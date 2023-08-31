@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"kernel.h": "c",
+			"config.h": "c",
+			"shared_utils.h": "c",
+			"stdio.h": "c",
+			"stdbool.h": "c"
+		}
+	}
+}
