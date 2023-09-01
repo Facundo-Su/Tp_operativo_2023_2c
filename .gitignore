@@ -52,3 +52,10 @@ Mkfile.old
 dkms.conf
 /.metadata/
 Kernel/makefile
+
+# Eclipse files
+RemoteSystemsTempFiles/
+.metadata/
+.settings/
+.cproject
+.project
