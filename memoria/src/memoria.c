@@ -10,7 +10,7 @@ int main(void) {
 	int cliente_fd = esperar_cliente(memoria);
 
 	t_list* lista;
-	while (1) {
+	/*while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
 		switch (cod_op) {
 		case MENSAJE:
@@ -29,7 +29,7 @@ int main(void) {
 			break;
 		}
 	}
-	return EXIT_SUCCESS;
+	return EXIT_SUCCESS;*/
 }
 
 void iterator(char* value) {

@@ -46,11 +46,9 @@ char **recursos;
 int *instancias_recursos;
 
 void obtenerConfiguracion();
-bool generarConexion(t_log*,int*,int*,int*);
 void asignarAlgoritmo(char *algoritmo);
 int* string_to_int_array(char** array_de_strings);
 void paquete(int);
-void terminar_programa();
 void mostrar_paquete(t_paquete*);
 //prueba
 void iterator(char*);
