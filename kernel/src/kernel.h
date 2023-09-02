@@ -49,5 +49,7 @@ void obtenerConfiguracion();
 bool generarConexion(t_log*,int*,int*,int*);
 void asignarAlgoritmo(char *algoritmo);
 int* string_to_int_array(char** array_de_strings);
+void paquete(int);
+void terminar_programa();
 #endif /* KERNEL_H_ */
 

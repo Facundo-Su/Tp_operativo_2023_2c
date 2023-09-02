@@ -1,5 +1,5 @@
 #include "kernel.h"
-
+#include<readline/readline.h>
 int main(int argc, char **argv){
 
     config = config_create("./kernel.config");
@@ -14,13 +14,11 @@ int main(int argc, char **argv){
     conexion_memoria =crear_conexion(ip_memoria, puerto_memoria);
     conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
     conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
-
-    enviar_mensaje("buenas soy kernel", conexion_memoria);
-
-
-    config_destroy(config);
-    log_destroy(logger);
-
+    paquete(conexion_memoria);
+    //enviar_mensaje("buenas soy kernel", conexion_memoria);
+    terminar_programa(conexion_memoria, logger, config);
+    terminar_programa(conexion_cpu, logger, config);
+    terminar_programa(conexion_file_system, logger, config);
     return EXIT_SUCCESS;
 }
 
@@ -63,4 +61,31 @@ int* string_to_int_array(char** array_de_strings){
 		numbers[i] = num;
 	}
 	return numbers;
+}
+
+void paquete(int conexion)
+{
+	char* leido;
+	t_paquete* paquete = crear_paquete();
+	// Leemos y esta vez agregamos las lineas al paquete
+	leido = readline(">");
+	while(leido && leido[0] != '\0'){
+		agregar_a_paquete(paquete, leido, conexion);
+		free(leido);
+		leido = readline(">");
+	}
+	free(leido);
+
+	enviar_paquete(paquete,conexion);
+	// ¡No te olvides de liberar las líneas y el paquete antes de regresar!
+	eliminar_paquete(paquete);
+}
+
+void terminar_programa(int conexion, t_log* logger, t_config* config)
+{
+	log_destroy(logger);
+	config_destroy(config);
+	liberar_conexion(conexion);
+	/* Y por ultimo, hay que liberar lo que utilizamos (conexion, log y config)
+	  con las funciones de las commons y del TP mencionadas en el enunciado */
 }
