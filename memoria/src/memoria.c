@@ -39,3 +39,6 @@ void iterator(char* value) {
 void obtenerConfiguraciones(){
 	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA");
 }
+
+
+

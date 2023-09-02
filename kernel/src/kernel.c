@@ -15,6 +15,7 @@ int main(int argc, char **argv){
     conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
     conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
     paquete(conexion_memoria);
+
     //enviar_mensaje("buenas soy kernel", conexion_memoria);
     terminar_programa(conexion_memoria, logger, config);
     terminar_programa(conexion_cpu, logger, config);
@@ -75,7 +76,7 @@ void paquete(int conexion)
 		leido = readline(">");
 	}
 	free(leido);
-
+	mostrar_paquete(paquete);
 	enviar_paquete(paquete,conexion);
 	// ¡No te olvides de liberar las líneas y el paquete antes de regresar!
 	eliminar_paquete(paquete);
@@ -89,3 +90,9 @@ void terminar_programa(int conexion, t_log* logger, t_config* config)
 	/* Y por ultimo, hay que liberar lo que utilizamos (conexion, log y config)
 	  con las funciones de las commons y del TP mencionadas en el enunciado */
 }
+void mostrar_paquete(t_paquete* paquete) {
+    printf("Código de operación: %d\n", paquete->codigo_operacion);
+    printf("Tamaño del buffer: %d\n", paquete->buffer->size);
+    printf("Contenido del buffer: %s\n", (char*)paquete->buffer->stream);
+}
+
