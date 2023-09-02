@@ -31,6 +31,5 @@ t_algoritmo algoritmo;
 
 void iterator(char* value);
 void obtenerConfiguraciones();
-
 #endif /* KERNEL_H_ */
 

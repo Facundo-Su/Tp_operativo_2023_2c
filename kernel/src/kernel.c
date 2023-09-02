@@ -14,6 +14,8 @@ int main(int argc, char **argv){
     conexion_memoria =crear_conexion(ip_memoria, puerto_memoria);
     conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
     conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+
+    //error
     paquete(conexion_memoria);
 
     //enviar_mensaje("buenas soy kernel", conexion_memoria);

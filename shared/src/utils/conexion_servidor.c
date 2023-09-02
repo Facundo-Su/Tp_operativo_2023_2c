@@ -61,6 +61,7 @@ void* recibir_buffer(int* size, int socket_cliente)
 
 void recibir_mensaje(int socket_cliente)
 {
+
 	int size;
 	char* buffer = recibir_buffer(&size, socket_cliente);
 	log_info(logger, "Me llego el mensaje %s", buffer);
@@ -69,6 +70,7 @@ void recibir_mensaje(int socket_cliente)
 
 t_list* recibir_paquete(int socket_cliente)
 {
+	logger = log_create("prueba.log", "prueba", 1, LOG_LEVEL_INFO);
 	int size;
 	int desplazamiento = 0;
 	void * buffer;
@@ -78,6 +80,7 @@ t_list* recibir_paquete(int socket_cliente)
 	buffer = recibir_buffer(&size, socket_cliente);
 	while(desplazamiento < size)
 	{
+		log_info(logger, "blblbb");
 		memcpy(&tamanio, buffer + desplazamiento, sizeof(int));
 		desplazamiento+=sizeof(int);
 		char* valor = malloc(tamanio);
