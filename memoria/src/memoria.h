@@ -8,7 +8,7 @@
 #include<commons/config.h>
 #include<readline/readline.h>
 #include <utils/conexion.h>
-#include <utils/conexion_servidor.h>
+
 t_log* logger;
 t_config* config;
 
@@ -16,6 +16,8 @@ typedef enum{
 	FIFO,
 	LRU
 }t_algoritmo;
+
+int conexion_filesystem;
 
 
 char *puerto_escucha;
@@ -30,6 +32,6 @@ t_algoritmo algoritmo;
 
 void iterator(char* value);
 void obtenerConfiguraciones();
-int esperandoOperacion(char*);
+int iniciarServidor(char*);
 #endif /* KERNEL_H_ */
 

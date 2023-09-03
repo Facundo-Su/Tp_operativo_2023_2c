@@ -10,6 +10,8 @@
 #include<string.h>
 #include<commons/log.h>
 #include<commons/config.h>
+#include<commons/collections/list.h>
+#include<assert.h>
 
 typedef enum
 {
@@ -39,5 +41,16 @@ void enviar_paquete(t_paquete* paquete, int socket_cliente);
 void liberar_conexion(int socket_cliente);
 void eliminar_paquete(t_paquete* paquete);
 void terminar_programa(int , t_log* , t_config* );
+
+//servidores
+extern t_log* logger;
+
+void* recibir_buffer(int*, int);
+
+int iniciar_servidor(char*);
+int esperar_cliente(int);
+t_list* recibir_paquete(int);
+void recibir_mensaje(int);
+int recibir_operacion(int);
 
 #endif /* CONEXION_SERVIDOR_H_*/

@@ -7,7 +7,15 @@ int main(void) {
 	config = config_create("./memoria.config");
 
 	obtenerConfiguraciones(puerto_escucha);
-	esperandoOperacion();
+
+	conexion_filesystem = crear_conexion(ip_file_system, puerto_filesystem);
+
+	enviar_mensaje("de memoria a fileSystem", conexion_filesystem);
+
+
+	iniciarServidor(puerto_escucha);
+	terminar_programa(conexion_filesystem,logger,config);
+
 	return EXIT_SUCCESS;
 }
 
@@ -17,11 +25,13 @@ void iterator(char* value) {
 //obtengo las configuraciones de .config
 void obtenerConfiguraciones(){
 	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA");
+	puerto_filesystem = config_get_string_value(config,"PUERTO_FILESYSTEM");
+	ip_file_system = config_get_string_value(config,"IP_FILESYSTEM");
 }
 
 
 //operacion despues de recibir el mensaje
-int esperandoOperacion(char *puerto){
+int iniciarServidor(char *puerto){
 	int memoria_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
 	int cliente_fd = esperar_cliente(memoria_fd);

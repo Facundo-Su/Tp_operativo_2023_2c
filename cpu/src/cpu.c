@@ -1,5 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
+
 #include "cpu.h"
 //falta hacer que este reciba mensaje de kernel
 int main(int argc, char* argv[]) {
@@ -19,7 +18,9 @@ int main(int argc, char* argv[]) {
 
 
 	enviar_mensaje("cpu a memoria", conexion_memoria);
-	esperandoOperacion(puerto_escucha);
+
+	//Inicia el cpu como servidor
+	iniciarServidor(puerto_escucha);
 
 	terminar_programa(conexion_memoria, logger, config);
     return 0;
@@ -27,9 +28,9 @@ int main(int argc, char* argv[]) {
 void obtenerConfiguracion(){
 	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
 	puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
-	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA");
+	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA_DISPATCH");
 }
-void esperandoOperacion(char *puerto){
+int iniciarServidor(char *puerto){
 	int servidor_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
 	int cliente_fd = esperar_cliente(servidor_fd);
@@ -48,12 +49,13 @@ void esperandoOperacion(char *puerto){
 			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
-			break;
+			return EXIT_FAILURE;
 		default:
 			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
 	}
+	return EXIT_SUCCESS;
 
 }
 void iterator(char* value) {

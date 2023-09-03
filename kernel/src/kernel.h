@@ -28,6 +28,8 @@ typedef enum{
 char *ip_memoria;
 char *ip_filesystem;
 char *ip_cpu;
+char *puerto_fileSystem;
+
 
 //variable enum , uso enum porque esta fijo por el enunciado que el tp que solo tenemos
 //que implementar 3 algoritmos
