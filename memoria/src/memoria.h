@@ -9,7 +9,6 @@
 #include<readline/readline.h>
 #include <utils/conexion.h>
 #include <utils/conexion_servidor.h>
-
 t_log* logger;
 t_config* config;
 
@@ -31,5 +30,6 @@ t_algoritmo algoritmo;
 
 void iterator(char* value);
 void obtenerConfiguraciones();
+int esperandoOperacion(char*);
 #endif /* KERNEL_H_ */
 

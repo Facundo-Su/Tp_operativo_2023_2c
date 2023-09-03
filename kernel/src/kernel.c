@@ -2,7 +2,8 @@
 #include<readline/readline.h>
 int main(int argc, char **argv){
 
-	config = iniciar_config();
+	config = config_create("./kernel.config");
+
     logger = log_create("./kernel.log", "KERNEL", true, LOG_LEVEL_INFO);
     log_info(logger, "Soy el Kernel!");
 
@@ -11,29 +12,21 @@ int main(int argc, char **argv){
     // conexiones
     conexion_memoria =crear_conexion(ip_memoria, puerto_memoria);
     conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
-    conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+    //conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 
     //envio de mensajes
     enviar_mensaje("kernel a memoria", conexion_memoria);
-    enviar_mensaje("kernel a cpu", conexion_cpu);
+    //enviar_mensaje("kernel a cpu", conexion_cpu);
     enviar_mensaje("kernel a filesystem", conexion_file_system);
     //error
     //paquete(conexion_memoria);
 
     terminar_programa(conexion_memoria, logger, config);
     terminar_programa(conexion_cpu, logger, config);
-    terminar_programa(conexion_file_system, logger, config);
+    //terminar_programa(conexion_file_system, logger, config);
     return EXIT_SUCCESS;
 }
 
-t_config* iniciar_config(){
-    t_config * config_nuevo = config_create("./kernel.config");
-    if (config == NULL) {
-        fprintf(stderr, "No se encontró el archivo de configuración");
-         return EXIT_FAILURE;
-    }
-    return config_nuevo;
-}
 
 void obtenerConfiguracion(){
 
@@ -88,15 +81,10 @@ void paquete(int conexion)
 		leido = readline(">");
 	}
 	free(leido);
-	mostrar_paquete(paquete);
 	enviar_paquete(paquete,conexion);
 	// ¡No te olvides de liberar las líneas y el paquete antes de regresar!
 	eliminar_paquete(paquete);
 }
 
-void mostrar_paquete(t_paquete* paquete) {
-    printf("Código de operación: %d\n", paquete->codigo_operacion);
-    printf("Tamaño del buffer: %d\n", paquete->buffer->size);
-    printf("Contenido del buffer: %s\n", (char*)paquete->buffer->stream);
-}
+
 

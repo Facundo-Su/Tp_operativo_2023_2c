@@ -1,16 +1,33 @@
-#include <memoria.h>
+#include "memoria.h"
 
-
+//falta hacer que reciba este pueda enviar mensaje a cpu
 int main(void) {
 	logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
+
 	config = config_create("./memoria.config");
-	obtenerConfiguraciones();
-	int memoria = iniciar_servidor(puerto_escucha);
+
+	obtenerConfiguraciones(puerto_escucha);
+	esperandoOperacion();
+	return EXIT_SUCCESS;
+}
+
+void iterator(char* value) {
+	log_info(logger,"%s", value);
+}
+//obtengo las configuraciones de .config
+void obtenerConfiguraciones(){
+	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA");
+}
+
+
+//operacion despues de recibir el mensaje
+int esperandoOperacion(char *puerto){
+	int memoria_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
-	int cliente_fd = esperar_cliente(memoria);
+	int cliente_fd = esperar_cliente(memoria_fd);
 
 	t_list* lista;
-	/*while (1) {
+	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
 		switch (cod_op) {
 		case MENSAJE:
@@ -29,16 +46,6 @@ int main(void) {
 			break;
 		}
 	}
-	return EXIT_SUCCESS;*/
+	return EXIT_SUCCESS;
 }
-
-void iterator(char* value) {
-	log_info(logger,"%s", value);
-}
-
-void obtenerConfiguraciones(){
-	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA");
-}
-
-
 

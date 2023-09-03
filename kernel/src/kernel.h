@@ -52,6 +52,6 @@ void paquete(int);
 void mostrar_paquete(t_paquete*);
 //prueba
 void iterator(char*);
-
+t_config* iniciar_config();
 #endif /* KERNEL_H_ */
 

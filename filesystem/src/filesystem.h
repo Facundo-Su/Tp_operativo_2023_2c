@@ -15,6 +15,7 @@
 #include<commons/config.h>
 #include<readline/readline.h>
 #include <utils/conexion.h>
+#include <utils/conexion_servidor.h>
 
 t_log* logger;
 t_config* config;
@@ -22,9 +23,12 @@ t_config* config;
 int conexion_memoria;
 char *ip_memoria;
 char *puerto_memoria;
+char *puerto_escucha;
 
 void obtenerConfiguracion();
 void terminar_programa();
 t_config* iniciar_config();
+void iterator(char*);
+int esperandoOperacion(char*);
 
 #endif /* SRC_FILESYSTEM_H_ */
