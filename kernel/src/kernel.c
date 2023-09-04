@@ -15,12 +15,13 @@ int main(int argc, char **argv){
     conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 
     //envio de mensajes
-    enviar_mensaje("kernel a memoria", conexion_memoria);
-    enviar_mensaje("kernel a cpu", conexion_cpu);
-    enviar_mensaje("kernel a filesystem", conexion_file_system);
+    //enviar_mensaje("kernel a memoria", conexion_memoria);
+    //enviar_mensaje("kernel a cpu", conexion_cpu);
+    //enviar_mensaje("kernel a filesystem", conexion_file_system);
 
     //error
-    //paquete(conexion_memoria);
+    paquete(conexion_memoria);
+
 
     terminar_programa(conexion_memoria, logger, config);
     terminar_programa(conexion_cpu, logger, config);
