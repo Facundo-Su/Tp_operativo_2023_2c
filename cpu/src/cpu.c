@@ -5,7 +5,7 @@ int main(int argc, char* argv[]) {
 
 	char *rutaConfig = argv[1];
 
-	cargarConfig(rutaConfig);
+	config = cargarConfig(rutaConfig);
 
     logger = log_create("./cpu.log", "CPU", true, LOG_LEVEL_INFO);
     log_info(logger, "Soy la cpu!");

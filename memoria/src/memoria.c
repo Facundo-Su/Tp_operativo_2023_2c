@@ -4,15 +4,15 @@
 int main(int argc, char* argv[]) {
 
 
-    char* ruta = argv[1];
+	char *rutaConfig = argv[1];
 
-    config= cargarConfig(ruta);
+	config = cargarConfig(rutaConfig);
+
+    obtenerConfiguraciones();
 
     logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
 
     log_info(logger, "Soy el Memoria!");
-
-    obtenerConfiguraciones();
 
     conexion_filesystem = crear_conexion(ip_file_system, puerto_filesystem);
 

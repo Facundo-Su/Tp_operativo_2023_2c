@@ -12,10 +12,12 @@ int main(int argc, char* argv[]) {
 
     log_info(logger, "Soy el filesystem!");
     //obtener datos de .config
+
 	obtenerConfiguracion();
 
 	//creo la conexion
 	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+
 	enviar_mensaje("filesystem a memoria", conexion_memoria);
 
 	//realiza la operacion segun lo que necesita el cliente
