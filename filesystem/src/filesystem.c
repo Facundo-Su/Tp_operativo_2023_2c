@@ -3,15 +3,9 @@
 
 int main(int argc, char* argv[]) {
 
-	config = config_create("./filesystem.config");
+	char *rutaConfig = argv[1];
 
-
-    if (config == NULL) {
-        printf("No se encontró el archivo de configuración");
-         return EXIT_FAILURE;
-    }
-
-
+	config = cargarConfig(rutaConfig);
 
     logger = log_create("./filesystem.log", "FILESYSTEM", true, LOG_LEVEL_INFO);
 
@@ -32,9 +26,6 @@ int main(int argc, char* argv[]) {
 	terminar_programa(conexion_memoria, logger, config);
     return EXIT_SUCCESS;
 }
-
-
-
 
 
 void obtenerConfiguracion(){

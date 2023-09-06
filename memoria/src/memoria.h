@@ -33,5 +33,6 @@ t_algoritmo algoritmo;
 void iterator(char* value);
 void obtenerConfiguraciones();
 int iniciarServidor(char*);
+
 #endif /* KERNEL_H_ */
 

@@ -1,10 +1,16 @@
 #include "memoria.h"
 
 
-int main(void) {
+int main(int argc, char* argv[]) {
+
+
+    char* ruta = argv[1];
+
+    config= cargarConfig(ruta);
+
     logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
+
     log_info(logger, "Soy el Memoria!");
-    config = config_create("./memoria.config");
 
     obtenerConfiguraciones();
 
@@ -19,6 +25,7 @@ int main(void) {
 
     return EXIT_SUCCESS;
 }
+
 
 void iterator(char* value) {
     log_info(logger, "%s", value);

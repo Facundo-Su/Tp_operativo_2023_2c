@@ -2,7 +2,9 @@
 #include<readline/readline.h>
 int main(int argc, char **argv){
 
-	config = config_create("./kernel.config");
+
+	char *rutaConfig = argv[1];
+	config = cargarConfig(rutaConfig);
 
     logger = log_create("./kernel.log", "KERNEL", true, LOG_LEVEL_INFO);
     log_info(logger, "Soy el Kernel!");
@@ -12,12 +14,12 @@ int main(int argc, char **argv){
     // conexiones
     conexion_memoria =crear_conexion(ip_memoria, puerto_memoria);
     conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
-    //conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+    conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 
     //envio de mensajes
     //enviar_mensaje("kernel a memoria", conexion_memoria);
-    //enviar_mensaje("kernel a cpu", conexion_cpu);
-    enviar_mensaje("kernel a filesystem", conexion_file_system);
+    enviar_mensaje("kernel a cpu", conexion_cpu);
+    //enviar_mensaje("kernel a filesystem", conexion_file_system);
 
     //error
     //paquete(conexion_memoria);
@@ -30,6 +32,8 @@ int main(int argc, char **argv){
 
     return EXIT_SUCCESS;
 }
+
+
 
 
 void obtenerConfiguracion(){

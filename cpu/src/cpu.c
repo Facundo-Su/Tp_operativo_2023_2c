@@ -1,17 +1,17 @@
 
 #include "cpu.h"
-//falta hacer que este reciba mensaje de kernel
+
 int main(int argc, char* argv[]) {
-	config = config_create("./cpu.config");
-    if (config == NULL) {
-        printf("No se encontró el archivo de configuración");
-         return EXIT_FAILURE;
-    }
+
+	char *rutaConfig = argv[1];
+
+	cargarConfig(rutaConfig);
+
     logger = log_create("./cpu.log", "CPU", true, LOG_LEVEL_INFO);
     log_info(logger, "Soy la cpu!");
 
     //iniciar configuraciones
-	obtenerConfiguracion();
+	 obtenerConfiguracion();
 
 	//generar conexion
 	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
@@ -25,6 +25,9 @@ int main(int argc, char* argv[]) {
 	terminar_programa(conexion_memoria, logger, config);
     return 0;
 }
+
+
+
 void obtenerConfiguracion(){
 	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
 	puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");

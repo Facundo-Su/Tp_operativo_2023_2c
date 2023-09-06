@@ -204,3 +204,11 @@ t_list* recibir_paquete(int socket_cliente)
 	return valores;
 }
 
+t_config* cargarConfig(char *ruta){
+	t_config* config = config_create(ruta);
+    if (config == NULL) {
+        printf("No se encontró el archivo de configuración");
+         exit(1);
+    }
+    return config;
+}
