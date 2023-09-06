@@ -12,20 +12,20 @@ int main(int argc, char **argv){
     // conexiones
     conexion_memoria =crear_conexion(ip_memoria, puerto_memoria);
     conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
-    conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+    //conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 
     //envio de mensajes
     //enviar_mensaje("kernel a memoria", conexion_memoria);
     //enviar_mensaje("kernel a cpu", conexion_cpu);
-    //enviar_mensaje("kernel a filesystem", conexion_file_system);
+    enviar_mensaje("kernel a filesystem", conexion_file_system);
 
     //error
-    paquete(conexion_memoria);
+    //paquete(conexion_memoria);
 
 
     terminar_programa(conexion_memoria, logger, config);
-    terminar_programa(conexion_cpu, logger, config);
-    terminar_programa(conexion_file_system, logger, config);
+    //terminar_programa(conexion_cpu, logger, config);
+    //terminar_programa(conexion_file_system, logger, config);
 
 
     return EXIT_SUCCESS;
