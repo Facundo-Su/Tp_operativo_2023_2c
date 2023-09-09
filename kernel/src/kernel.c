@@ -11,20 +11,13 @@ int main(int argc, char **argv){
 
     obtenerConfiguracion();
 
-    //iniciarConsola();
-
-    // conexiones
-    conexion_memoria =crear_conexion(ip_memoria, puerto_memoria);
-    conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
-    conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+    iniciarConsola();
 
     //envio de mensajes
-    enviar_mensaje("kernel a memoria", conexion_memoria);
-    enviar_mensaje("kernel a cpu", conexion_cpu);
-    enviar_mensaje("kernel a filesystem", conexion_file_system);
+
 
     //error
-    paquete(conexion_memoria);
+    //paquete(conexion_memoria);
 
 
     terminar_programa(conexion_memoria, logger, config);
@@ -36,7 +29,7 @@ int main(int argc, char **argv){
 }
 
 void iniciarConsola(){
-	t_log *loggerConsola = log_create("./kernelConsola.log", "consola", 1, LOG_LEVEL_INFO);
+	loggerConsola = log_create("./kernelConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	char* variable;
 
 	while(1){
@@ -45,7 +38,9 @@ void iniciarConsola(){
 				"\n 3. iniciar Planificacion"
 				"\n 4. detener Planificacion"
 				"\n 5. modificar grado multiprogramacion"
-				"\n 6. listar procesos por estado");
+				"\n 6. listar procesos por estado"
+				"\n 7. generar conexion"
+				"\n 8. enviar mensaje");
 		variable = readline(">");
 
 		switch (*variable) {
@@ -53,19 +48,25 @@ void iniciarConsola(){
 				iniciarProceso("prueba",4,planificador);
 				break;
 			case '2':
-				finalizarProceso(loggerConsola);
+				finalizarProceso();
 				break;
 			case '3':
-				iniciarPlanificacion(loggerConsola);
+				iniciarPlanificacion();
 				break;
 			case '4':
-				detenerPlanificacion(loggerConsola);
+				detenerPlanificacion();
 				break;
 			case '5':
-				modificarGradoMultiprogramacion(loggerConsola);
+				modificarGradoMultiprogramacion();
 				break;
 			case '6':
-				listarProcesoPorEstado(loggerConsola);
+				listarProcesoPorEstado();
+				break;
+			case '7':
+				generarConexion();
+				break;
+			case '8':
+				enviarMensaje();
 				break;
 			default:
 				log_info(loggerConsola,"no corresponde a ninguno");
@@ -77,6 +78,61 @@ void iniciarConsola(){
 	}
 
 }
+
+void enviarMensaje() {
+	log_info(loggerConsola,"ingrese q que modulos deseas mandar mensaje"
+			"\n 1. modulo memoria"
+			"\n 2. modulo filesystem"
+			"\n 3. modulo cpu");
+
+    char *valor = readline(">");
+	switch (*valor) {
+		case '1':
+	        enviar_mensaje("kernel a memoria", conexion_memoria);
+	        log_info(loggerConsola,"mensaje enviado correctamente\n");
+			break;
+		case '2':
+	        enviar_mensaje("kernel a cpu", conexion_cpu);
+	        log_info(loggerConsola,"mensaje enviado correctamente\n");
+			break;
+		case '3':
+	        enviar_mensaje("kernel a filesystem", conexion_file_system);
+	        log_info(loggerConsola,"mensaje enviado correctamente\n");
+			break;
+		default:
+			log_info(loggerConsola,"no corresponde a ninguno\n");
+			break;
+	}
+}
+
+void generarConexion() {
+
+	log_info(loggerConsola,"ingrese q que modulos deseas conectar"
+			"\n 1. modulo memoria"
+			"\n 2. modulo filesystem"
+			"\n 3. modulo cpu");
+
+    char *valor = readline(">");
+	switch (*valor) {
+		case '1':
+			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+	        log_info(loggerConsola,"conexion generado correctamente\n");
+			break;
+		case '2':
+			conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
+	        log_info(loggerConsola,"conexion generado correctamente\n");
+			break;
+		case '3':
+			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+	        log_info(loggerConsola,"conexion generado correctamente\n");
+			break;
+		default:
+			log_info(loggerConsola,"no corresponde a ninguno\n");
+			break;
+	}
+
+}
+
 
 void iniciarProceso(char* archivo_test,int size,t_planificador prioridad){
 	char* prueba = ruta_archivo_test;
@@ -104,26 +160,26 @@ void mandarAMemoria(char* archivo,int size){
 
 
 t_contexto_ejecucion* obtenerContexto(char* archivo){
-	t_contexto_ejecucion *estructura_retornar;
+	t_contexto_ejecucion *estructura_retornar ;
 
 	return estructura_retornar;
 }
 
 
-void finalizarProceso(t_log*){
+void finalizarProceso(){
 
 }
-void iniciarPlanificacion(t_log *loggerConsola){
+void iniciarPlanificacion(){
 	log_info(loggerConsola,"inicio el proceso de planificacion");
 
 }
-void detenerPlanificacion(t_log* loggerConsola){
+void detenerPlanificacion(){
 
 }
-void modificarGradoMultiprogramacion(t_log* loggerConsola){
+void modificarGradoMultiprogramacion(){
 
 }
-void listarProcesoPorEstado(t_log* loggerConsola){
+void listarProcesoPorEstado(){
 
 }
 
@@ -185,6 +241,4 @@ void paquete(int conexion)
 	// ¡No te olvides de liberar las líneas y el paquete antes de regresar!
 	eliminar_paquete(paquete);
 }
-
-
 

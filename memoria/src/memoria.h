@@ -11,6 +11,7 @@
 
 t_log* logger;
 t_config* config;
+t_log * logger_consola_memoria;
 
 typedef enum{
 	FIFO,
@@ -33,6 +34,7 @@ t_algoritmo algoritmo;
 void iterator(char* value);
 void obtenerConfiguraciones();
 int iniciarServidor(char*);
+void iniciarConsola();
 
 #endif /* KERNEL_H_ */
 

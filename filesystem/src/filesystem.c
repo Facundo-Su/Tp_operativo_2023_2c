@@ -1,6 +1,6 @@
 
 #include "filesystem.h"
-
+#include<readline/readline.h>
 int main(int argc, char* argv[]) {
 
 	char *rutaConfig = argv[1];
@@ -12,18 +12,8 @@ int main(int argc, char* argv[]) {
 
     log_info(logger, "Soy el filesystem!");
     //obtener datos de .config
-
 	obtenerConfiguracion();
-	//realiza la operacion segun lo que necesita el cliente
-	iniciarServidor(puerto_escucha);
-	//creo la conexion
-	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
-
-	enviar_mensaje("filesystem a memoria", conexion_memoria);
-
-
-
-
+	iniciarConsola();
 
 	terminar_programa(conexion_memoria, logger, config);
     return EXIT_SUCCESS;
@@ -35,6 +25,40 @@ void obtenerConfiguracion(){
 	puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
 	puerto_escucha= config_get_string_value(config,"PUERTO_ESCUCHA");
 }
+
+
+void iniciarConsola(){
+	logger_consola_filesystem = log_create("./filesystemConsola.log", "consola", 1, LOG_LEVEL_INFO);
+	char* valor;
+
+	while(1){
+		log_info(logger_consola_filesystem,"ingrese la operacion que deseas realizar"
+				"\n 1. generar conexion"
+				"\n 2. enviar mensaje"
+				"\n 3. iniciarComoServidor");
+		valor = readline("<");
+		switch (*valor) {
+			case '1':
+				log_info(logger_consola_filesystem, "generar conexion con memoria\n");
+				conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+				break;
+			case '2':
+				log_info(logger_consola_filesystem, "enviar mensaje a memoria\n");
+				enviar_mensaje("filesystem a memoria", conexion_memoria);
+				break;
+			case '3':
+				log_info(logger_consola_filesystem, "se inicio el servidor\n");
+				iniciarServidor(puerto_escucha);
+				break;
+			default:
+				log_info(logger_consola_filesystem,"no corresponde a ninguno");
+				exit(2);
+		}
+		free(valor);
+	}
+
+}
+
 
 int iniciarServidor(char *puerto){
 	int servidor_fd = iniciar_servidor(puerto);

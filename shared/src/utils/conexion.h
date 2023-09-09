@@ -13,6 +13,7 @@
 #include<commons/collections/list.h>
 #include<assert.h>
 #include <bits/types.h>
+#include<readline/readline.h>
 
 typedef enum
 {

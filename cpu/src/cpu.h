@@ -23,12 +23,13 @@ int conexion_memoria;
 char *ip_memoria;
 char *puerto_memoria;
 char *puerto_escucha;
+t_log *logger_consola_cpu;
 
 void obtenerConfiguracion();
 void terminar_programa();
 t_config* iniciar_config();
 int iniciarServidor(char*);
 void iterator(char*);
-
+void iniciarConsola();
 
 #endif /* SRC_CPU_H_ */

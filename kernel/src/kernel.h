@@ -24,6 +24,13 @@ typedef enum{
 	PRIORIDADES
 }t_planificador;
 
+typedef enum{
+	KERNEL,
+	CPU,
+	FILESYSTEM,
+
+};
+
 typedef struct{
 	uint32_t ax;
 	uint32_t bx;
@@ -56,10 +63,14 @@ typedef struct{
 }t_pcb;
 
 //ruta de archivo test
+//variable global
 char * ruta_archivo_test = "./test/";
 
 int contador_pid =0;
 int contador_pc =0;
+t_log *loggerConsola;
+
+
 //configuraciones del archibo kernel.config
 
 char *ip_memoria;
@@ -68,7 +79,6 @@ char *ip_cpu;
 char *puerto_fileSystem;
 
 
-// variables de tipo Numérico
 char *puerto_memoria;
 char *puerto_filesystem;
 char *puerto_cpu_dispatch;
@@ -77,7 +87,6 @@ int quantum;
 int grado_multiprogramacion_ini;
 t_planificador planificador;
 
-// variables de tipo Lista (supongamos que se refiere a un arreglo)
 char **recursos;
 int *instancias_recursos;
 
@@ -86,18 +95,21 @@ void asignarAlgoritmo(char *algoritmo);
 int* string_to_int_array(char** array_de_strings);
 void paquete(int);
 void mostrar_paquete(t_paquete*);
-//prueba
+
+
 void iterator(char*);
 void interactuarConModulo();
 t_config* iniciar_config();
-
 void iniciarConsola();
 void iniciarProceso(char*,int,t_planificador);
-void finalizarProceso(t_log*);
-void iniciarPlanificacion(t_log*);
-void detenerPlanificacion(t_log*);
-void modificarGradoMultiprogramacion(t_log*);
-void listarProcesoPorEstado(t_log*);
+void finalizarProceso();
+void iniciarPlanificacion();
+void detenerPlanificacion();
+void modificarGradoMultiprogramacion();
+void listarProcesoPorEstado();
+void generarConexion();
+void enviarMensaje();
+
 
 
 t_contexto_ejecucion* obtenerContexto(char*);

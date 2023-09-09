@@ -13,20 +13,44 @@ int main(int argc, char* argv[]) {
     //iniciar configuraciones
 	 obtenerConfiguracion();
 
-	//generar conexion
-	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+	iniciarConsola();
 
-
-	enviar_mensaje("cpu a memoria", conexion_memoria);
-
-	//Inicia el cpu como servidor
-	iniciarServidor(puerto_escucha);
 
 	terminar_programa(conexion_memoria, logger, config);
     return 0;
 }
 
+void iniciarConsola(){
+	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
+	char* valor;
 
+	while(1){
+		log_info(logger_consola_cpu,"ingrese la operacion que deseas realizar"
+				"\n 1. generar conexion"
+				"\n 2. enviar mensaje"
+				"\n 3. iniciar Como Servidor");
+		valor = readline("<");
+		switch (*valor) {
+			case '1':
+				log_info(logger_consola_cpu, "generar conexion con memoria\n");
+				conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+				break;
+			case '2':
+				log_info(logger_consola_cpu, "enviar mensaje a memoria\n");
+				enviar_mensaje("cpu a memoria", conexion_memoria);
+				break;
+			case '3':
+				log_info(logger_consola_cpu, "se inicio el servidor\n");
+				iniciarServidor(puerto_escucha);
+				break;
+			default:
+				log_info(logger_consola_cpu,"no corresponde a ninguno");
+				exit(2);
+		}
+		free(valor);
+	}
+
+}
 
 void obtenerConfiguracion(){
 	ip_memoria = config_get_string_value(config, "IP_MEMORIA");

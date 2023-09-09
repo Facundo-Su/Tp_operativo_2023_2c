@@ -14,11 +14,7 @@ int main(int argc, char* argv[]) {
 
     log_info(logger, "Soy el Memoria!");
 
-    conexion_filesystem = crear_conexion(ip_file_system, puerto_filesystem);
-
-    enviar_mensaje("de memoria a fileSystem", conexion_filesystem);
-
-    iniciarServidor(puerto_escucha);
+    iniciarConsola();
 
     // Limpieza y terminación
     terminar_programa(conexion_filesystem, logger, config);
@@ -26,6 +22,37 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
+void iniciarConsola(){
+	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
+	char* valor;
+
+	while(1){
+		log_info(logger_consola_memoria,"ingrese la operacion que deseas realizar"
+				"\n 1. generar conexion"
+				"\n 2. enviar mensaje"
+				"\n 3. iniciarComoServidor");
+		valor = readline("<");
+		switch (*valor) {
+			case '1':
+				log_info(logger_consola_memoria, "generar conexion con filesystem\n");
+				conexion_filesystem = crear_conexion(ip_file_system, puerto_filesystem);
+				break;
+			case '2':
+				log_info(logger_consola_memoria, "enviar mensaje a memoria\n");
+				enviar_mensaje("memoria a fylesystem", conexion_filesystem);
+				break;
+			case '3':
+				log_info(logger_consola_memoria, "se inicio el servidor\n");
+				iniciarServidor(puerto_escucha);
+				break;
+			default:
+				log_info(logger_consola_memoria,"no corresponde a ninguno");
+				exit(2);
+		}
+		free(valor);
+	}
+
+}
 
 void iterator(char* value) {
     log_info(logger, "%s", value);
