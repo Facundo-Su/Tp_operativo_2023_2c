@@ -14,14 +14,14 @@ int main(int argc, char* argv[]) {
     //obtener datos de .config
 
 	obtenerConfiguracion();
-
+	//realiza la operacion segun lo que necesita el cliente
+	iniciarServidor(puerto_escucha);
 	//creo la conexion
 	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
 
 	enviar_mensaje("filesystem a memoria", conexion_memoria);
 
-	//realiza la operacion segun lo que necesita el cliente
-	iniciarServidor(puerto_escucha);
+
 
 
 

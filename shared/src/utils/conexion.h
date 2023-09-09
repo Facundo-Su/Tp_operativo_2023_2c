@@ -12,6 +12,7 @@
 #include<commons/config.h>
 #include<commons/collections/list.h>
 #include<assert.h>
+#include <bits/types.h>
 
 typedef enum
 {
@@ -53,5 +54,7 @@ t_list* recibir_paquete(int);
 void recibir_mensaje(int);
 int recibir_operacion(int);
 t_config* cargarConfig(char *);
+
+
 
 #endif /* CONEXION_SERVIDOR_H_*/
