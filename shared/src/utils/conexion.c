@@ -1,6 +1,8 @@
 #include "conexion.h"
 
 
+
+
 void* serializar_paquete(t_paquete* paquete, int bytes)
 {
 	void * magic = malloc(bytes);

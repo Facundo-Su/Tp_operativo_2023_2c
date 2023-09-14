@@ -28,8 +28,9 @@ void iniciarConsola(){
 		log_info(logger_consola_cpu,"ingrese la operacion que deseas realizar"
 				"\n 1. generar conexion"
 				"\n 2. enviar mensaje"
-				"\n 3. iniciar Como Servidor");
-		valor = readline("<");
+				"\n 3. iniciar Como Servidor"
+				"\n 4. leer archivo");
+		valor = readline(">");
 		switch (*valor) {
 			case '1':
 				log_info(logger_consola_cpu, "generar conexion con memoria\n");
@@ -42,6 +43,12 @@ void iniciarConsola(){
 			case '3':
 				log_info(logger_consola_cpu, "se inicio el servidor\n");
 				iniciarServidor(puerto_escucha);
+				break;
+			case '4':
+				FILE* archivos = fopen("./test.txt","r");
+				log_info(logger_consola_cpu, "estos son los valores\n");
+				leer_pseudocodigo(archivos);
+				printf("estos son los valores %i",list_size(instrucciones));
 				break;
 			default:
 				log_info(logger_consola_cpu,"no corresponde a ninguno");
@@ -85,6 +92,41 @@ int iniciarServidor(char *puerto){
 	return EXIT_SUCCESS;
 
 }
+
+
 void iterator(char* value) {
 	log_info(logger,"%s", value);
+}
+
+
+//archivos
+
+void leer_pseudocodigo(FILE* pseudocodigo){
+	instrucciones = list_create();
+    logger_instruciones = log_create("./instruciones.log","INSTRUCCIONES", 1, LOG_LEVEL_INFO);
+    // Creo las variables para parsear el archivo
+    char* instruccion = NULL;
+    size_t len = 0;
+
+    // Recorro el archivo de pseudocodigo y parseo las instrucciones
+    while (getline(&instruccion, &len, pseudocodigo) != -1){
+
+        // Logueo la linea a parsear
+        log_debug(logger_instruciones, "Se parseó la siguiente instrucción: %s", instruccion);
+
+        // Parseo la instruccion
+        char** instruccion_parseada = parsear_instruccion(instruccion);
+
+        // Añado la instruccion parseada a la lista de instrucciones
+        list_add(instrucciones, instruccion_parseada);
+    }
+}
+
+char** parsear_instruccion(char* instruccion){
+
+    // Parseo la instruccion
+    char** instruccion_parseada = string_split(instruccion, " ");
+
+    // Retorno la instruccion parseada
+    return instruccion_parseada;
 }

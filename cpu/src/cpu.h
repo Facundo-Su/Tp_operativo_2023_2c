@@ -15,9 +15,13 @@
 #include<commons/config.h>
 #include<readline/readline.h>
 #include <utils/conexion.h>
+#include "instrucciones.h"
 
 t_log* logger;
 t_config* config;
+t_log* logger_instruciones;
+t_list* instrucciones ;
+
 
 int conexion_memoria;
 char *ip_memoria;
@@ -31,5 +35,11 @@ t_config* iniciar_config();
 int iniciarServidor(char*);
 void iterator(char*);
 void iniciarConsola();
+
+//archivos
+
+void leer_pseudocodigo(FILE* );
+
+char** parsear_instruccion(char* );
 
 #endif /* SRC_CPU_H_ */

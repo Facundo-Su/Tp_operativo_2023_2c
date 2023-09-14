@@ -25,25 +25,6 @@ typedef enum{
 }t_planificador;
 
 typedef enum{
-	KERNEL,
-	CPU,
-	FILESYSTEM,
-
-};
-
-typedef struct{
-	uint32_t ax;
-	uint32_t bx;
-	uint32_t cx;
-	uint32_t dx;
-}t_registro_cpu;
-
-typedef struct{
-	int pc;
-	t_registro_cpu registros_cpu;
-}t_contexto_ejecucion;
-
-typedef enum{
 	NEW,
 	READY,
 	RUNNING,

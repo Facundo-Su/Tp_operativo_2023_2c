@@ -82,8 +82,8 @@ void iniciarConsola(){
 void enviarMensaje() {
 	log_info(loggerConsola,"ingrese q que modulos deseas mandar mensaje"
 			"\n 1. modulo memoria"
-			"\n 2. modulo filesystem"
-			"\n 3. modulo cpu");
+			"\n 2. modulo cpu"
+			"\n 3. modulo filesystem");
 
     char *valor = readline(">");
 	switch (*valor) {
