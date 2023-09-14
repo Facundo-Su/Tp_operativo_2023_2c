@@ -45,6 +45,28 @@ typedef struct{
 	t_registro_cpu registros_cpu;
 }t_contexto_ejecucion;
 
+typedef enum{
+	NEW,
+	READY,
+	RUNNING,
+	WAITING,
+	TERMINATED,
+}t_estado;
+
+
+
+typedef struct{
+	int pid;
+	int prioridad;
+	t_contexto_ejecucion* contexto;
+	t_list* tabla_archivo_abierto;
+	t_estado estado;
+}t_pcb;
+
+t_log *loggerConsola;
+t_list* lista_pcb;
+
+
 int crear_conexion(char* ip, char* puerto);
 void enviar_mensaje(char* mensaje, int socket_cliente);
 t_paquete* crear_paquete(void);

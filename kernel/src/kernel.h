@@ -24,24 +24,7 @@ typedef enum{
 	PRIORIDADES
 }t_planificador;
 
-typedef enum{
-	NEW,
-	READY,
-	RUNNING,
-	WAITING,
-	TERMINATED,
-}t_estado;
 
-
-
-typedef struct{
-	int pid;
-	int prioridad;
-	t_contexto_ejecucion* contexto;
-	t_registro_cpu registro_cpu;
-	t_list* tabla_archivo_abierto;
-	t_estado estado;
-}t_pcb;
 
 //ruta de archivo test
 //variable global
@@ -49,7 +32,6 @@ char * ruta_archivo_test = "./test/";
 
 int contador_pid =0;
 int contador_pc =0;
-t_log *loggerConsola;
 
 
 //configuraciones del archibo kernel.config
@@ -83,13 +65,15 @@ void interactuarConModulo();
 t_config* iniciar_config();
 void iniciarConsola();
 void iniciarProceso(char*,int,t_planificador);
-void finalizarProceso();
+void finalizarProceso(int);
 void iniciarPlanificacion();
 void detenerPlanificacion();
 void modificarGradoMultiprogramacion();
 void listarProcesoPorEstado();
 void generarConexion();
 void enviarMensaje();
+
+bool controladorMultiProgramacion();
 
 
 

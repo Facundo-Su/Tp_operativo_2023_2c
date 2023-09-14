@@ -48,7 +48,11 @@ void iniciarConsola(){
 				iniciarProceso("prueba",4,planificador);
 				break;
 			case '2':
-				finalizarProceso();
+				log_info(loggerConsola, "ingrese pid");
+				char* valor = readline(">");
+				int valorNumero = atoi(valor);
+				log_info(loggerConsola, "%i",valorNumero);
+				finalizarProceso(valorNumero);
 				break;
 			case '3':
 				iniciarPlanificacion();
@@ -145,12 +149,21 @@ void iniciarProceso(char* archivo_test,int size,t_planificador prioridad){
 	//pcb->tabla_archivo_abierto;
 	pcb->estado=NEW;
 	contador_pid++;
-	//
+	lista_pcb=list_create();
+
+	//controlar gradoMultiprogramacion
+	if(controladorMultiProgramacion()){
+		list_add(lista_pcb,pcb);
+	}
 
 	mandarAMemoria(prueba,size);
 
 	free(prueba);
 	free(rutaAtestear);
+}
+
+bool controladorMultiProgramacion(){
+	return list_size(lista_pcb)<grado_multiprogramacion_ini;
 }
 
 
@@ -166,9 +179,43 @@ t_contexto_ejecucion* obtenerContexto(char* archivo){
 }
 
 
-void finalizarProceso(){
+void finalizarProceso(int pid){
+	int posicion= buscarPosicionQueEstaElPid(pid);
+	list_get(lista_pcb,posicion);
+}
+
+void liberarMemoriaPcb(int pid){
+
+
+
+	int posicion = buscarPosicionQueEstaElPid(pid);
+	t_pcb* auxiliar = list_get(posicion);
+	list_remove_and_destroy_element(lista_pcb, posicion,(void) liberarMemoriaPcb,auxiliar);
+
+
 
 }
+
+void liberarMemoriaPcb(t_pcb* pcbABorrar){
+		free(pcbABorrar->contexto->pc);
+		free(pcbABorrar->contexto->registros_cpu);
+		free(pcbABorrar->tabla_archivo_abierto);
+		free(pcbABorrar);
+}
+
+bool buscarPosicionQueEstaElPid(int valor){
+	int cantidad= list_size(lista_pcb);
+	t_pcb* elemento ;
+	for(int i=0;i<cantidad;i++){
+		elemento = list_get(cantidad);
+		if(elemento->pid == valor){
+			return cantidad;
+		}
+	}
+
+	return -1;
+}
+
 void iniciarPlanificacion(){
 	log_info(loggerConsola,"inicio el proceso de planificacion");
 
