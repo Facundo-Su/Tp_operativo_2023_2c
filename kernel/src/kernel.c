@@ -92,7 +92,9 @@ void iniciarConsola(){
 void iniciarRecurso(){
 	lista_pcb=list_create();
 	sem_init(gradoMultiprogramacion, 0, grado_multiprogramacion_ini);
-	sem_init(mutex_cola, 0, 1);
+	sem_init(mutex_cola_new, 0, 1);
+	sem_init(mutex_cola_ready,0,1);
+
 }
 
 void enviarMensaje() {
@@ -173,12 +175,52 @@ void iniciarProceso(char* archivo_test,int size,t_planificador prioridad){
 	free(rutaAtestear);
 }
 
-void agregarElementoAlaListaNew(t_pcb* pcb){
-	//sem_wait(mutex_cola);
-	//list_add(lista_cola_new,pcb);
-	//sem_post(mutex_cola);
+void agregarAColaNew(t_pcb* pcb){
+	sem_wait(&mutex_cola_new);
+	queue_push(cola_new,pcb);
+	sem_post(&mutex_cola_new);
 }
-
+t_pcb* quitarDeColaNew(){
+	sem_wait(&mutex_cola_new);
+	t_pcb* pcb=queue_pop(cola_new,pcb);
+	sem_post(&mutex_cola_new);
+	return pcb;
+}
+void agregarAColaReady(t_pcb* pcb){
+	sem_wait(&mutex_cola_ready);
+	queue_push(cola_ready);
+	pcb->estado=READY;
+	sem_post(&mutex_cola_ready);
+}
+t_pcb* quitarDeColaReady(){
+	sem_wait(&mutex_cola_ready);
+	t_pcb* pcb=queue_pop(cola_ready,pcb);
+	sem_post(&mutex_cola_ready);
+	return pcb;
+}
+void planificadorLargoPlazo(){
+	while(1){
+		while(!queue_is_empty(cola_new)){
+			sem_wait(&gradoMultiprogramacion);
+			t_pcb* pcb =quitarDeColaNew();
+			agregarAColaReady(pcb);
+		}
+	}
+}
+void planificadorCortoPlazo(){
+	while(1){
+			while(!queue_is_empty(cola_ready)){
+				switch(tipoPlanificador){
+				case FIFO:
+					break;
+				case ROUND_ROBIN:
+					break;
+				case PRIORIDADES:
+					break;
+				}
+			}
+		}
+}
 bool controladorMultiProgramacion(){
 	return list_size(lista_pcb)<grado_multiprogramacion_ini;
 }

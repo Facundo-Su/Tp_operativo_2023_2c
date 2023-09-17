@@ -9,6 +9,8 @@
 #include<readline/readline.h>
 #include <utils/conexion.h>
 #include <pthread.h>
+#include <semaphore.h>
+#include <commons/collections/queue.h>
 
 t_log* logger;
 t_config* config;
@@ -43,9 +45,15 @@ char *puerto_fileSystem;
 
 t_log *loggerConsola;
 t_list* lista_pcb;
-t_list*lista_cola_new;
-sem_t* mutex_cola;
-sem_t* gradoMultiprogramacion;
+t_queue* cola_new;
+t_queue* cola_ready;
+
+sem_t mutex_cola_new;
+sem_t mutex_cola_ready;
+//sem_t sem_new;
+//sem_t sem_ready;
+t_planificador tipoPlanificador;
+sem_t gradoMultiprogramacion;
 
 char *puerto_memoria;
 char *puerto_filesystem;
@@ -87,7 +95,11 @@ void mandarAMemoria(char* , int , int );
 void liberarMemoriaPcb(t_pcb*);
 int buscarPosicionQueEstaElPid(int );
 
-void agregarElementoAlaListaNew(t_pcb* );
+void agregarAColaNew(t_pcb* pcb);
+t_pcb* quitarDeColaNew();
+void agregarAColaReady(t_pcb* pcb);
+t_pcb* quitarDeColaReady();
+void planificadorLargoPlazo();
 
 #endif /* KERNEL_H_ */
 
