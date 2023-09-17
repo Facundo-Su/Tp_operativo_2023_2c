@@ -154,9 +154,9 @@ void iniciarProceso(char* archivo_test,int size,t_planificador prioridad){
 
 
 
-	char* prueba = ruta_archivo_test;
+	//char* prueba = ruta_archivo_test;
 	//string_append(*prueba, archivo_test);
-	char*rutaAtestear = prueba;
+	char*rutaAtestear = archivo_test;
 	t_pcb* pcb = malloc(sizeof(pcb));
 	pcb->pid= contador_pid;
 	pcb->prioridad = prioridad;
@@ -167,9 +167,9 @@ void iniciarProceso(char* archivo_test,int size,t_planificador prioridad){
 
 	agregarElementoAlaListaNew(pcb);
 
-	mandarAMemoria(prueba,size,conexion_memoria);
+	mandarAMemoria(rutaAtestear,size,conexion_memoria);
 
-	free(prueba);
+	//free(prueba);
 	free(rutaAtestear);
 }
 

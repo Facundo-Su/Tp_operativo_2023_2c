@@ -22,7 +22,8 @@ typedef struct{
 	char* ruta;
 	int size;
 }estructura_Inicial;
-estructura_Inicial* auxiliar;
+
+estructura_Inicial* estrctura_inicial;
 
 int conexion_filesystem;
 
@@ -41,6 +42,7 @@ void iterator(char* value);
 void obtenerConfiguraciones();
 int iniciarServidor(char*);
 void iniciarConsola();
+void recibir_estructura_Inicial(int);
 
 #endif /* KERNEL_H_ */
 

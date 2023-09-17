@@ -84,9 +84,9 @@ int iniciarServidor(char *puerto) {
                 list_iterate(lista, (void*) iterator);
                 break;
             case ENVIARRUTAPARAINICIAR:
-            	recibir_estructura_Incial(cliente_fd);
-                log_info(logger, "Me llegaron los siguientes valores: %s",auxiliar->ruta);
-                log_info(logger, "Me llegaron los siguientes valores: %i",auxiliar->size);
+            	recibir_estructura_Inicial(cliente_fd);
+                log_info(logger, "Me llegaron los siguientes valores: %s",estrctura_inicial->ruta);
+                log_info(logger, "Me llegaron los siguientes valores: %i",estrctura_inicial->size);
             case -1:
                 log_error(logger, "El cliente se desconectó. Terminando servidor");
                 close(cliente_fd);
@@ -99,26 +99,39 @@ int iniciarServidor(char *puerto) {
     }
 }
 
-void recibir_estructura_Incial(int socket_cliente)
-{
 
-	int size;
-	int desplazamiento = 0;
-	void * buffer;
-	t_list* valores = list_create();
-	int tamanio;
+void recibir_estructura_Inicial(int socket_cliente) {
+    int size;
+    void* buffer;
+    int tamanio;
 
-	buffer = recibir_buffer(&size, socket_cliente);
-	memcpy(&tamanio, buffer + desplazamiento, sizeof(int));
-	desplazamiento+=sizeof(int);
-	char* valor = malloc(tamanio);
-	memcpy(valor, buffer+desplazamiento, tamanio);
-	desplazamiento+=tamanio;
-	auxiliar->ruta = valor;
+    buffer = recibir_buffer(&size, socket_cliente);
+    int desplazamiento = 0;
 
+    // Deserializar el tamaño
+    memcpy(&tamanio, buffer + desplazamiento, sizeof(int));
+    desplazamiento += sizeof(int);
+
+    // Deserializar la ruta
+    char* valor = malloc(tamanio);
+    memcpy(valor, buffer + desplazamiento, tamanio);
+    desplazamiento += tamanio;
+
+    // Crear la estructura_Inicial y asignar la ruta
+    estrctura_inicial = malloc(sizeof(estructura_Inicial));
+    estrctura_inicial->ruta = valor;
+
+    // Deserializar el segundo valor
     int segundo_valor;
     memcpy(&segundo_valor, buffer + desplazamiento, sizeof(int));
-    auxiliar->size = segundo_valor;
+    estrctura_inicial->size = segundo_valor;
 
-	free(buffer);
+    // Realizar cualquier operación adicional necesaria
+
+    // Liberar el buffer
+    free(buffer);
+
+    // Importante: No olvides liberar la estructura_Inicial cuando ya no la necesites
+    //free(auxiliar);
 }
+
