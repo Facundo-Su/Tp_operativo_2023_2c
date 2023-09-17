@@ -101,6 +101,9 @@ void agregarAColaReady(t_pcb* pcb);
 t_pcb* quitarDeColaReady();
 void planificadorLargoPlazo();
 void planificadorCortoPlazo();
+void deReadyAFifo();
+void deReadyARoundRobin();
+void deReadyAPrioridades();
 
 #endif /* KERNEL_H_ */
 

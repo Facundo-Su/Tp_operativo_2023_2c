@@ -181,11 +181,13 @@ void agregarAColaNew(t_pcb* pcb){
 	sem_wait(&mutex_cola_new);
 	queue_push(cola_new,pcb);
 	sem_post(&mutex_cola_new);
+	log_info(logger,"El proceso [%d] fue agregado a la cola new",pcb->pid);
 }
 t_pcb* quitarDeColaNew(){
 	sem_wait(&mutex_cola_new);
 	t_pcb* pcb=queue_pop(cola_new);
 	sem_post(&mutex_cola_new);
+	log_info(logger,"El proceso [%d] fue quitado de la cola new",pcb->pid);
 	return pcb;
 }
 void agregarAColaReady(t_pcb* pcb){
@@ -193,11 +195,13 @@ void agregarAColaReady(t_pcb* pcb){
 	queue_push(cola_ready,pcb);
 	pcb->estado=READY;
 	sem_post(&mutex_cola_ready);
+	log_info(logger,"El proceso [%d] fue agregado a la cola ready",pcb->pid);
 }
 t_pcb* quitarDeColaReady(){
 	sem_wait(&mutex_cola_ready);
 	t_pcb* pcb=queue_pop(cola_ready);
 	sem_post(&mutex_cola_ready);
+	log_info(logger,"El proceso [%d] fue quitado de la cola ready",pcb->pid);
 	return pcb;
 }
 void planificadorLargoPlazo(){
@@ -214,14 +218,32 @@ void planificadorCortoPlazo(){
 			while(!queue_is_empty(cola_ready)){
 				switch(tipoPlanificador){
 				case FIFO:
+					//Transcionarlo a Running
+					log_info(logger,"Planificador FIFO");
+					deReadyAFifo();
+					//Enviar su contexto de ejecucion al CPU a traves del puerto dispatch
 					break;
 				case ROUND_ROBIN:
+					log_info(logger,"Planificador Round Robin");
+					deReadyARoundRobin(cola_ready);
 					break;
 				case PRIORIDADES:
+					log_info(logger,"Planificador Prioridades");
+					deReadyAPrioridades(cola_ready);
 					break;
 				}
 			}
 		}
+}
+void deReadyAFifo(){
+	t_pcb* pcb =quitarDeColaReady();
+	pcb->estado=RUNNING;
+}
+void deReadyARoundRobin(){
+	return ;
+}
+void deReadyAPrioridades(){
+	return ;
 }
 bool controladorMultiProgramacion(){
 	return list_size(lista_pcb)<grado_multiprogramacion_ini;
