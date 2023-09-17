@@ -100,6 +100,7 @@ t_pcb* quitarDeColaNew();
 void agregarAColaReady(t_pcb* pcb);
 t_pcb* quitarDeColaReady();
 void planificadorLargoPlazo();
+void planificadorCortoPlazo();
 
 #endif /* KERNEL_H_ */
 

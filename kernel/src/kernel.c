@@ -3,14 +3,14 @@
 int main(int argc, char **argv){
 
 
-	char *rutaConfig = argv[1];
+	char *rutaConfig = "kernel.config";
 	config = cargarConfig(rutaConfig);
 
     logger = log_create("./kernel.log", "KERNEL", true, LOG_LEVEL_INFO);
     log_info(logger, "Soy el Kernel!");
 
     obtenerConfiguracion();
-
+    iniciarRecurso();
     iniciarConsola();
 
     //envio de mensajes
@@ -91,9 +91,11 @@ void iniciarConsola(){
 
 void iniciarRecurso(){
 	lista_pcb=list_create();
-	sem_init(gradoMultiprogramacion, 0, grado_multiprogramacion_ini);
-	sem_init(mutex_cola_new, 0, 1);
-	sem_init(mutex_cola_ready,0,1);
+	cola_new = queue_create();
+	cola_ready = queue_create();
+	sem_init(&gradoMultiprogramacion, 0, grado_multiprogramacion_ini);
+	sem_init(&mutex_cola_new, 0, 1);
+	sem_init(&mutex_cola_ready,0,1);
 
 }
 
@@ -167,7 +169,7 @@ void iniciarProceso(char* archivo_test,int size,t_planificador prioridad){
 	pcb->estado=NEW;
 	contador_pid++;
 
-	agregarElementoAlaListaNew(pcb);
+	agregarAColaNew(pcb);
 
 	mandarAMemoria(rutaAtestear,size,conexion_memoria);
 
@@ -182,19 +184,19 @@ void agregarAColaNew(t_pcb* pcb){
 }
 t_pcb* quitarDeColaNew(){
 	sem_wait(&mutex_cola_new);
-	t_pcb* pcb=queue_pop(cola_new,pcb);
+	t_pcb* pcb=queue_pop(cola_new);
 	sem_post(&mutex_cola_new);
 	return pcb;
 }
 void agregarAColaReady(t_pcb* pcb){
 	sem_wait(&mutex_cola_ready);
-	queue_push(cola_ready);
+	queue_push(cola_ready,pcb);
 	pcb->estado=READY;
 	sem_post(&mutex_cola_ready);
 }
 t_pcb* quitarDeColaReady(){
 	sem_wait(&mutex_cola_ready);
-	t_pcb* pcb=queue_pop(cola_ready,pcb);
+	t_pcb* pcb=queue_pop(cola_ready);
 	sem_post(&mutex_cola_ready);
 	return pcb;
 }
@@ -238,7 +240,7 @@ t_contexto_ejecucion* obtenerContexto(char* archivo){
 
 void finalizarProceso(int pid){
 	int posicion= buscarPosicionQueEstaElPid(pid);
-	t_pcb* auxiliar =list_remove(lista_cola_new,posicion);
+	t_pcb* auxiliar =list_remove(cola_new->elements,posicion);
 	liberarMemoriaPcb(auxiliar);
 }
 
