@@ -18,6 +18,12 @@ typedef enum{
 	LRU
 }t_algoritmo;
 
+typedef struct{
+	char* ruta;
+	int size;
+}estructura_Inicial;
+estructura_Inicial* auxiliar;
+
 int conexion_filesystem;
 
 

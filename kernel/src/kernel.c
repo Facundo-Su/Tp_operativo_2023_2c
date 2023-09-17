@@ -16,6 +16,8 @@ int main(int argc, char **argv){
     //envio de mensajes
 
 
+
+
     //error
     //paquete(conexion_memoria);
 
@@ -33,7 +35,8 @@ void iniciarConsola(){
 	char* variable;
 
 	while(1){
-		log_info(loggerConsola,"ingrese la operacion que deseas realizar\n 1. iniciar Proceso"
+		log_info(loggerConsola,"ingrese la operacion que deseas realizar"
+				"\n 1. iniciar Proceso"
 				"\n 2. finalizar proceso"
 				"\n 3. iniciar Planificacion"
 				"\n 4. detener Planificacion"
@@ -45,13 +48,16 @@ void iniciarConsola(){
 
 		switch (*variable) {
 			case '1':
-				iniciarProceso("prueba",4,planificador);
+				log_info(loggerConsola, "ingrese la ruta");
+				char* ruta = readline(">");
+				log_info(loggerConsola, "ingrese el tamanio");
+				int size = atoi(readline(">"));
+				iniciarProceso(ruta,size,planificador);
 				break;
 			case '2':
 				log_info(loggerConsola, "ingrese pid");
 				char* valor = readline(">");
 				int valorNumero = atoi(valor);
-				log_info(loggerConsola, "%i",valorNumero);
 				finalizarProceso(valorNumero);
 				break;
 			case '3':
@@ -81,6 +87,12 @@ void iniciarConsola(){
 
 	}
 
+}
+
+void iniciarRecurso(){
+	lista_pcb=list_create();
+	sem_init(gradoMultiprogramacion, 0, grado_multiprogramacion_ini);
+	sem_init(mutex_cola, 0, 1);
 }
 
 void enviarMensaje() {
@@ -137,29 +149,34 @@ void generarConexion() {
 
 }
 
-
+//hilo que espere consola,
 void iniciarProceso(char* archivo_test,int size,t_planificador prioridad){
+
+
+
 	char* prueba = ruta_archivo_test;
-	string_append(*prueba, archivo_test);
+	//string_append(*prueba, archivo_test);
 	char*rutaAtestear = prueba;
 	t_pcb* pcb = malloc(sizeof(pcb));
 	pcb->pid= contador_pid;
 	pcb->prioridad = prioridad;
-	pcb->contexto =obtenerContexto(rutaAtestear);
+	pcb->contexto =NULL;
 	//pcb->tabla_archivo_abierto;
 	pcb->estado=NEW;
 	contador_pid++;
-	lista_pcb=list_create();
 
-	//controlar gradoMultiprogramacion
-	if(controladorMultiProgramacion()){
-		list_add(lista_pcb,pcb);
-	}
+	agregarElementoAlaListaNew(pcb);
 
-	mandarAMemoria(prueba,size);
+	mandarAMemoria(prueba,size,conexion_memoria);
 
 	free(prueba);
 	free(rutaAtestear);
+}
+
+void agregarElementoAlaListaNew(t_pcb* pcb){
+	//sem_wait(mutex_cola);
+	//list_add(lista_cola_new,pcb);
+	//sem_post(mutex_cola);
 }
 
 bool controladorMultiProgramacion(){
@@ -167,9 +184,7 @@ bool controladorMultiProgramacion(){
 }
 
 
-void mandarAMemoria(char* archivo,int size){
 
-}
 
 
 t_contexto_ejecucion* obtenerContexto(char* archivo){
@@ -181,33 +196,21 @@ t_contexto_ejecucion* obtenerContexto(char* archivo){
 
 void finalizarProceso(int pid){
 	int posicion= buscarPosicionQueEstaElPid(pid);
-	list_get(lista_pcb,posicion);
-}
-
-void liberarMemoriaPcb(int pid){
-
-
-
-	int posicion = buscarPosicionQueEstaElPid(pid);
-	t_pcb* auxiliar = list_get(posicion);
-	list_remove_and_destroy_element(lista_pcb, posicion,(void) liberarMemoriaPcb,auxiliar);
-
-
-
+	t_pcb* auxiliar =list_remove(lista_cola_new,posicion);
+	liberarMemoriaPcb(auxiliar);
 }
 
 void liberarMemoriaPcb(t_pcb* pcbABorrar){
-		free(pcbABorrar->contexto->pc);
-		free(pcbABorrar->contexto->registros_cpu);
+		free(pcbABorrar->contexto);
 		free(pcbABorrar->tabla_archivo_abierto);
 		free(pcbABorrar);
 }
 
-bool buscarPosicionQueEstaElPid(int valor){
+int buscarPosicionQueEstaElPid(int valor){
 	int cantidad= list_size(lista_pcb);
 	t_pcb* elemento ;
 	for(int i=0;i<cantidad;i++){
-		elemento = list_get(cantidad);
+		elemento = list_get(lista_pcb,cantidad);
 		if(elemento->pid == valor){
 			return cantidad;
 		}

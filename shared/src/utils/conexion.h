@@ -14,11 +14,14 @@
 #include<assert.h>
 #include <bits/types.h>
 #include<readline/readline.h>
+#include <commons/collections/queue.h>
+#include <semaphore.h>
 
 typedef enum
 {
 	MENSAJE,
-	PAQUETE
+	PAQUETE,
+	ENVIARRUTAPARAINICIAR
 }op_code;
 
 typedef struct
@@ -33,6 +36,14 @@ typedef struct
 	t_buffer* buffer;
 } t_paquete;
 
+typedef enum{
+	NEW,
+	READY,
+	RUNNING,
+	WAITING,
+	TERMINATED,
+}t_estado;
+
 typedef struct{
 	uint32_t ax;
 	uint32_t bx;
@@ -45,15 +56,6 @@ typedef struct{
 	t_registro_cpu registros_cpu;
 }t_contexto_ejecucion;
 
-typedef enum{
-	NEW,
-	READY,
-	RUNNING,
-	WAITING,
-	TERMINATED,
-}t_estado;
-
-
 
 typedef struct{
 	int pid;
@@ -61,11 +63,9 @@ typedef struct{
 	t_contexto_ejecucion* contexto;
 	t_list* tabla_archivo_abierto;
 	t_estado estado;
+
 }t_pcb;
-
-t_log *loggerConsola;
-t_list* lista_pcb;
-
+t_log * loggerConsola;
 
 int crear_conexion(char* ip, char* puerto);
 void enviar_mensaje(char* mensaje, int socket_cliente);
@@ -87,7 +87,7 @@ t_list* recibir_paquete(int);
 void recibir_mensaje(int);
 int recibir_operacion(int);
 t_config* cargarConfig(char *);
-
+void mandarAMemoria(char* , int , int );
 
 
 #endif /* CONEXION_SERVIDOR_H_*/

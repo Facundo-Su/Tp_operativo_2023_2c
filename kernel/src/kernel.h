@@ -41,6 +41,11 @@ char *ip_filesystem;
 char *ip_cpu;
 char *puerto_fileSystem;
 
+t_log *loggerConsola;
+t_list* lista_pcb;
+t_list*lista_cola_new;
+sem_t* mutex_cola;
+sem_t* gradoMultiprogramacion;
 
 char *puerto_memoria;
 char *puerto_filesystem;
@@ -78,8 +83,11 @@ bool controladorMultiProgramacion();
 
 
 t_contexto_ejecucion* obtenerContexto(char*);
-void mandarAMemoria(char*,int );
+void mandarAMemoria(char* , int , int );
+void liberarMemoriaPcb(t_pcb*);
+int buscarPosicionQueEstaElPid(int );
 
+void agregarElementoAlaListaNew(t_pcb* );
 
 #endif /* KERNEL_H_ */
 

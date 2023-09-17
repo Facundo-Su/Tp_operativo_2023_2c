@@ -18,6 +18,39 @@ void* serializar_paquete(t_paquete* paquete, int bytes)
 	return magic;
 }
 
+void mandarAMemoria(char* archivo, int size, int socket_cliente) {
+    t_paquete* paquete = malloc(sizeof(t_paquete));
+
+    paquete->codigo_operacion = ENVIARRUTAPARAINICIAR;
+    paquete->buffer = malloc(sizeof(t_buffer));
+
+    // Calcular el tamaño del string de la ruta
+    int longitud_ruta = strlen(archivo) + 1;
+
+    // Calcular el tamaño total del buffer
+    paquete->buffer->size = longitud_ruta + sizeof(int) + sizeof(int);
+
+    // Asignar memoria para el buffer
+    paquete->buffer->stream = malloc(paquete->buffer->size);
+
+    // Copiar la longitud de la ruta y el archivo
+    memcpy(paquete->buffer->stream, &longitud_ruta, sizeof(int));
+    memcpy(paquete->buffer->stream + sizeof(int), archivo, longitud_ruta);
+
+    // Copiar el tamaño
+    memcpy(paquete->buffer->stream + sizeof(int) + longitud_ruta, &size, sizeof(int));
+
+    int bytes = paquete->buffer->size + 2*sizeof(int);
+
+    void* a_enviar = serializar_paquete(paquete, bytes);
+
+    send(socket_cliente, a_enviar, bytes, 0);
+
+    //free(a_enviar);
+    eliminar_paquete(paquete);
+
+}
+
 int crear_conexion(char *ip, char* puerto)
 {
 	struct addrinfo hints;

@@ -83,6 +83,10 @@ int iniciarServidor(char *puerto) {
                 log_info(logger, "Me llegaron los siguientes valores:\n");
                 list_iterate(lista, (void*) iterator);
                 break;
+            case ENVIARRUTAPARAINICIAR:
+            	recibir_estructura_Incial(cliente_fd);
+                log_info(logger, "Me llegaron los siguientes valores: %s",auxiliar->ruta);
+                log_info(logger, "Me llegaron los siguientes valores: %i",auxiliar->size);
             case -1:
                 log_error(logger, "El cliente se desconectó. Terminando servidor");
                 close(cliente_fd);
@@ -93,4 +97,28 @@ int iniciarServidor(char *puerto) {
             }
         }
     }
+}
+
+void recibir_estructura_Incial(int socket_cliente)
+{
+
+	int size;
+	int desplazamiento = 0;
+	void * buffer;
+	t_list* valores = list_create();
+	int tamanio;
+
+	buffer = recibir_buffer(&size, socket_cliente);
+	memcpy(&tamanio, buffer + desplazamiento, sizeof(int));
+	desplazamiento+=sizeof(int);
+	char* valor = malloc(tamanio);
+	memcpy(valor, buffer+desplazamiento, tamanio);
+	desplazamiento+=tamanio;
+	auxiliar->ruta = valor;
+
+    int segundo_valor;
+    memcpy(&segundo_valor, buffer + desplazamiento, sizeof(int));
+    auxiliar->size = segundo_valor;
+
+	free(buffer);
 }
