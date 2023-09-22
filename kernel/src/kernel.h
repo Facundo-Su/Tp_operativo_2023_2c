@@ -77,7 +77,7 @@ void iterator(char*);
 void interactuarConModulo();
 t_config* iniciar_config();
 void iniciarConsola();
-void iniciarProceso(char*,int,t_planificador);
+void iniciarProceso(char*,int*,t_planificador);
 void finalizarProceso(int);
 void iniciarPlanificacion();
 void detenerPlanificacion();
@@ -104,6 +104,7 @@ void planificadorCortoPlazo();
 void deReadyAFifo();
 void deReadyARoundRobin();
 void deReadyAPrioridades();
+void enviarContextoEjecucion(t_contexto_ejecucion * );
 
 #endif /* KERNEL_H_ */
 

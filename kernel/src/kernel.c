@@ -51,8 +51,8 @@ void iniciarConsola(){
 				log_info(loggerConsola, "ingrese la ruta");
 				char* ruta = readline(">");
 				log_info(loggerConsola, "ingrese el tamanio");
-				int size = atoi(readline(">"));
-				iniciarProceso(ruta,size,planificador);
+				int* size = atoi(readline(">"));
+				iniciarProceso(ruta,&size,planificador);
 				break;
 			case '2':
 				log_info(loggerConsola, "ingrese pid");
@@ -154,7 +154,7 @@ void generarConexion() {
 }
 
 //hilo que espere consola,
-void iniciarProceso(char* archivo_test,int size,t_planificador prioridad){
+void iniciarProceso(char* archivo_test,int* size,t_planificador prioridad){
 
 
 
@@ -170,11 +170,17 @@ void iniciarProceso(char* archivo_test,int size,t_planificador prioridad){
 	contador_pid++;
 
 	agregarAColaNew(pcb);
+	op_code op = ENVIARRUTAPARAINICIAR;
+	t_paquete* paquete =crear_paquete(op);
+	agregar_a_paquete(paquete, rutaAtestear, sizeof(rutaAtestear));
+	agregar_a_paquete(paquete, &size ,sizeof(size));
 
-	mandarAMemoria(rutaAtestear,size,conexion_memoria);
+	enviar_paquete(paquete, conexion_memoria);
 
 	//free(prueba);
+	eliminar_paquete(paquete);
 	free(rutaAtestear);
+	free(pcb);
 }
 
 void agregarAColaNew(t_pcb* pcb){
@@ -216,7 +222,7 @@ void planificadorLargoPlazo(){
 void planificadorCortoPlazo(){
 	while(1){
 			while(!queue_is_empty(cola_ready)){
-				switch(tipoPlanificador){
+				switch(planificador){
 				case FIFO:
 					//Transcionarlo a Running
 					log_info(logger,"Planificador FIFO");
@@ -238,6 +244,7 @@ void planificadorCortoPlazo(){
 void deReadyAFifo(){
 	t_pcb* pcb =quitarDeColaReady();
 	pcb->estado=RUNNING;
+	enviarContextoEjecucion(pcb->contexto);
 }
 void deReadyARoundRobin(){
 	return ;
@@ -250,6 +257,20 @@ bool controladorMultiProgramacion(){
 }
 
 
+void enviarContextoEjecucion(t_contexto_ejecucion * contexto){
+
+	t_paquete * paquete = crear_paquete(ENVIARCONTEXTO);
+	agregar_a_paquete(paquete,&contexto->pc, sizeof(contexto->pc));
+	agregar_a_paquete(paquete,&contexto->registros_cpu.ax, sizeof(uint32_t));
+	agregar_a_paquete(paquete,&contexto->registros_cpu.bx, sizeof(uint32_t));
+	agregar_a_paquete(paquete,&contexto->registros_cpu.cx, sizeof(uint32_t));
+	agregar_a_paquete(paquete,&contexto->registros_cpu.dx, sizeof(uint32_t));
+	int dispatchCpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+	enviar_paquete(paquete, dispatchCpu);
+	log_info(loggerConsola, "el paquete se envio correctamente a cpu");
+	eliminar_paquete(paquete);
+
+}
 
 
 
@@ -339,22 +360,5 @@ int* string_to_int_array(char** array_de_strings){
 		numbers[i] = num;
 	}
 	return numbers;
-}
-
-void paquete(int conexion)
-{
-	char* leido;
-	t_paquete* paquete = crear_paquete();
-	// Leemos y esta vez agregamos las lineas al paquete
-	leido = readline(">");
-	while(leido && leido[0] != '\0'){
-		agregar_a_paquete(paquete, leido, conexion);
-		free(leido);
-		leido = readline(">");
-	}
-	free(leido);
-	enviar_paquete(paquete,conexion);
-	// ¡No te olvides de liberar las líneas y el paquete antes de regresar!
-	eliminar_paquete(paquete);
 }
 

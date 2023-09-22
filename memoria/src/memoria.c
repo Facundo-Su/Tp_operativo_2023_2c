@@ -84,9 +84,12 @@ int iniciarServidor(char *puerto) {
                 list_iterate(lista, (void*) iterator);
                 break;
             case ENVIARRUTAPARAINICIAR:
-            	recibir_estructura_Inicial(cliente_fd);
-                log_info(logger, "Me llegaron los siguientes valores: %s",estrctura_inicial->ruta);
-                log_info(logger, "Me llegaron los siguientes valores: %i",estrctura_inicial->size);
+            	t_list* valorRecibido;
+				valorRecibido=recibir_paquete(cliente_fd);
+   //         	recibir_estructura_Inicial(cliente_fd);
+                log_info(logger, "Me llegaron los siguientes valores: %s",list_get(valorRecibido,0));
+                log_info(logger, "Me llegaron los siguientes valores: %i",list_get(valorRecibido,1));
+                break;
             case -1:
                 log_error(logger, "El cliente se desconectó. Terminando servidor");
                 close(cliente_fd);

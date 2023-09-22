@@ -51,6 +51,10 @@ void mandarAMemoria(char* archivo, int size, int socket_cliente) {
 
 }
 
+
+
+
+
 int crear_conexion(char *ip, char* puerto)
 {
 	struct addrinfo hints;
@@ -100,10 +104,10 @@ void crear_buffer(t_paquete* paquete)
 	paquete->buffer->stream = NULL;
 }
 
-t_paquete* crear_paquete(void)
+t_paquete* crear_paquete(op_code cod_op)
 {
 	t_paquete* paquete = malloc(sizeof(t_paquete));
-	paquete->codigo_operacion = PAQUETE;
+	paquete->codigo_operacion = cod_op;
 	crear_buffer(paquete);
 	return paquete;
 }

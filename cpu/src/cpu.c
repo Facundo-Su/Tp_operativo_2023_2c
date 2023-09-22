@@ -81,6 +81,9 @@ int iniciarServidor(char *puerto){
 			log_info(logger, "Me llegaron los siguientes valores:\n");
 			list_iterate(lista, (void*) iterator);
 			break;
+		case ENVIARREGISTROCPU:
+			t_list* valoresCpu = recibir_paquete(cliente_fd);
+			log_info(logger, message);
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
 			return EXIT_FAILURE;
