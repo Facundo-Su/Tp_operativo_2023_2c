@@ -90,6 +90,11 @@ int iniciarServidor(char *puerto) {
                 log_info(logger, "Me llegaron los siguientes valores: %s",list_get(valorRecibido,0));
                 log_info(logger, "Me llegaron los siguientes valores: %i",list_get(valorRecibido,1));
                 break;
+            case FINALIZAR:
+
+            	t_list* valor_pid;
+            	valor_pid= recibir_paquete(cliente_fd);
+            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %s :",list_get(valor_pid,0));
             case -1:
                 log_error(logger, "El cliente se desconectó. Terminando servidor");
                 close(cliente_fd);

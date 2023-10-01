@@ -251,3 +251,162 @@ t_config* cargarConfig(char *ruta){
     }
     return config;
 }
+
+
+//------------------------------------------------------------------------------------//
+//envir contexto
+void enviar_Pcb(t_pcb* pcb, int conexion,op_code operacion){
+	t_paquete* paquete = crear_paquete(operacion);
+	empaquetarPcb(paquete, pcb);
+	enviar_paquete(paquete, conexion);
+	eliminar_paquete(paquete);
+}
+
+//----------------------------------------------------------------------------------------------//
+void empaquetarPcb(t_paquete* paquete, t_pcb* pcb){
+	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
+	agregar_a_paquete(paquete, &(pcb->estado), sizeof(t_estado));
+	empaquetarContextoEjecucion(paquete, pcb->contexto);
+	empaquetarInstrucciones(paquete, pcb->listaInstruciones);
+}
+
+void empaquetarContextoEjecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
+	agregar_a_paquete(paquete, contexto->pc, sizeof(int));
+	empaquetarRegistro(paquete,contexto->registros_cpu);
+}
+
+void empaquetarRegistro(t_paquete* paquete, t_registro_cpu* registroCpu){
+	agregar_a_paquete(paquete,&(registroCpu->AX), strlen(registroCpu->AX)+1);
+	agregar_a_paquete(paquete,&(registroCpu->BX), strlen(registroCpu->BX)+1);
+	agregar_a_paquete(paquete,&(registroCpu->CX), strlen(registroCpu->CX)+1);
+	agregar_a_paquete(paquete,&(registroCpu->DX), strlen(registroCpu->DX)+1);
+}
+
+
+void empaquetarInstrucciones(t_paquete* paquete, t_list* lista_de_instrucciones){
+	int cantidad_instrucciones = list_size(lista_de_instrucciones);
+	agregar_a_paquete(paquete, &(cantidad_instrucciones), sizeof(int));
+	for(int i=0; i<cantidad_instrucciones; i++){
+		t_instruccion* instruccion = list_get(lista_de_instrucciones, i);
+		agregar_a_paquete(paquete, &(instruccion->nombre), sizeof(op_instrucciones));
+		empaquetarParametros(paquete,instruccion->parametros);
+	}
+}
+
+
+void empaquetarParametros(t_paquete * paquete, t_list* parametros){
+	int* cantidad_parametros = list_size(parametros);
+	agregar_a_paquete(paquete, &cantidad_parametros, sizeof(cantidad_parametros));
+	for(int i=0; i<cantidad_parametros; i++){
+		char* parametro = list_get(parametros, i);
+		agregar_a_paquete(paquete, &(parametro), strlen(parametro)+1);
+	}
+}
+
+//desempaquetar
+//-----------------------------------------------------------------------------------------//
+
+t_pcb* desempaquetar_pcb(t_list* paquete){
+	t_pcb* pcb = malloc(sizeof(t_pcb));
+	int valor_inicial =0;
+	int* posicion =&valor_inicial;
+	pcb->pid = list_get(paquete, posicion);
+	(*posicion)++;
+
+	t_estado *estado = list_get(paquete, posicion);
+	pcb->estado = *estado;
+	(*posicion)++;
+	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, posicion);
+	pcb->contexto = contexto;
+
+	t_list* instrucciones = desempaquetar_instrucciones(paquete,posicion);
+	pcb->listaInstruciones = instrucciones;
+	int cantidad_instrucciones = list_size(instrucciones);
+
+	return contexto;
+}
+
+t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int *posicion){
+	t_contexto_ejecucion *contexto = malloc(sizeof(t_contexto_ejecucion));
+	contexto->pc = list_get(paquete,posicion);
+	(*posicion)++;
+	t_registro_cpu * registros = desempaquetar_registros(paquete,&posicion);
+	contexto->registros_cpu = registros;
+	return contexto;
+}
+
+t_registro_cpu * desempaquetar_registros(t_list * paquete,int *posicion){
+	t_registro_cpu *registro = malloc(sizeof(t_registro_cpu));
+	char* ax = list_get(paquete,posicion);
+	(*posicion)++;
+	strcpy(registro->AX, ax);
+	free(ax);
+
+	char* bx = list_get(paquete,posicion);
+	(*posicion)++;
+	strcpy(registro->BX, bx);
+	free(bx);
+
+	char* cx = list_get(paquete,posicion);
+	(*posicion)++;
+	strcpy(registro->CX, cx);
+	free(cx);
+
+	char* dx = list_get(paquete,posicion);
+	(*posicion)++;
+	strcpy(registro->DX, dx);
+	free(dx);
+
+	return registro;
+}
+
+t_instruccion * desempaquetar_instrucciones(t_list* paquete,int* posicion){
+	t_list* instrucciones = list_create();
+	int* cantidad_instrucciones = list_get(paquete, posicion);
+	(*posicion)++;
+
+	for(int i =0;i<cantidad_instrucciones;i++){
+		t_instruccion* instruccion = malloc(sizeof(t_instruccion));
+		char* nombre = list_get(paquete,posicion);
+		op_instrucciones operacion = convertir_a_op_instrucciones(nombre);
+		instruccion->nombre = operacion;
+		(*posicion)++;
+
+		t_list* parametros = desempaquetar_parametros(paquete,posicion);
+	}
+
+	return instrucciones;
+}
+
+
+t_list* desempaquetar_parametros(t_list* paquete,int* posicion){
+	t_list*parametros = list_create();
+	int cantidad_parametro = list_get(paquete,posicion);
+	posicion++;
+	for(int i=0;i<cantidad_parametro;i++){
+		char* parametro = list_get(paquete,posicion);
+		(*posicion)++;
+		list_add(parametros,parametro);
+	}
+	return parametros;
+
+}
+
+
+//convertir en op_instrucciones
+op_instrucciones convertir_a_op_instrucciones(char* operacion) {
+    if (strcmp(operacion, "SET") == 0) {
+        return SET;
+    } else if (strcmp(operacion, "SUB") == 0) {
+        return SUB;
+    } else if (strcmp(operacion, "SUM") == 0) {
+        return SUM;
+    } else if (strcmp(operacion, "EXIT") == 0) {
+        return EXIT;
+    } else {
+    	log_info(loggerConsola,"no existe el valor");
+    	return -1;
+    }
+}
+
+

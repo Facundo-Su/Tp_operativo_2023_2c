@@ -82,8 +82,16 @@ int iniciarServidor(char *puerto){
 			list_iterate(lista, (void*) iterator);
 			break;
 		case ENVIARREGISTROCPU:
-			t_list* valoresCpu = recibir_paquete(cliente_fd);
-			log_info(logger, message);
+			t_list* valoresCpu = list_create();
+			valoresCpu= recibir_paquete(cliente_fd);
+			log_info(logger, "ME LLEGARON");
+
+		case EJECUTARINSTRUCIONES:
+			t_list *datosRecibidoPcb = list_create();
+			datosRecibidoPcb = recibir_paquete(cliente_fd);
+			//t_pcb* pcbAEjecutar = transformarEnPcb(datosRecibidoPcb);
+			//pcbAEjecutar= ejecutarInstrucion(pcbAEjecutar);
+
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
 			return EXIT_FAILURE;
@@ -94,6 +102,118 @@ int iniciarServidor(char *puerto){
 	}
 	return EXIT_SUCCESS;
 
+}
+
+t_pcb* ejecutarInstrucion(t_pcb* pcb){
+	int i=0;
+	while(i<list_size(pcb->listaInstruciones)){
+		ejecutar(pcb,list_get(pcb->listaInstruciones,i));
+	}
+	return pcb;
+
+}
+
+void ejecutar(t_pcb* pcb, t_instruccion* instrucciones){
+	t_estrucutra_cpu registroAux;
+	t_estrucutra_cpu registroAux2;
+	char* parametro;
+	char* parametro2;
+	switch(instrucciones->nombre){
+	case SET:
+
+		 parametro2= list_get(instrucciones,1);
+		 parametro= list_get(instrucciones,0);
+		registroAux = devolver_registro(parametro);
+		setear(pcb,registroAux,parametro2);
+		break;
+	case SUB:
+		parametro= list_get(instrucciones,0);
+		parametro2= list_get(instrucciones,1);
+		registroAux = devolver_registro(parametro);
+		registroAux2 = devolver_registro(parametro2);
+		restar(pcb, registroAux, registroAux2);
+		break;
+	case SUM:
+		parametro= list_get(instrucciones,0);
+		parametro2= list_get(instrucciones,1);
+		registroAux = devolver_registro(parametro);
+		registroAux2 = devolver_registro(parametro2);
+		sumar(pcb, registroAux, registroAux2);
+		break;
+	case EXIT:
+
+		break;
+	}
+}
+
+void setear(t_pcb* pcb, t_estrucutra_cpu pos, char* valor) {
+    switch(pos) {
+        case AX: memcpy(&(pcb->contexto->registros_cpu.AX), valor, strlen(valor)+1);
+                 break;
+        case BX: memcpy(&(pcb->contexto->registros_cpu.BX), valor, strlen(valor)+1);
+                 break;
+        case CX: memcpy(&(pcb->contexto->registros_cpu.CX), valor, strlen(valor)+1);
+                 break;
+        case DX: memcpy(&(pcb->contexto->registros_cpu.DX), valor, strlen(valor)+1);
+                 break;
+        default: log_info(logger, "Registro de destino no válido");
+    }
+}
+
+
+//transformar en enum
+t_estrucutra_cpu devolver_registro(char* registro){
+	t_estrucutra_cpu v;
+    if(strcmp(registro,"AX")==0){
+        v = AX;
+    } else if(strcmp(registro,"BX")==0){
+        v = BX;
+    } else if(strcmp(registro,"CX")==0){
+        v = CX;
+    } else if(strcmp(registro,"DX")==0){
+        v = DX;
+    } else {
+        log_error(logger,"CUIDADO,CODIGO INVALIDO");
+    }
+    return v;
+}
+
+void sumar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu inicio) {
+	char valor_destino;
+	char valor_origen;
+
+	valor_destino =obtenerValor(pcb, destino);
+	valor_origen = obtenerValor(pcb, inicio);
+
+    char resultado = valor_destino+ valor_origen;
+    setear(pcb, destino, resultado);
+
+}
+
+
+
+
+void restar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu inicio) {
+	char valor_destino;
+	char valor_origen;
+
+	valor_destino =obtenerValor(pcb, destino);
+	valor_origen = obtenerValor(pcb, inicio);
+
+    char resultado = valor_destino- valor_origen;
+    setear(pcb, destino, resultado);
+}
+
+
+
+char* obtenerValor(t_pcb* pcb, t_estrucutra_cpu pos) {
+    switch(pos) {
+        case AX: return (char) pcb->contexto->registros_cpu.AX;
+        case BX: return (char) pcb->contexto->registros_cpu.BX;
+        case CX: return (char) pcb->contexto->registros_cpu.CX;
+        case DX: return (char) pcb->contexto->registros_cpu.DX;
+        default: log_info(logger, "Registro no reconocido"); return NULL;
+    }
 }
 
 

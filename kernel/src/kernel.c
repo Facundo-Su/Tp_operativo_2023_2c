@@ -136,14 +136,17 @@ void generarConexion() {
 	switch (*valor) {
 		case '1':
 			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+			setsockopt(conexion_memoria, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	        log_info(loggerConsola,"conexion generado correctamente\n");
 			break;
 		case '2':
 			conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
+			setsockopt(conexion_file_system, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	        log_info(loggerConsola,"conexion generado correctamente\n");
 			break;
 		case '3':
 			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+			setsockopt(conexion_cpu, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	        log_info(loggerConsola,"conexion generado correctamente\n");
 			break;
 		default:
@@ -189,6 +192,7 @@ void agregarAColaNew(t_pcb* pcb){
 	sem_post(&mutex_cola_new);
 	log_info(logger,"El proceso [%d] fue agregado a la cola new",pcb->pid);
 }
+
 t_pcb* quitarDeColaNew(){
 	sem_wait(&mutex_cola_new);
 	t_pcb* pcb=queue_pop(cola_new);
@@ -244,7 +248,7 @@ void planificadorCortoPlazo(){
 void deReadyAFifo(){
 	t_pcb* pcb =quitarDeColaReady();
 	pcb->estado=RUNNING;
-	enviarContextoEjecucion(pcb->contexto);
+	enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
 }
 void deReadyARoundRobin(){
 	return ;
@@ -257,20 +261,6 @@ bool controladorMultiProgramacion(){
 }
 
 
-void enviarContextoEjecucion(t_contexto_ejecucion * contexto){
-
-	t_paquete * paquete = crear_paquete(ENVIARCONTEXTO);
-	agregar_a_paquete(paquete,&contexto->pc, sizeof(contexto->pc));
-	agregar_a_paquete(paquete,&contexto->registros_cpu.ax, sizeof(uint32_t));
-	agregar_a_paquete(paquete,&contexto->registros_cpu.bx, sizeof(uint32_t));
-	agregar_a_paquete(paquete,&contexto->registros_cpu.cx, sizeof(uint32_t));
-	agregar_a_paquete(paquete,&contexto->registros_cpu.dx, sizeof(uint32_t));
-	int dispatchCpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
-	enviar_paquete(paquete, dispatchCpu);
-	log_info(loggerConsola, "el paquete se envio correctamente a cpu");
-	eliminar_paquete(paquete);
-
-}
 
 
 
@@ -280,11 +270,22 @@ t_contexto_ejecucion* obtenerContexto(char* archivo){
 	return estructura_retornar;
 }
 
+// ver como pasar int TODO
+void finalizarProceso(char *pid){
 
-void finalizarProceso(int pid){
-	int posicion= buscarPosicionQueEstaElPid(pid);
-	t_pcb* auxiliar =list_remove(cola_new->elements,posicion);
-	liberarMemoriaPcb(auxiliar);
+	t_paquete * paquete = crear_paquete(FINALIZAR);
+	agregar_a_paquete(paquete, pid, sizeof(pid));
+	enviar_paquete(paquete, conexion_memoria);
+
+	eliminar_paquete(paquete);
+	free(paquete);
+
+
+
+
+	//int posicion= buscarPosicionQueEstaElPid(pid);
+	//t_pcb* auxiliar =list_remove(cola_new->elements,posicion);
+	//liberarMemoriaPcb(auxiliar);
 }
 
 void liberarMemoriaPcb(t_pcb* pcbABorrar){

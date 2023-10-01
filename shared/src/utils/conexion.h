@@ -23,7 +23,10 @@ typedef enum
 	PAQUETE,
 	ENVIARRUTAPARAINICIAR,
 	ENVIARREGISTROCPU,
-	ENVIARCONTEXTO
+	ENVIARCONTEXTO,
+	FINALIZAR,
+	EJECUTARINSTRUCIONES,
+	RECIBIR_PCB
 }op_code;
 
 typedef struct
@@ -47,15 +50,22 @@ typedef enum{
 }t_estado;
 
 typedef struct{
-	uint32_t ax;
-	uint32_t bx;
-	uint32_t cx;
-	uint32_t dx;
+	char AX[4];
+	char BX[4];
+	char CX[4];
+	char DX[4];
 }t_registro_cpu;
+
+typedef enum{
+	AX,
+	BX,
+	CX,
+	DX
+}t_estrucutra_cpu;
 
 typedef struct{
 	int pc;
-	t_registro_cpu registros_cpu;
+	t_registro_cpu* registros_cpu;
 }t_contexto_ejecucion;
 
 
@@ -65,9 +75,23 @@ typedef struct{
 	t_contexto_ejecucion* contexto;
 	t_list* tabla_archivo_abierto;
 	t_estado estado;
-
+	t_list* listaInstruciones;
 }t_pcb;
+
 t_log * loggerConsola;
+
+typedef enum
+{
+    SET,
+	SUB,
+	SUM,
+	EXIT
+}op_instrucciones;
+
+typedef struct{
+	op_instrucciones nombre;
+    t_list* parametros;
+}t_instruccion;
 
 int crear_conexion(char* ip, char* puerto);
 void enviar_mensaje(char* mensaje, int socket_cliente);
@@ -77,6 +101,8 @@ void enviar_paquete(t_paquete* paquete, int socket_cliente);
 void liberar_conexion(int socket_cliente);
 void eliminar_paquete(t_paquete* paquete);
 void terminar_programa(int , t_log* , t_config* );
+t_pcb * transformarEnPcb(t_list* );
+
 
 //servidores
 extern t_log* logger;
@@ -91,5 +117,22 @@ int recibir_operacion(int);
 t_config* cargarConfig(char *);
 void mandarAMemoria(char* , int , int );
 
+
+//empaquetar pcb
+void empaquetarPcb(t_paquete* , t_pcb* );
+void empaquetarContextoEjecucion(t_paquete* , t_contexto_ejecucion* );
+void empaquetarRegistro(t_paquete* , t_registro_cpu* );
+void empaquetarInstrucciones(t_paquete* , t_list* );
+
+//enviar pcb
+void enviar_Pcb(t_pcb* , int conexion, op_code);
+
+
+//desempaquetar
+t_contexto_ejecucion *desempaquetar_contexto(t_list *,int *);
+t_registro_cpu * desempaquetar_registros(t_list * ,int *);
+t_instruccion * desempaquetar_instrucciones(t_list* ,int* );
+t_list* desempaquetar_parametros(t_list* ,int* );
+op_instrucciones convertir_a_op_instrucciones(char* );
 
 #endif /* CONEXION_SERVIDOR_H_*/

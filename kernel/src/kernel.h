@@ -78,7 +78,7 @@ void interactuarConModulo();
 t_config* iniciar_config();
 void iniciarConsola();
 void iniciarProceso(char*,int*,t_planificador);
-void finalizarProceso(int);
+void finalizarProceso(char*);
 void iniciarPlanificacion();
 void detenerPlanificacion();
 void modificarGradoMultiprogramacion();
