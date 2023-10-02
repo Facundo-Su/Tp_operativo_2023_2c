@@ -23,10 +23,10 @@ typedef enum
 	PAQUETE,
 	ENVIARRUTAPARAINICIAR,
 	ENVIARREGISTROCPU,
-	ENVIARCONTEXTO,
 	FINALIZAR,
 	EJECUTARINSTRUCIONES,
-	RECIBIR_PCB
+	RECIBIR_PCB,
+	INICIAR_PROCESO
 }op_code;
 
 typedef struct
@@ -49,6 +49,7 @@ typedef enum{
 	TERMINATED,
 }t_estado;
 
+// VER SI FUNCA SI FUNCA, CAMBIAR A UINT_32
 typedef struct{
 	char AX[4];
 	char BX[4];
@@ -129,6 +130,7 @@ void enviar_Pcb(t_pcb* , int conexion, op_code);
 
 
 //desempaquetar
+t_pcb* desempaquetar_pcb(t_list* );
 t_contexto_ejecucion *desempaquetar_contexto(t_list *,int *);
 t_registro_cpu * desempaquetar_registros(t_list * ,int *);
 t_instruccion * desempaquetar_instrucciones(t_list* ,int* );

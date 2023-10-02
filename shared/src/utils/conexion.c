@@ -262,6 +262,16 @@ void enviar_Pcb(t_pcb* pcb, int conexion,op_code operacion){
 	eliminar_paquete(paquete);
 }
 
+
+
+//recibir_pcb
+t_pcb* recibir_pcb(int socket_cliente){
+	t_pcb* pcb = malloc(sizeof(t_pcb));
+	t_list*paquete = recibir_paquete(socket_cliente);
+	pcb = desempaquetar_pcb(paquete);
+	return pcb;
+}
+
 //----------------------------------------------------------------------------------------------//
 void empaquetarPcb(t_paquete* paquete, t_pcb* pcb){
 	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
@@ -323,7 +333,7 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	pcb->listaInstruciones = instrucciones;
 	int cantidad_instrucciones = list_size(instrucciones);
 
-	return contexto;
+	return pcb;
 }
 
 t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int *posicion){
@@ -408,5 +418,7 @@ op_instrucciones convertir_a_op_instrucciones(char* operacion) {
     	return -1;
     }
 }
+
+
 
 

@@ -10,7 +10,6 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
     t_instruccion *instruct;
     // Recorro el archivo de pseudocodigo y parseo las instrucciones
     while (getline(&instruccion, &len, pseudocodigo) != -1){
-
         // Parseo la instruccion
 
         char** instruccion_parseada = parsear_instruccion(instruccion);

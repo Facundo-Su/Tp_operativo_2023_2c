@@ -40,9 +40,9 @@ void iniciarConsola();
 t_pcb* ejecutarInstrucion(t_pcb* );
 char* obtenerValor(t_pcb* , t_estrucutra_cpu );
 void setear(t_pcb* , t_estrucutra_cpu , char* );
-void ejecutar(t_pcb* pcb, t_instruccion* );
 char* obtenerValor(t_pcb* , t_estrucutra_cpu );
 t_estrucutra_cpu devolver_registro(char* );
+void ejecutar(t_pcb* ,t_instruccion*,int);
 
 //archivos
 

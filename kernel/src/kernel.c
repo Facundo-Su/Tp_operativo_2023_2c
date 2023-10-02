@@ -15,12 +15,11 @@ int main(int argc, char **argv){
 
     //envio de mensajes
 
+    pthread_t servidorKernel;
 
-
-
+    pthread_create(&servidorKernel,NULL,(void*) iniciarServidor,NULL);
     //error
     //paquete(conexion_memoria);
-
 
     terminar_programa(conexion_memoria, logger, config);
     terminar_programa(conexion_cpu, logger, config);
@@ -29,6 +28,37 @@ int main(int argc, char **argv){
 
     return EXIT_SUCCESS;
 }
+
+
+void* iniciarServidor(char *puerto){
+	int servidor_fd = iniciar_servidor(puerto);
+	log_info(logger, "Servidor listo para recibir al cliente");
+	int cliente_fd = esperar_cliente(servidor_fd);
+
+	t_list* lista;
+	while (1) {
+		int cod_op = recibir_operacion(cliente_fd);
+		switch (cod_op) {
+		case MENSAJE:
+			recibir_mensaje(cliente_fd);
+			break;
+		case FINALIZAR:
+			t_pcb* pcbAuxiliar = malloc(sizeof(t_pcb));
+			pcbAuxiliar = recibir_pcb(cliente_fd);
+			enviar_Pcb(pcbAuxiliar,conexion_memoria,FINALIZAR);
+			break;
+
+		case -1:
+			log_error(logger, "el cliente se desconecto. Terminando servidor");
+			return EXIT_FAILURE;
+		default:
+			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
+			break;
+		}
+	}
+
+}
+
 
 void iniciarConsola(){
 	loggerConsola = log_create("./kernelConsola.log", "consola", 1, LOG_LEVEL_INFO);
@@ -135,6 +165,7 @@ void generarConexion() {
     char *valor = readline(">");
 	switch (*valor) {
 		case '1':
+
 			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
 			setsockopt(conexion_memoria, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	        log_info(loggerConsola,"conexion generado correctamente\n");
@@ -159,21 +190,15 @@ void generarConexion() {
 //hilo que espere consola,
 void iniciarProceso(char* archivo_test,int* size,t_planificador prioridad){
 
-
-
 	//char* prueba = ruta_archivo_test;
 	//string_append(*prueba, archivo_test);
-	char*rutaAtestear = archivo_test;
-	t_pcb* pcb = malloc(sizeof(pcb));
-	pcb->pid= contador_pid;
-	pcb->prioridad = prioridad;
-	pcb->contexto =NULL;
-	//pcb->tabla_archivo_abierto;
-	pcb->estado=NEW;
-	contador_pid++;
 
-	agregarAColaNew(pcb);
-	op_code op = ENVIARRUTAPARAINICIAR;
+	char*rutaAtestear = archivo_test;
+	t_list* instruccion = obtenerListaInstruccion(archivo_test);
+
+	crear_pcb(instruccion);
+
+	op_code op = INICIAR_PROCESO;
 	t_paquete* paquete =crear_paquete(op);
 	agregar_a_paquete(paquete, rutaAtestear, sizeof(rutaAtestear));
 	agregar_a_paquete(paquete, &size ,sizeof(size));
@@ -183,7 +208,47 @@ void iniciarProceso(char* archivo_test,int* size,t_planificador prioridad){
 	//free(prueba);
 	eliminar_paquete(paquete);
 	free(rutaAtestear);
-	free(pcb);
+
+}
+
+void crear_pcb(t_list* instrucciones,t_planificador prioridad){
+	t_pcb* pcb = malloc(sizeof(pcb));
+	pcb->pid= contador_pid;
+	pcb->prioridad = prioridad;
+	t_contexto_ejecucion* contexto = crearContexto();
+	pcb->contexto =NULL;
+	//pcb->tabla_archivo_abierto;
+	pcb->estado=NEW;
+	contador_pid++;
+
+	agregarAColaNew(pcb);
+}
+
+t_contexto_ejecucion* crearContexto(){
+	t_contexto_ejecucion* contexto = malloc(sizeof(t_contexto_ejecucion));
+	contexto->pc =NULL;
+	t_registro_cpu* registro = crearRegistro();
+	contexto->registros_cpu = registro;
+	return contexto;
+}
+
+t_registro_cpu* crearRegistro(){
+	t_registro_cpu* reg = malloc(sizeof(t_registro_cpu));
+    memset(reg->AX, 0, sizeof(reg->AX));
+    memset(reg->BX, 0, sizeof(reg->BX));
+    memset(reg->CX, 0, sizeof(reg->CX));
+    memset(reg->DX, 0, sizeof(reg->DX));
+	return reg;
+}
+
+t_list* obtenerListaInstruccion(char* ruta){
+	t_list *instrucciones = list_create();
+	FILE* pseucodigo;
+
+	pseucodigo =fopen(ruta,"r");
+	instrucciones =leer_pseudocodigo(pseucodigo);
+
+	return instrucciones;
 }
 
 void agregarAColaNew(t_pcb* pcb){

@@ -105,6 +105,13 @@ void deReadyAFifo();
 void deReadyARoundRobin();
 void deReadyAPrioridades();
 void enviarContextoEjecucion(t_contexto_ejecucion * );
+t_contexto_ejecucion* crearContexto();
+t_registro_cpu* crearRegistro();
+t_list* obtenerListaInstruccion(char* ruta);
+
+void* iniciarServidor(char *);
+
+
 
 #endif /* KERNEL_H_ */
 
