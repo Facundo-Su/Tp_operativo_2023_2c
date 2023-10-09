@@ -73,6 +73,7 @@ typedef struct{
 typedef struct{
 	int pid;
 	int prioridad;
+	int tiempo_cpu;
 	t_contexto_ejecucion* contexto;
 	t_list* tabla_archivo_abierto;
 	t_estado estado;

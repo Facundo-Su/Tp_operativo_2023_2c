@@ -300,11 +300,11 @@ void planificadorCortoPlazo(){
 					break;
 				case ROUND_ROBIN:
 					log_info(logger,"Planificador Round Robin");
-					deReadyARoundRobin(cola_ready);
+					deReadyARoundRobin();
 					break;
 				case PRIORIDADES:
 					log_info(logger,"Planificador Prioridades");
-					deReadyAPrioridades(cola_ready);
+					deReadyAPrioridades();
 					break;
 				}
 			}
@@ -316,11 +316,45 @@ void deReadyAFifo(){
 	enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
 }
 void deReadyARoundRobin(){
-	return ;
+	t_pcb* pcbEnEjecucion = NULL;
+	if(pcbEnEjecucion->tiempo_cpu <= quantum){
+		t_pcb* pcb = procesoConMayorPrioridad(cola_ready, queue_size(cola_ready));
+		pcb->estado=RUNNING;
+		enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
+	}
+	if(pcbEnEjecucion->tiempo_cpu > quantum){
+		//Interrupcion de clock y desalojo al final de la cola de ready
+		t_pcb* pcb = procesoConMayorPrioridad(cola_ready, queue_size(cola_ready));
+		pcb->estado=RUNNING;
+		enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
+	}
 }
+
+
 void deReadyAPrioridades(){
-	return ;
+	t_pcb* pcbEnEjecucion = NULL;
+	t_pcb* pcb = procesoConMayorPrioridad(cola_ready, queue_size(cola_ready));
+	if(pcb->prioridad > pcbEnEjecucion->prioridad){ //Conseguir contexto del pcb en ejecucion
+		//Enviar interrupcion a CPU y desalojar proceso
+		pcb->estado=RUNNING;
+		enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
+	}
 }
+
+struct t_pcb* procesoConMayorPrioridad(struct t_pcb* colaReady, int cantProcesos) {
+    struct t_pcb* procesoElegido = NULL;
+    int prioridadMaxima = 20; // Inicializar con un valor alto
+
+    for (int i = 0; i < cantProcesos; i++) {
+        if (colaReady[i].prioridad < prioridadMaxima) {
+        	procesoElegido = &colaReady[i];
+        	prioridadMaxima = colaReady[i].prioridad;
+        }
+    }
+
+    return procesoElegido;
+}
+
 bool controladorMultiProgramacion(){
 	return list_size(lista_pcb)<grado_multiprogramacion_ini;
 }
