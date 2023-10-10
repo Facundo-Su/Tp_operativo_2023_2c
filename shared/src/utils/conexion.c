@@ -259,6 +259,7 @@ void enviar_Pcb(t_pcb* pcb, int conexion,op_code operacion){
 	t_paquete* paquete = crear_paquete(operacion);
 	empaquetarPcb(paquete, pcb);
 	enviar_paquete(paquete, conexion);
+
 	eliminar_paquete(paquete);
 }
 
@@ -274,14 +275,20 @@ t_pcb* recibir_pcb(int socket_cliente){
 
 //----------------------------------------------------------------------------------------------//
 void empaquetarPcb(t_paquete* paquete, t_pcb* pcb){
+
 	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
 	agregar_a_paquete(paquete, &(pcb->estado), sizeof(t_estado));
+
 	empaquetarContextoEjecucion(paquete, pcb->contexto);
+
 	empaquetarInstrucciones(paquete, pcb->listaInstruciones);
+
 }
 
 void empaquetarContextoEjecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
-	agregar_a_paquete(paquete, contexto->pc, sizeof(int));
+
+	agregar_a_paquete(paquete, &(contexto->pc), sizeof(int));
+	log_info(loggerConsola,"nose");
 	empaquetarRegistro(paquete,contexto->registros_cpu);
 }
 

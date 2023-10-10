@@ -108,6 +108,13 @@ void iniciarConsola(){
 			case '8':
 				enviarMensaje();
 				break;
+			case '9':
+				crear_pcb(NULL, FIFO);
+				/*t_pcb* auxiliar = malloc(sizeof(t_pcb));
+				auxiliar =queue_pop(cola_new);
+				log_info(loggerConsola,"el pid es %i",auxiliar->pid);*/
+
+				enviar_Pcb(queue_pop(cola_new),conexion_cpu,RECIBIR_PCB);
 			default:
 				log_info(loggerConsola,"no corresponde a ninguno");
 				exit(2);
@@ -300,11 +307,11 @@ void planificadorCortoPlazo(){
 					break;
 				case ROUND_ROBIN:
 					log_info(logger,"Planificador Round Robin");
-					deReadyARoundRobin();
+					//deReadyARoundRobin();
 					break;
 				case PRIORIDADES:
 					log_info(logger,"Planificador Prioridades");
-					deReadyAPrioridades();
+					//deReadyAPrioridades();
 					break;
 				}
 			}
@@ -315,36 +322,40 @@ void deReadyAFifo(){
 	pcb->estado=RUNNING;
 	enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
 }
+
+/*
 void deReadyARoundRobin(){
 	t_pcb* pcbEnEjecucion = NULL;
-	if(pcbEnEjecucion->tiempo_cpu <= quantum){
-		t_pcb* pcb = procesoConMayorPrioridad(cola_ready, queue_size(cola_ready));
-		pcb->estado=RUNNING;
-		enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
-	}
-	if(pcbEnEjecucion->tiempo_cpu > quantum){
-		//Interrupcion de clock y desalojo al final de la cola de ready
-		t_pcb* pcb = procesoConMayorPrioridad(cola_ready, queue_size(cola_ready));
-		pcb->estado=RUNNING;
-		enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
-	}
+
+	enviar_Pcb(queue_pop(cola_ready),conexion_cpu,PLANIFICACION);
+
 }
 
+//alternativa agregar una cola de ejecucion
 
 void deReadyAPrioridades(){
-	t_pcb* pcbEnEjecucion = NULL;
-	t_pcb* pcb = procesoConMayorPrioridad(cola_ready, queue_size(cola_ready));
+
+	t_pcb* pcb = procesoConMayorPrioridad();
+
+	for(int i=0)
+
+
 	if(pcb->prioridad > pcbEnEjecucion->prioridad){ //Conseguir contexto del pcb en ejecucion
 		//Enviar interrupcion a CPU y desalojar proceso
 		pcb->estado=RUNNING;
+		if(pcbEnEjecucion->prioridad !=-1){
+			desalojar();
+		}
+
 		enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
 	}
 }
 
-struct t_pcb* procesoConMayorPrioridad(struct t_pcb* colaReady, int cantProcesos) {
-    struct t_pcb* procesoElegido = NULL;
-    int prioridadMaxima = 20; // Inicializar con un valor alto
 
+struct t_pcb* procesoConMayorPrioridad() {
+    struct t_pcb* procesoElegido = NULL;
+    int prioridadMaxima = -1; // Inicializar con un valor alto
+    t_list * lista = list_create();
     for (int i = 0; i < cantProcesos; i++) {
         if (colaReady[i].prioridad < prioridadMaxima) {
         	procesoElegido = &colaReady[i];
@@ -354,6 +365,7 @@ struct t_pcb* procesoConMayorPrioridad(struct t_pcb* colaReady, int cantProcesos
 
     return procesoElegido;
 }
+*/
 
 bool controladorMultiProgramacion(){
 	return list_size(lista_pcb)<grado_multiprogramacion_ini;

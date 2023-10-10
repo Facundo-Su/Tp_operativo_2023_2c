@@ -87,7 +87,7 @@ int iniciarServidor(char *puerto){
 			log_info(logger, "ME LLEGARON");
 			break;
 
-		case EJECUTARINSTRUCIONES:
+/*		case EJECUTARINSTRUCIONES:
 			t_pcb* pcb = malloc(sizeof(t_pcb));
 			pcb = recibir_pcb(cliente_fd);
 			t_list* instrucciones = list_create();
@@ -96,10 +96,11 @@ int iniciarServidor(char *puerto){
 			for(int i =0;i<cantidadInstrucciones;i++){
 				t_instruccion* instruccion = list_get(instrucciones,i);
 				ejecutar(pcb,instruccion,cliente_fd);
-			}
+			}*/
 
 		case RECIBIR_PCB:
 			t_pcb* pcb = malloc(sizeof(t_pcb));
+			log_info(logger_consola_cpu,"hola");
 			pcb = recibir_pcb(cliente_fd);
 
 			log_info(loggerConsola,"me llego %s",pcb->pid);
