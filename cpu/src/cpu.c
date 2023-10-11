@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[]) {
 
-	char *rutaConfig = argv[1];
+	char *rutaConfig = "cpu.config";
 
 	config = cargarConfig(rutaConfig);
 
@@ -99,13 +99,9 @@ int iniciarServidor(char *puerto){
 			}*/
 
 		case RECIBIR_PCB:
-			t_pcb* pcb = malloc(sizeof(t_pcb));
-			log_info(logger_consola_cpu,"hola");
-			pcb = recibir_pcb(cliente_fd);
 
-			log_info(loggerConsola,"me llego %s",pcb->pid);
-
-
+			t_pcb* pcb = recibir_pcb(cliente_fd);
+			log_info(logger_consola_cpu,"%d",pcb->pid);
 			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
