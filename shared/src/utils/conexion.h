@@ -100,7 +100,6 @@ typedef struct{
 }t_instruccion;
 
 int crear_conexion(char* ip, char* puerto);
-void enviar_mensaje(char* mensaje, int socket_cliente);
 t_paquete* crear_paquete(op_code);
 void agregar_a_paquete(t_paquete* paquete, void* valor, int tamanio);
 void enviar_paquete(t_paquete* paquete, int socket_cliente);
@@ -115,7 +114,6 @@ extern t_log* logger;
 
 void* recibir_buffer(int*, int);
 
-int iniciar_servidor(char*);
 int esperar_cliente(int);
 t_list* recibir_paquete(int);
 void recibir_mensaje(int);
