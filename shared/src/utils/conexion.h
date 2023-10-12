@@ -131,15 +131,13 @@ void empaquetar_instrucciones(t_paquete* , t_list* );
 //enviar pcb
 void enviar_pcb(t_pcb* , int conexion, op_code);
 
-//crear pcb
-
 
 //desempaquetar
 t_pcb* desempaquetar_pcb(t_list* );
-t_contexto_ejecucion *desempaquetar_contexto(t_list *,int );
-t_registro_cpu * desempaquetar_registros(t_list * ,int );
-t_list * desempaquetar_instrucciones(t_list* ,int);
-t_list* desempaquetar_parametros(t_list* ,int );
+t_contexto_ejecucion *desempaquetar_contexto(t_list *,int *);
+t_registro_cpu * desempaquetar_registros(t_list * ,int *);
+t_instruccion * desempaquetar_instrucciones(t_list* ,int* );
+t_list* desempaquetar_parametros(t_list* ,int* );
 op_instrucciones convertir_a_op_instrucciones(char* );
 
 #endif /* CONEXION_SERVIDOR_H_*/

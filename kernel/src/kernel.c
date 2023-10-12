@@ -110,12 +110,11 @@ void iniciarConsola(){
 				break;
 			case '9':
 				crear_pcb(NULL, FIFO);
-				t_pcb* auxiliar = malloc(sizeof(t_pcb));
+				/*t_pcb* auxiliar = malloc(sizeof(t_pcb));
 				auxiliar =queue_pop(cola_new);
+				log_info(loggerConsola,"el pid es %i",auxiliar->pid);*/
 
-
-				enviar_Pcb(auxiliar,conexion_cpu,RECIBIR_PCB);
-				break;
+				enviar_Pcb(queue_pop(cola_new),conexion_cpu,RECIBIR_PCB);
 			default:
 				log_info(loggerConsola,"no corresponde a ninguno");
 				exit(2);
@@ -175,15 +174,17 @@ void generarConexion() {
 		case '1':
 
 			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
-
+			setsockopt(conexion_memoria, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	        log_info(loggerConsola,"conexion generado correctamente\n");
 			break;
 		case '2':
 			conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
+			setsockopt(conexion_file_system, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	        log_info(loggerConsola,"conexion generado correctamente\n");
 			break;
 		case '3':
 			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+			setsockopt(conexion_cpu, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	        log_info(loggerConsola,"conexion generado correctamente\n");
 			break;
 		default:
@@ -222,7 +223,7 @@ void crear_pcb(t_list* instrucciones,t_planificador prioridad){
 	pcb->pid= contador_pid;
 	pcb->prioridad = prioridad;
 	t_contexto_ejecucion* contexto = crearContexto();
-	pcb->contexto =contexto;
+	pcb->contexto =NULL;
 	//pcb->tabla_archivo_abierto;
 	pcb->estado=NEW;
 	contador_pid++;
@@ -232,7 +233,7 @@ void crear_pcb(t_list* instrucciones,t_planificador prioridad){
 
 t_contexto_ejecucion* crearContexto(){
 	t_contexto_ejecucion* contexto = malloc(sizeof(t_contexto_ejecucion));
-	contexto->pc =0;
+	contexto->pc =NULL;
 	t_registro_cpu* registro = crearRegistro();
 	contexto->registros_cpu = registro;
 	return contexto;

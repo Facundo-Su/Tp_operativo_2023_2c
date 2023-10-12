@@ -70,7 +70,6 @@ int crear_conexion(char *ip, char* puerto)
 	// Ahora vamos a crear el socket.
 	int socket_cliente = socket(server_info->ai_family,server_info->ai_socktype,server_info->ai_protocol);
 	// Ahora que tenemos el socket, vamos a conectarlo
-	setsockopt(socket_cliente, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen);
 	freeaddrinfo(server_info);
 
@@ -254,7 +253,7 @@ t_config* cargar_config(char *ruta){
 }
 
 
-//--------------------------------------------------------------------------------------------------//
+//------------------------------------------------------------------------------------//
 //envir contexto
 void enviar_pcb(t_pcb* pcb, int conexion,op_code operacion){
 	t_paquete* paquete = crear_paquete(operacion);
@@ -268,10 +267,9 @@ void enviar_pcb(t_pcb* pcb, int conexion,op_code operacion){
 
 //recibir_pcb
 t_pcb* recibir_pcb(int socket_cliente){
-
+	t_pcb* pcb = malloc(sizeof(t_pcb));
 	t_list*paquete = recibir_paquete(socket_cliente);
-	t_pcb* pcb = desempaquetar_pcb(paquete);
-	list_destroy(paquete);
+	pcb = desempaquetar_pcb(paquete);
 	return pcb;
 }
 
@@ -283,15 +281,15 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 
 	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
 
-//	empaquetarInstrucciones(paquete, pcb->listaInstruciones);
+	empaquetarInstrucciones(paquete, pcb->listaInstruciones);
 
 }
 
 void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
 
 	agregar_a_paquete(paquete, &(contexto->pc), sizeof(int));
+	log_info(loggerConsola,"nose");
 	empaquetarRegistro(paquete,contexto->registros_cpu);
-
 }
 
 void empaquetar_registro(t_paquete* paquete, t_registro_cpu* registroCpu){
@@ -299,35 +297,27 @@ void empaquetar_registro(t_paquete* paquete, t_registro_cpu* registroCpu){
 	agregar_a_paquete(paquete,&(registroCpu->BX), strlen(registroCpu->BX)+1);
 	agregar_a_paquete(paquete,&(registroCpu->CX), strlen(registroCpu->CX)+1);
 	agregar_a_paquete(paquete,&(registroCpu->DX), strlen(registroCpu->DX)+1);
-
 }
 
 
 void empaquetar_instrucciones(t_paquete* paquete, t_list* lista_de_instrucciones){
 	int cantidad_instrucciones = list_size(lista_de_instrucciones);
 	agregar_a_paquete(paquete, &(cantidad_instrucciones), sizeof(int));
-
 	for(int i=0; i<cantidad_instrucciones; i++){
-		log_info(loggerConsola,"hola");
 		t_instruccion* instruccion = list_get(lista_de_instrucciones, i);
 		agregar_a_paquete(paquete, &(instruccion->nombre), sizeof(op_instrucciones));
-
 		empaquetarParametros(paquete,instruccion->parametros);
 	}
-
 }
 
 
 void empaquetarParametros(t_paquete * paquete, t_list* parametros){
 	int* cantidad_parametros = list_size(parametros);
-
 	agregar_a_paquete(paquete, &cantidad_parametros, sizeof(cantidad_parametros));
 	for(int i=0; i<cantidad_parametros; i++){
 		char* parametro = list_get(parametros, i);
 		agregar_a_paquete(paquete, &(parametro), strlen(parametro)+1);
-
 	}
-
 }
 
 //desempaquetar
@@ -335,86 +325,89 @@ void empaquetarParametros(t_paquete * paquete, t_list* parametros){
 
 t_pcb* desempaquetar_pcb(t_list* paquete){
 	t_pcb* pcb = malloc(sizeof(t_pcb));
-	int* pid = list_get(paquete, 0);
-	pcb->pid = *pid;
-	free(pid);
+	int valor_inicial =0;
+	int* posicion =&valor_inicial;
+	pcb->pid = list_get(paquete, posicion);
+	(*posicion)++;
 
-	t_estado *estado = list_get(paquete, 1);
+	t_estado *estado = list_get(paquete, posicion);
 	pcb->estado = *estado;
-
-	int posicion_leido = 2;
-	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, posicion_leido);
+	(*posicion)++;
+	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, posicion);
 	pcb->contexto = contexto;
 
-	int posicion_despues_de_registro =7;
-
-	//t_list* instrucciones = desempaquetar_instrucciones(paquete,posicion_despues_de_registro);
-	//pcb->listaInstruciones = instrucciones;
-	//int cantidad_instrucciones = list_size(instrucciones);
+	t_list* instrucciones = desempaquetar_instrucciones(paquete,posicion);
+	pcb->listaInstruciones = instrucciones;
+	int cantidad_instrucciones = list_size(instrucciones);
 
 	return pcb;
 }
 
-t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int posicion){
+t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int *posicion){
 	t_contexto_ejecucion *contexto = malloc(sizeof(t_contexto_ejecucion));
 	contexto->pc = list_get(paquete,posicion);
-
-	int posicion_leido =3;
-	t_registro_cpu * registros = desempaquetar_registros(paquete,posicion_leido);
+	(*posicion)++;
+	t_registro_cpu * registros = desempaquetar_registros(paquete,&posicion);
 	contexto->registros_cpu = registros;
 	return contexto;
 }
 
-t_registro_cpu * desempaquetar_registros(t_list * paquete,int posicion){
+t_registro_cpu * desempaquetar_registros(t_list * paquete,int *posicion){
 	t_registro_cpu *registro = malloc(sizeof(t_registro_cpu));
 	char* ax = list_get(paquete,posicion);
+	(*posicion)++;
 	strcpy(registro->AX, ax);
 	free(ax);
 
-	char* bx = list_get(paquete,posicion+1);
+	char* bx = list_get(paquete,posicion);
+	(*posicion)++;
 	strcpy(registro->BX, bx);
 	free(bx);
 
-	char* cx = list_get(paquete,posicion+2);
+	char* cx = list_get(paquete,posicion);
+	(*posicion)++;
 	strcpy(registro->CX, cx);
 	free(cx);
 
-	char* dx = list_get(paquete,posicion+3);
+	char* dx = list_get(paquete,posicion);
+	(*posicion)++;
 	strcpy(registro->DX, dx);
 	free(dx);
 
 	return registro;
 }
 
-t_list * desempaquetar_instrucciones(t_list* paquete,int posicion){
+t_instruccion * desempaquetar_instrucciones(t_list* paquete,int* posicion){
 	t_list* instrucciones = list_create();
-	int cantidad_instrucciones = list_get(paquete, posicion);
-	int j=1;
+	int* cantidad_instrucciones = list_get(paquete, posicion);
+	(*posicion)++;
 
 	for(int i =0;i<cantidad_instrucciones;i++){
 		t_instruccion* instruccion = malloc(sizeof(t_instruccion));
-
-		char* nombre = list_get(paquete,posicion+j);
+		char* nombre = list_get(paquete,posicion);
 		op_instrucciones operacion = convertir_a_op_instrucciones(nombre);
 		instruccion->nombre = operacion;
-		j++;
-		//desempaquetar parametros
+		(*posicion)++;
 
-		t_list*parametros = list_create();
-		int cantidad_parametro = list_get(paquete,posicion+j);
-		j++;
-		for(int k=0;i<cantidad_parametro;k++){
-			char* parametro = list_get(paquete,posicion+j);
-			list_add(parametros,parametro);
-			j++;
-		}
-
-		instruccion->parametros =parametros;
+		t_list* parametros = desempaquetar_parametros(paquete,posicion);
 	}
 
 	return instrucciones;
 }
 
+
+t_list* desempaquetar_parametros(t_list* paquete,int* posicion){
+	t_list*parametros = list_create();
+	int cantidad_parametro = list_get(paquete,posicion);
+	posicion++;
+	for(int i=0;i<cantidad_parametro;i++){
+		char* parametro = list_get(paquete,posicion);
+		(*posicion)++;
+		list_add(parametros,parametro);
+	}
+	return parametros;
+
+}
 
 
 //convertir en op_instrucciones
@@ -432,6 +425,7 @@ op_instrucciones convertir_a_op_instrucciones(char* operacion) {
     	return -1;
     }
 }
+
 
 
 
