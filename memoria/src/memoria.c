@@ -6,15 +6,15 @@ int main(int argc, char* argv[]) {
 
 	char *rutaConfig = argv[1];
 
-	config = cargarConfig(rutaConfig);
+	config = cargar_config(rutaConfig);
 
-    obtenerConfiguraciones();
+    obtener_configuraciones();
 
     logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
 
     log_info(logger, "Soy el Memoria!");
 
-    iniciarConsola();
+    iniciar_consola();
 
     // Limpieza y terminación
     terminar_programa(conexion_filesystem, logger, config);
@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
 }
 
-void iniciarConsola(){
+void iniciar_consola(){
 	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	char* valor;
 
@@ -43,7 +43,7 @@ void iniciarConsola(){
 				break;
 			case '3':
 				log_info(logger_consola_memoria, "se inicio el servidor\n");
-				iniciarServidor(puerto_escucha);
+				iniciar_servidor(puerto_escucha);
 				break;
 			default:
 				log_info(logger_consola_memoria,"no corresponde a ninguno");
@@ -58,13 +58,13 @@ void iterator(char* value) {
     log_info(logger, "%s", value);
 }
 
-void obtenerConfiguraciones() {
+void obtener_configuraciones() {
     puerto_escucha = config_get_string_value(config, "PUERTO_ESCUCHA");
     puerto_filesystem = config_get_string_value(config, "PUERTO_FILESYSTEM");
     ip_file_system = config_get_string_value(config, "IP_FILESYSTEM");
 }
 
-int iniciarServidor(char *puerto) {
+int iniciar_servidor(char *puerto) {
     int memoria_fd = iniciar_servidor(puerto);
     log_info(logger, "Servidor listo para recibir al cliente");
 
@@ -108,7 +108,7 @@ int iniciarServidor(char *puerto) {
 }
 
 
-void recibir_estructura_Inicial(int socket_cliente) {
+void recibir_estructura_inicial(int socket_cliente) {
     int size;
     void* buffer;
     int tamanio;

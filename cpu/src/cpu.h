@@ -29,18 +29,17 @@ char *puerto_memoria;
 char *puerto_escucha;
 t_log *logger_consola_cpu;
 
-void obtenerConfiguracion();
+void obtener_configuracion();
 void terminar_programa();
 t_config* iniciar_config();
-int iniciarServidor(char*);
+int iniciar_servidor(char*);
 void iterator(char*);
-void iniciarConsola();
+void iniciar_consola();
 
 
-t_pcb* ejecutarInstrucion(t_pcb* );
-char* obtenerValor(t_pcb* , t_estrucutra_cpu );
+t_pcb* ejecutar_instruccion(t_pcb* );
+char* obtener_valor(t_pcb* , t_estrucutra_cpu );
 void setear(t_pcb* , t_estrucutra_cpu , char* );
-char* obtenerValor(t_pcb* , t_estrucutra_cpu );
 t_estrucutra_cpu devolver_registro(char* );
 void ejecutar(t_pcb* ,t_instruccion*,int);
 

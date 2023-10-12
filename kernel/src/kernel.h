@@ -43,7 +43,7 @@ char *ip_filesystem;
 char *ip_cpu;
 char *puerto_fileSystem;
 
-t_log *loggerConsola;
+t_log *logger_consola;
 t_list* lista_pcb;
 t_queue* cola_new;
 t_queue* cola_ready;
@@ -52,8 +52,8 @@ sem_t mutex_cola_new;
 sem_t mutex_cola_ready;
 //sem_t sem_new;
 //sem_t sem_ready;
-t_planificador tipoPlanificador;
-sem_t gradoMultiprogramacion;
+t_planificador tipo_planificador;
+sem_t grado_multiprogramacion;
 
 char *puerto_memoria;
 char *puerto_filesystem;
@@ -66,50 +66,50 @@ t_planificador planificador;
 char **recursos;
 int *instancias_recursos;
 
-void obtenerConfiguracion();
-void asignarAlgoritmo(char *algoritmo);
+void obtener_configuracion();
+void asignar_algoritmo(char *algoritmo);
 int* string_to_int_array(char** array_de_strings);
 void paquete(int);
 void mostrar_paquete(t_paquete*);
 
 
 void iterator(char*);
-void interactuarConModulo();
+void interactuar_con_modulo();
 t_config* iniciar_config();
-void iniciarConsola();
-void iniciarProceso(char*,int*,t_planificador);
-void finalizarProceso(char*);
-void iniciarPlanificacion();
-void detenerPlanificacion();
-void modificarGradoMultiprogramacion();
-void listarProcesoPorEstado();
-void generarConexion();
-void enviarMensaje();
+void iniciar_consola();
+void iniciar_proceso(char*,int*,t_planificador);
+void finalizar_proceso(char*);
+void iniciar_planificacion();
+void detener_planificacion();
+void modificar_grado_multiprogramacion();
+void listar_proceso_por_estado();
+void generar_conexion();
+void enviar_mensaje();
 
-bool controladorMultiProgramacion();
+bool controlador_multiprogramacion();
 
 
 
-t_contexto_ejecucion* obtenerContexto(char*);
-void mandarAMemoria(char* , int , int );
-void liberarMemoriaPcb(t_pcb*);
-int buscarPosicionQueEstaElPid(int );
+t_contexto_ejecucion* obtener_contexto(char*);
+void mandar_a_memoria(char* , int , int );
+void liberar_memoria_pcb(t_pcb*);
+int buscar_posicion_pid(int );
 
-void agregarAColaNew(t_pcb* pcb);
-t_pcb* quitarDeColaNew();
-void agregarAColaReady(t_pcb* pcb);
-t_pcb* quitarDeColaReady();
-void planificadorLargoPlazo();
-void planificadorCortoPlazo();
-void deReadyAFifo();
-void deReadyARoundRobin();
-void deReadyAPrioridades();
-void enviarContextoEjecucion(t_contexto_ejecucion * );
-t_contexto_ejecucion* crearContexto();
-t_registro_cpu* crearRegistro();
-t_list* obtenerListaInstruccion(char* ruta);
+void agregar_a_cola_new(t_pcb* pcb);
+t_pcb* quitar_de_cola_new();
+void agregar_a_cola_ready(t_pcb* pcb);
+t_pcb* quitar_de_cola_ready();
+void planificador_largo_plazo();
+void planificador_corto_plazo();
+void de_ready_a_fifo();
+void de_ready_a_round_robin();
+void de_ready_a_prioridades();
+void enviar_contexto_ejecucion(t_contexto_ejecucion * );
+t_contexto_ejecucion* crear_contexto();
+t_registro_cpu* crear_registro();
+t_list* obtener_lista_instruccion(char* ruta);
 
-void* iniciarServidor(char *);
+void* iniciar_servidor(char *);
 
 
 

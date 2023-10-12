@@ -3,31 +3,31 @@
 #include<readline/readline.h>
 int main(int argc, char* argv[]) {
 
-	char *rutaConfig = argv[1];
+	char *ruta_config = argv[1];
 
-	config = cargarConfig(rutaConfig);
+	config = cargar_config(ruta_config);
 
     logger = log_create("./filesystem.log", "FILESYSTEM", true, LOG_LEVEL_INFO);
 
 
     log_info(logger, "Soy el filesystem!");
     //obtener datos de .config
-	obtenerConfiguracion();
-	iniciarConsola();
+	obtener_configuracion();
+	iniciar_consola();
 
 	terminar_programa(conexion_memoria, logger, config);
     return EXIT_SUCCESS;
 }
 
 
-void obtenerConfiguracion(){
+void obtener_configuracion(){
 	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
 	puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
 	puerto_escucha= config_get_string_value(config,"PUERTO_ESCUCHA");
 }
 
 
-void iniciarConsola(){
+void iniciar_consola(){
 	logger_consola_filesystem = log_create("./filesystemConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	char* valor;
 
@@ -48,7 +48,7 @@ void iniciarConsola(){
 				break;
 			case '3':
 				log_info(logger_consola_filesystem, "se inicio el servidor\n");
-				iniciarServidor(puerto_escucha);
+				iniciar_servidor(puerto_escucha);
 				break;
 			default:
 				log_info(logger_consola_filesystem,"no corresponde a ninguno");
@@ -60,7 +60,7 @@ void iniciarConsola(){
 }
 
 
-int iniciarServidor(char *puerto){
+int iniciar_servidor(char *puerto){
 	int servidor_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
 	int cliente_fd = esperar_cliente(servidor_fd);
