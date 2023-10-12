@@ -113,8 +113,9 @@ void iniciar_consola(){
 				/*t_pcb* auxiliar = malloc(sizeof(t_pcb));
 				auxiliar =queue_pop(cola_new);
 				log_info(loggerConsola,"el pid es %i",auxiliar->pid);*/
-
+				log_info(logger,"%i",list_size(cola_new));
 				enviar_pcb(queue_pop(cola_new),conexion_cpu,RECIBIR_PCB);
+				break;
 			default:
 				log_info(logger_consola,"no corresponde a ninguno");
 				exit(2);

@@ -99,13 +99,8 @@ int iniciar_servidor_cpu(char *puerto){
 			}*/
 
 		case RECIBIR_PCB:
-			t_pcb* pcb = malloc(sizeof(t_pcb));
-			log_info(logger_consola_cpu,"hola");
-			pcb = recibir_pcb(cliente_fd);
-
-			log_info(logger_consola,"me llego %s",pcb->pid);
-
-
+			t_pcb* pcb = recibir_pcb(cliente_fd);
+			log_info(logger, "%i",pcb->pid);
 			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");

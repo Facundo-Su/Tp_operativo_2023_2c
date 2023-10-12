@@ -289,7 +289,7 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
 
 	agregar_a_paquete(paquete, &(contexto->pc), sizeof(int));
-	log_info(logger_consola,"nose");
+
 	empaquetar_registro(paquete,contexto->registros_cpu);
 }
 
@@ -326,52 +326,52 @@ void empaquetarParametros(t_paquete * paquete, t_list* parametros){
 
 t_pcb* desempaquetar_pcb(t_list* paquete){
 	t_pcb* pcb = malloc(sizeof(t_pcb));
-	int valor_inicial =0;
-	int* posicion =&valor_inicial;
-	pcb->pid = list_get(paquete, posicion);
-	(*posicion)++;
+	int * pid = list_get(paquete, 0);
+	pcb->pid = *pid;
+	free(pid);
 
-	t_estado *estado = list_get(paquete, posicion);
+	t_estado* estado = list_get(paquete, 1);
 	pcb->estado = *estado;
-	(*posicion)++;
-	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, posicion);
+	free(estado);
+
+	int posicion_comienzo_contexto =2;
+	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, posicion_comienzo_contexto);
 	pcb->contexto = contexto;
 
-	t_list* instrucciones = desempaquetar_instrucciones(paquete,posicion);
-	pcb->lista_instruciones = instrucciones;
-	int cantidad_instrucciones = list_size(instrucciones);
+	//t_list* instrucciones = desempaquetar_instrucciones(paquete,posicion);
+	//pcb->lista_instruciones = instrucciones;
+	//int cantidad_instrucciones = list_size(instrucciones);
 
 	return pcb;
 }
 
-t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int *posicion){
+t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int posicion){
 	t_contexto_ejecucion *contexto = malloc(sizeof(t_contexto_ejecucion));
-	contexto->pc = list_get(paquete,posicion);
-	(*posicion)++;
-	t_registro_cpu * registros = desempaquetar_registros(paquete,&posicion);
+	int* pc = list_get(paquete,posicion);
+	contexto->pc = *pc;
+	free(*pc);
+
+	t_registro_cpu * registros = desempaquetar_registros(paquete,3);
 	contexto->registros_cpu = registros;
 	return contexto;
 }
 
-t_registro_cpu * desempaquetar_registros(t_list * paquete,int *posicion){
+t_registro_cpu * desempaquetar_registros(t_list * paquete,int posicion){
 	t_registro_cpu *registro = malloc(sizeof(t_registro_cpu));
+
 	char* ax = list_get(paquete,posicion);
-	(*posicion)++;
 	strcpy(registro->AX, ax);
 	free(ax);
 
-	char* bx = list_get(paquete,posicion);
-	(*posicion)++;
+	char* bx = list_get(paquete,posicion+1);
 	strcpy(registro->BX, bx);
 	free(bx);
 
-	char* cx = list_get(paquete,posicion);
-	(*posicion)++;
+	char* cx = list_get(paquete,posicion+2);
 	strcpy(registro->CX, cx);
 	free(cx);
 
-	char* dx = list_get(paquete,posicion);
-	(*posicion)++;
+	char* dx = list_get(paquete,posicion+3);
 	strcpy(registro->DX, dx);
 	free(dx);
 
