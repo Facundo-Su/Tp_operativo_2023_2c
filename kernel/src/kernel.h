@@ -109,7 +109,7 @@ t_contexto_ejecucion* crear_contexto();
 t_registro_cpu* crear_registro();
 t_list* obtener_lista_instruccion(char* ruta);
 
-void* iniciar_servidor(char *);
+void* procesar_conexion(char *);
 
 
 

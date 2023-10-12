@@ -4,20 +4,20 @@ int main(int argc, char **argv){
 
 
 	char *rutaConfig = "kernel.config";
-	config = cargarConfig(rutaConfig);
+	config = cargar_config(rutaConfig);
 
     logger = log_create("./kernel.log", "KERNEL", true, LOG_LEVEL_INFO);
     log_info(logger, "Soy el Kernel!");
 
     obtener_configuracion();
     iniciar_recurso();
-    iniciarConsola();
+    iniciar_consola();
 
     //envio de mensajes
 
     pthread_t servidor_kernel;
 
-    pthread_create(&servidor_kernel,NULL,(void*) iniciar_servidor,NULL);
+    pthread_create(&servidor_kernel,NULL,(void*) procesar_conexion,NULL);
     //error
     //paquete(conexion_memoria);
 
@@ -30,7 +30,7 @@ int main(int argc, char **argv){
 }
 
 
-void* iniciar_servidor(char *puerto){
+void* procesar_conexion(char *puerto){
 	int servidor_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
 	int cliente_fd = esperar_cliente(servidor_fd);
@@ -45,7 +45,7 @@ void* iniciar_servidor(char *puerto){
 		case FINALIZAR:
 			t_pcb* pcb_aux = malloc(sizeof(t_pcb));
 			pcb_aux = recibir_pcb(cliente_fd);
-			enviar_Pcb(pcb_aux,conexion_memoria,FINALIZAR);
+			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
 			break;
 
 		case -1:
@@ -61,11 +61,11 @@ void* iniciar_servidor(char *puerto){
 
 
 void iniciar_consola(){
-	loggerConsola = log_create("./kernelConsola.log", "consola", 1, LOG_LEVEL_INFO);
+	logger_consola = log_create("./kernelConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	char* variable;
 
 	while(1){
-		log_info(loggerConsola,"ingrese la operacion que deseas realizar"
+		log_info(logger_consola,"ingrese la operacion que deseas realizar"
 				"\n 1. iniciar Proceso"
 				"\n 2. finalizar proceso"
 				"\n 3. iniciar Planificacion"
@@ -78,14 +78,14 @@ void iniciar_consola(){
 
 		switch (*variable) {
 			case '1':
-				log_info(loggerConsola, "ingrese la ruta");
+				log_info(logger_consola, "ingrese la ruta");
 				char* ruta = readline(">");
-				log_info(loggerConsola, "ingrese el tamanio");
+				log_info(logger_consola, "ingrese el tamanio");
 				int* size = atoi(readline(">"));
-				iniciarProceso(ruta,&size,planificador);
+				iniciar_proceso(ruta,&size,planificador);
 				break;
 			case '2':
-				log_info(loggerConsola, "ingrese pid");
+				log_info(logger_consola, "ingrese pid");
 				char* valor = readline(">");
 				int valorNumero = atoi(valor);
 				finalizar_proceso(valorNumero);
@@ -106,7 +106,7 @@ void iniciar_consola(){
 				generar_conexion();
 				break;
 			case '8':
-				enviar_mensaje();
+				enviar_mensaje_kernel();
 				break;
 			case '9':
 				crear_pcb(NULL, FIFO);
@@ -114,9 +114,9 @@ void iniciar_consola(){
 				auxiliar =queue_pop(cola_new);
 				log_info(loggerConsola,"el pid es %i",auxiliar->pid);*/
 
-				enviar_Pcb(queue_pop(cola_new),conexion_cpu,RECIBIR_PCB);
+				enviar_pcb(queue_pop(cola_new),conexion_cpu,RECIBIR_PCB);
 			default:
-				log_info(loggerConsola,"no corresponde a ninguno");
+				log_info(logger_consola,"no corresponde a ninguno");
 				exit(2);
 		}
 		free(variable);
@@ -130,14 +130,14 @@ void iniciar_recurso(){
 	lista_pcb=list_create();
 	cola_new = queue_create();
 	cola_ready = queue_create();
-	sem_init(&gradoMultiprogramacion, 0, grado_multiprogramacion_ini);
+	sem_init(&grado_multiprogramacion, 0, grado_multiprogramacion_ini);
 	sem_init(&mutex_cola_new, 0, 1);
 	sem_init(&mutex_cola_ready,0,1);
 
 }
 
-void enviar_mensaje() {
-	log_info(loggerConsola,"ingrese q que modulos deseas mandar mensaje"
+void enviar_mensaje_kernel() {
+	log_info(logger_consola,"ingrese q que modulos deseas mandar mensaje"
 			"\n 1. modulo memoria"
 			"\n 2. modulo cpu"
 			"\n 3. modulo filesystem");
@@ -146,25 +146,25 @@ void enviar_mensaje() {
 	switch (*valor) {
 		case '1':
 	        enviar_mensaje("kernel a memoria", conexion_memoria);
-	        log_info(loggerConsola,"mensaje enviado correctamente\n");
+	        log_info(logger_consola,"mensaje enviado correctamente\n");
 			break;
 		case '2':
 	        enviar_mensaje("kernel a cpu", conexion_cpu);
-	        log_info(loggerConsola,"mensaje enviado correctamente\n");
+	        log_info(logger_consola,"mensaje enviado correctamente\n");
 			break;
 		case '3':
 	        enviar_mensaje("kernel a filesystem", conexion_file_system);
-	        log_info(loggerConsola,"mensaje enviado correctamente\n");
+	        log_info(logger_consola,"mensaje enviado correctamente\n");
 			break;
 		default:
-			log_info(loggerConsola,"no corresponde a ninguno\n");
+			log_info(logger_consola,"no corresponde a ninguno\n");
 			break;
 	}
 }
 
 void generar_conexion() {
 
-	log_info(loggerConsola,"ingrese q que modulos deseas conectar"
+	log_info(logger_consola,"ingrese q que modulos deseas conectar"
 			"\n 1. modulo memoria"
 			"\n 2. modulo filesystem"
 			"\n 3. modulo cpu");
@@ -174,34 +174,32 @@ void generar_conexion() {
 		case '1':
 
 			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
-			setsockopt(conexion_memoria, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
-	        log_info(loggerConsola,"conexion generado correctamente\n");
+
+	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		case '2':
 			conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
-			setsockopt(conexion_file_system, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
-	        log_info(loggerConsola,"conexion generado correctamente\n");
+	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		case '3':
 			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
-			setsockopt(conexion_cpu, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
-	        log_info(loggerConsola,"conexion generado correctamente\n");
+	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		default:
-			log_info(loggerConsola,"no corresponde a ninguno\n");
+			log_info(logger_consola,"no corresponde a ninguno\n");
 			break;
 	}
 
 }
 
 //hilo que espere consola,
-void iniciarroceso(char* archivo_test,int* size,t_planificador prioridad){
+void iniciar_proceso(char* archivo_test,int* size,t_planificador prioridad){
 
 	//char* prueba = ruta_archivo_test;
 	//string_append(*prueba, archivo_test);
 
 	char*ruta_a_testear = archivo_test;
-	t_list* instruccion = obtenerListaInstruccion(archivo_test);
+	t_list* instruccion = obtener_lista_instruccion(archivo_test);
 
 	crear_pcb(instruccion);
 
@@ -234,7 +232,7 @@ void crear_pcb(t_list* instrucciones,t_planificador prioridad){
 t_contexto_ejecucion* crear_contexto(){
 	t_contexto_ejecucion* contexto = malloc(sizeof(t_contexto_ejecucion));
 	contexto->pc =NULL;
-	t_registro_cpu* registro = crearRegistro();
+	t_registro_cpu* registro = crear_registro();
 	contexto->registros_cpu = registro;
 	return contexto;
 }
@@ -289,9 +287,9 @@ t_pcb* quitar_de_cola_ready(){
 void planificador_largo_plazo(){
 	while(1){
 		while(!queue_is_empty(cola_new)){
-			sem_wait(&gradoMultiprogramacion);
-			t_pcb* pcb =quitarDeColaNew();
-			agregarAColaReady(pcb);
+			sem_wait(&grado_multiprogramacion);
+			t_pcb* pcb =quitar_de_cola_new();
+			agregar_a_cola_ready(pcb);
 		}
 	}
 }
@@ -302,7 +300,7 @@ void planificador_corto_plazo(){
 				case FIFO:
 					//Transcionarlo a Running
 					log_info(logger,"Planificador FIFO");
-					deReadyAFifo();
+					de_ready_a_fifo();
 					//Enviar su contexto de ejecucion al CPU a traves del puerto dispatch
 					break;
 				case ROUND_ROBIN:
@@ -320,7 +318,7 @@ void planificador_corto_plazo(){
 void de_ready_a_fifo(){
 	t_pcb* pcb =quitar_de_cola_ready();
 	pcb->estado=RUNNING;
-	enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
+	enviar_pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
 }
 
 /*
@@ -382,7 +380,7 @@ t_contexto_ejecucion* obtener_contexto(char* archivo){
 }
 
 // ver como pasar int TODO
-void finalizar_roceso(char *pid){
+void finalizar_proceso(char *pid){
 
 	t_paquete * paquete = crear_paquete(FINALIZAR);
 	agregar_a_paquete(paquete, pid, sizeof(pid));
@@ -419,7 +417,7 @@ int buscarPosicionQueEstaElPid(int valor){
 }
 
 void iniciar_planificacion(){
-	log_info(loggerConsola,"inicio el proceso de planificacion");
+	log_info(logger_consola,"inicio el proceso de planificacion");
 
 }
 void detener_planificacion(){

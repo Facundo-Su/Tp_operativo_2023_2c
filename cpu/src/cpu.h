@@ -43,7 +43,7 @@ void ejecutar(t_pcb* ,t_instruccion*,int);
 
 //archivos
 void leer_pseudocodigo(FILE* );
-
+int iniciar_servidor_cpu(char *);
 char** parsear_instruccion(char* );
 
 #endif /* SRC_CPU_H_ */

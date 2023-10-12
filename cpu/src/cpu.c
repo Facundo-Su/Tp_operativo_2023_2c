@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[]) {
 
-	char *rutaConfig = argv[1];
+	char *rutaConfig = "./cpu.config";
 
 	config = cargar_config(rutaConfig);
 
@@ -42,7 +42,7 @@ void iniciar_consola(){
 				break;
 			case '3':
 				log_info(logger_consola_cpu, "se inicio el servidor\n");
-				iniciar_servidor(puerto_escucha);
+				iniciar_servidor_cpu(puerto_escucha);
 				break;
 			case '4':
 				FILE* archivos = fopen("./test.txt","r");
@@ -64,7 +64,7 @@ void obtener_configuracion(){
 	puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
 	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA_DISPATCH");
 }
-int iniciar_servidor(char *puerto){
+int iniciar_servidor_cpu(char *puerto){
 	int servidor_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
 	int cliente_fd = esperar_cliente(servidor_fd);
@@ -103,7 +103,7 @@ int iniciar_servidor(char *puerto){
 			log_info(logger_consola_cpu,"hola");
 			pcb = recibir_pcb(cliente_fd);
 
-			log_info(loggerConsola,"me llego %s",pcb->pid);
+			log_info(logger_consola,"me llego %s",pcb->pid);
 
 
 			break;

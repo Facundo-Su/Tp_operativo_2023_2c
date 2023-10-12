@@ -70,6 +70,7 @@ int crear_conexion(char *ip, char* puerto)
 	// Ahora vamos a crear el socket.
 	int socket_cliente = socket(server_info->ai_family,server_info->ai_socktype,server_info->ai_protocol);
 	// Ahora que tenemos el socket, vamos a conectarlo
+	setsockopt(socket_cliente, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 	connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen);
 	freeaddrinfo(server_info);
 
@@ -281,15 +282,15 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 
 	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
 
-	empaquetarInstrucciones(paquete, pcb->listaInstruciones);
+	//empaquetar_instrucciones(paquete, pcb->lista_instruciones);
 
 }
 
 void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
 
 	agregar_a_paquete(paquete, &(contexto->pc), sizeof(int));
-	log_info(loggerConsola,"nose");
-	empaquetarRegistro(paquete,contexto->registros_cpu);
+	log_info(logger_consola,"nose");
+	empaquetar_registro(paquete,contexto->registros_cpu);
 }
 
 void empaquetar_registro(t_paquete* paquete, t_registro_cpu* registroCpu){
@@ -337,7 +338,7 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	pcb->contexto = contexto;
 
 	t_list* instrucciones = desempaquetar_instrucciones(paquete,posicion);
-	pcb->listaInstruciones = instrucciones;
+	pcb->lista_instruciones = instrucciones;
 	int cantidad_instrucciones = list_size(instrucciones);
 
 	return pcb;
