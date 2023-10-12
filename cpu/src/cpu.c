@@ -5,22 +5,22 @@ int main(int argc, char* argv[]) {
 
 	char *rutaConfig = "cpu.config";
 
-	config = cargarConfig(rutaConfig);
+	config = cargar_config(rutaConfig);
 
     logger = log_create("./cpu.log", "CPU", true, LOG_LEVEL_INFO);
     log_info(logger, "Soy la cpu!");
 
     //iniciar configuraciones
-	 obtenerConfiguracion();
+	 obtener_configuracion();
 
-	iniciarConsola();
+	iniciar_consola();
 
 
 	terminar_programa(conexion_memoria, logger, config);
     return 0;
 }
 
-void iniciarConsola(){
+void iniciar_consola(){
 	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	char* valor;
 
@@ -42,7 +42,7 @@ void iniciarConsola(){
 				break;
 			case '3':
 				log_info(logger_consola_cpu, "se inicio el servidor\n");
-				iniciarServidor(puerto_escucha);
+				iniciar_servidor(puerto_escucha);
 				break;
 			case '4':
 				FILE* archivos = fopen("./test.txt","r");
@@ -59,12 +59,12 @@ void iniciarConsola(){
 
 }
 
-void obtenerConfiguracion(){
+void obtener_configuracion(){
 	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
 	puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
 	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA_DISPATCH");
 }
-int iniciarServidor(char *puerto){
+int iniciar_servidor(char *puerto){
 	int servidor_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
 	int cliente_fd = esperar_cliente(servidor_fd);
@@ -82,8 +82,8 @@ int iniciarServidor(char *puerto){
 			list_iterate(lista, (void*) iterator);
 			break;
 		case ENVIARREGISTROCPU:
-			t_list* valoresCpu = list_create();
-			valoresCpu= recibir_paquete(cliente_fd);
+			t_list* valores_cpu = list_create();
+			valores_cpu= recibir_paquete(cliente_fd);
 			log_info(logger, "ME LLEGARON");
 			break;
 
@@ -91,7 +91,7 @@ int iniciarServidor(char *puerto){
 			t_pcb* pcb = malloc(sizeof(t_pcb));
 			pcb = recibir_pcb(cliente_fd);
 			t_list* instrucciones = list_create();
-			instrucciones = pcb->listaInstruciones;
+			instrucciones = pcb->lista_instruciones;
 			int cantidadInstrucciones = list_size(instrucciones);
 			for(int i =0;i<cantidadInstrucciones;i++){
 				t_instruccion* instruccion = list_get(instrucciones,i);
@@ -116,33 +116,41 @@ int iniciarServidor(char *puerto){
 }
 
 void ejecutar(t_pcb* pcb, t_instruccion* instrucciones,int conexion){
-	t_estrucutra_cpu registroAux;
-	t_estrucutra_cpu registroAux2;
+	t_estrucutra_cpu registro_aux;
+	t_estrucutra_cpu registro_aux2;
 	char* parametro;
 	char* parametro2;
 	switch(instrucciones->nombre){
 	case SET:
 		parametro2= list_get(instrucciones,1);
 		parametro= list_get(instrucciones,0);
-		registroAux = devolver_registro(parametro);
-		setear(pcb,registroAux,parametro2);
+		registro_aux = devolver_registro(parametro);
+		setear(pcb,registro_aux,parametro2);
 		break;
 	case SUB:
 		parametro= list_get(instrucciones,0);
 		parametro2= list_get(instrucciones,1);
-		registroAux = devolver_registro(parametro);
-		registroAux2 = devolver_registro(parametro2);
-		restar(pcb, registroAux, registroAux2);
+		registro_aux = devolver_registro(parametro);
+		registro_aux2 = devolver_registro(parametro2);
+		restar(pcb, registro_aux, registro_aux2);
 		break;
 	case SUM:
 		parametro= list_get(instrucciones,0);
 		parametro2= list_get(instrucciones,1);
-		registroAux = devolver_registro(parametro);
-		registroAux2 = devolver_registro(parametro2);
-		sumar(pcb, registroAux, registroAux2);
+		registro_aux = devolver_registro(parametro);
+		registro_aux2 = devolver_registro(parametro2);
+		sumar(pcb, registro_aux, registro_aux2);
+		break;
+	case SLEEP:
+		break;
+	case WAIT:
+		enviar_pcb(pcb,conexion,WAIT);
+		break;
+	case SIGNAL:
+		enviar_pcb(pcb,conexion,SIGNAL);
 		break;
 	case EXIT:
-		enviar_Pcb(pcb,conexion,FINALIZAR);
+		enviar_pcb(pcb,conexion,FINALIZAR);
 		break;
 	}
 }
@@ -183,8 +191,8 @@ void sumar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu inicio) {
 	char valor_destino;
 	char valor_origen;
 
-	valor_destino =obtenerValor(pcb, destino);
-	valor_origen = obtenerValor(pcb, inicio);
+	valor_destino =obtener_valor(pcb, destino);
+	valor_origen = obtener_valor(pcb, inicio);
 
     char resultado = valor_destino+ valor_origen;
     setear(pcb, destino, resultado);
@@ -198,8 +206,8 @@ void restar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu inicio) {
 	char valor_destino;
 	char valor_origen;
 
-	valor_destino =obtenerValor(pcb, destino);
-	valor_origen = obtenerValor(pcb, inicio);
+	valor_destino =obtener_valor(pcb, destino);
+	valor_origen = obtener_valor(pcb, inicio);
 
     char resultado = valor_destino- valor_origen;
     setear(pcb, destino, resultado);
@@ -207,7 +215,7 @@ void restar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu inicio) {
 
 
 
-char* obtenerValor(t_pcb* pcb, t_estrucutra_cpu pos) {
+char* obtener_valor(t_pcb* pcb, t_estrucutra_cpu pos) {
     switch(pos) {
         case AX: return (char) pcb->contexto->registros_cpu->AX;
         case BX: return (char) pcb->contexto->registros_cpu->BX;

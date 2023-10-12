@@ -26,12 +26,12 @@ char *ip_memoria;
 char *puerto_memoria;
 char *puerto_escucha;
 
-void obtenerConfiguracion();
+void obtener_configuracion();
 void terminar_programa();
 t_config* iniciar_config();
 void iterator(char*);
-int iniciarServidor(char*);
-void iniciarConsola();
+int iniciar_servidor(char*);
+void iniciar_consola();
 
 
 #endif /* SRC_FILESYSTEM_H_ */

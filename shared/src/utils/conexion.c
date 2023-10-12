@@ -18,7 +18,7 @@ void* serializar_paquete(t_paquete* paquete, int bytes)
 	return magic;
 }
 
-void mandarAMemoria(char* archivo, int size, int socket_cliente) {
+void mandar_a_memoria(char* archivo, int size, int socket_cliente) {
     t_paquete* paquete = malloc(sizeof(t_paquete));
 
     paquete->codigo_operacion = ENVIARRUTAPARAINICIAR;
@@ -244,7 +244,7 @@ t_list* recibir_paquete(int socket_cliente)
 	return valores;
 }
 
-t_config* cargarConfig(char *ruta){
+t_config* cargar_config(char *ruta){
 	t_config* config = config_create(ruta);
     if (config == NULL) {
         printf("No se encontró el archivo de configuración");
@@ -256,9 +256,9 @@ t_config* cargarConfig(char *ruta){
 
 //--------------------------------------------------------------------------------------------------//
 //envir contexto
-void enviar_Pcb(t_pcb* pcb, int conexion,op_code operacion){
+void enviar_pcb(t_pcb* pcb, int conexion,op_code operacion){
 	t_paquete* paquete = crear_paquete(operacion);
-	empaquetarPcb(paquete, pcb);
+	empaquetar_pcb(paquete, pcb);
 	enviar_paquete(paquete, conexion);
 
 	eliminar_paquete(paquete);
@@ -276,25 +276,25 @@ t_pcb* recibir_pcb(int socket_cliente){
 }
 
 //----------------------------------------------------------------------------------------------//
-void empaquetarPcb(t_paquete* paquete, t_pcb* pcb){
+void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 
 	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
 	agregar_a_paquete(paquete, &(pcb->estado), sizeof(t_estado));
 
-	empaquetarContextoEjecucion(paquete, pcb->contexto);
+	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
 
 //	empaquetarInstrucciones(paquete, pcb->listaInstruciones);
 
 }
 
-void empaquetarContextoEjecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
+void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
 
 	agregar_a_paquete(paquete, &(contexto->pc), sizeof(int));
 	empaquetarRegistro(paquete,contexto->registros_cpu);
 
 }
 
-void empaquetarRegistro(t_paquete* paquete, t_registro_cpu* registroCpu){
+void empaquetar_registro(t_paquete* paquete, t_registro_cpu* registroCpu){
 	agregar_a_paquete(paquete,&(registroCpu->AX), strlen(registroCpu->AX)+1);
 	agregar_a_paquete(paquete,&(registroCpu->BX), strlen(registroCpu->BX)+1);
 	agregar_a_paquete(paquete,&(registroCpu->CX), strlen(registroCpu->CX)+1);
@@ -303,7 +303,7 @@ void empaquetarRegistro(t_paquete* paquete, t_registro_cpu* registroCpu){
 }
 
 
-void empaquetarInstrucciones(t_paquete* paquete, t_list* lista_de_instrucciones){
+void empaquetar_instrucciones(t_paquete* paquete, t_list* lista_de_instrucciones){
 	int cantidad_instrucciones = list_size(lista_de_instrucciones);
 	agregar_a_paquete(paquete, &(cantidad_instrucciones), sizeof(int));
 
@@ -428,7 +428,7 @@ op_instrucciones convertir_a_op_instrucciones(char* operacion) {
     } else if (strcmp(operacion, "EXIT") == 0) {
         return EXIT;
     } else {
-    	log_info(loggerConsola,"no existe el valor");
+    	log_info(logger_consola,"no existe el valor");
     	return -1;
     }
 }

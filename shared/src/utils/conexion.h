@@ -27,7 +27,10 @@ typedef enum
 	EJECUTARINSTRUCIONES,
 	RECIBIR_PCB,
 	INICIAR_PROCESO,
-	PLANIFICACION
+	PLANIFICACION,
+	WAIT,
+	SIGNAL,
+	SLEEP
 }op_code;
 
 typedef struct
@@ -78,10 +81,10 @@ typedef struct{
 	t_contexto_ejecucion* contexto;
 	t_list* tabla_archivo_abierto;
 	t_estado estado;
-	t_list* listaInstruciones;
+	t_list* lista_instruciones;
 }t_pcb;
 
-t_log * loggerConsola;
+t_log * logger_consola;
 
 typedef enum
 {
@@ -104,7 +107,7 @@ void enviar_paquete(t_paquete* paquete, int socket_cliente);
 void liberar_conexion(int socket_cliente);
 void eliminar_paquete(t_paquete* paquete);
 void terminar_programa(int , t_log* , t_config* );
-t_pcb * transformarEnPcb(t_list* );
+t_pcb * transformar_en_pcb(t_list* );
 
 
 //servidores
@@ -117,18 +120,18 @@ int esperar_cliente(int);
 t_list* recibir_paquete(int);
 void recibir_mensaje(int);
 int recibir_operacion(int);
-t_config* cargarConfig(char *);
-void mandarAMemoria(char* , int , int );
+t_config* cargar_config(char *);
+void mandar_a_memoria(char* , int , int );
 
 
 //empaquetar pcb
-void empaquetarPcb(t_paquete* , t_pcb* );
-void empaquetarContextoEjecucion(t_paquete* , t_contexto_ejecucion* );
-void empaquetarRegistro(t_paquete* , t_registro_cpu* );
-void empaquetarInstrucciones(t_paquete* , t_list* );
+void empaquetar_pcb(t_paquete* , t_pcb* );
+void empaquetar_contexto_ejecucion(t_paquete* , t_contexto_ejecucion* );
+void empaquetar_registro(t_paquete* , t_registro_cpu* );
+void empaquetar_instrucciones(t_paquete* , t_list* );
 
 //enviar pcb
-void enviar_Pcb(t_pcb* , int conexion, op_code);
+void enviar_pcb(t_pcb* , int conexion, op_code);
 
 //crear pcb
 

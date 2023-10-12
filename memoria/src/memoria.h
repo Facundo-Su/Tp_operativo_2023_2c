@@ -21,7 +21,7 @@ typedef enum{
 typedef struct{
 	char* ruta;
 	int size;
-}estructura_Inicial;
+}estructura_inicial;
 
 estructura_Inicial* estrctura_inicial;
 
@@ -39,10 +39,10 @@ t_algoritmo algoritmo;
 
 
 void iterator(char* value);
-void obtenerConfiguraciones();
-int iniciarServidor(char*);
-void iniciarConsola();
-void recibir_estructura_Inicial(int);
+void obtener_configuraciones();
+int iniciar_servidor(char*);
+void iniciar_consola();
+void recibir_estructura_inicial(int);
 
 #endif /* KERNEL_H_ */
 
