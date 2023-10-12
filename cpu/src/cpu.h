@@ -35,8 +35,6 @@ t_config* iniciar_config();
 int iniciar_servidor(char*);
 void iterator(char*);
 void iniciar_consola();
-
-
 t_pcb* ejecutar_instruccion(t_pcb* );
 char* obtener_valor(t_pcb* , t_estrucutra_cpu );
 void setear(t_pcb* , t_estrucutra_cpu , char* );
@@ -44,7 +42,6 @@ t_estrucutra_cpu devolver_registro(char* );
 void ejecutar(t_pcb* ,t_instruccion*,int);
 
 //archivos
-
 void leer_pseudocodigo(FILE* );
 
 char** parsear_instruccion(char* );

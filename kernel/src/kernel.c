@@ -9,15 +9,15 @@ int main(int argc, char **argv){
     logger = log_create("./kernel.log", "KERNEL", true, LOG_LEVEL_INFO);
     log_info(logger, "Soy el Kernel!");
 
-    obtenerConfiguracion();
-    iniciarRecurso();
+    obtener_configuracion();
+    iniciar_recurso();
     iniciarConsola();
 
     //envio de mensajes
 
-    pthread_t servidorKernel;
+    pthread_t servidor_kernel;
 
-    pthread_create(&servidorKernel,NULL,(void*) iniciarServidor,NULL);
+    pthread_create(&servidor_kernel,NULL,(void*) iniciar_servidor,NULL);
     //error
     //paquete(conexion_memoria);
 
@@ -30,7 +30,7 @@ int main(int argc, char **argv){
 }
 
 
-void* iniciarServidor(char *puerto){
+void* iniciar_servidor(char *puerto){
 	int servidor_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
 	int cliente_fd = esperar_cliente(servidor_fd);
@@ -43,9 +43,9 @@ void* iniciarServidor(char *puerto){
 			recibir_mensaje(cliente_fd);
 			break;
 		case FINALIZAR:
-			t_pcb* pcbAuxiliar = malloc(sizeof(t_pcb));
-			pcbAuxiliar = recibir_pcb(cliente_fd);
-			enviar_Pcb(pcbAuxiliar,conexion_memoria,FINALIZAR);
+			t_pcb* pcb_aux = malloc(sizeof(t_pcb));
+			pcb_aux = recibir_pcb(cliente_fd);
+			enviar_Pcb(pcb_aux,conexion_memoria,FINALIZAR);
 			break;
 
 		case -1:
@@ -60,7 +60,7 @@ void* iniciarServidor(char *puerto){
 }
 
 
-void iniciarConsola(){
+void iniciar_consola(){
 	loggerConsola = log_create("./kernelConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	char* variable;
 
@@ -88,25 +88,25 @@ void iniciarConsola(){
 				log_info(loggerConsola, "ingrese pid");
 				char* valor = readline(">");
 				int valorNumero = atoi(valor);
-				finalizarProceso(valorNumero);
+				finalizar_proceso(valorNumero);
 				break;
 			case '3':
-				iniciarPlanificacion();
+				iniciar_planificacion();
 				break;
 			case '4':
-				detenerPlanificacion();
+				detener_planificacion();
 				break;
 			case '5':
-				modificarGradoMultiprogramacion();
+				modificar_grado_multiprogramacion();
 				break;
 			case '6':
-				listarProcesoPorEstado();
+				listar_proceso_estado();
 				break;
 			case '7':
-				generarConexion();
+				generar_conexion();
 				break;
 			case '8':
-				enviarMensaje();
+				enviar_mensaje();
 				break;
 			case '9':
 				crear_pcb(NULL, FIFO);
@@ -127,7 +127,7 @@ void iniciarConsola(){
 
 }
 
-void iniciarRecurso(){
+void iniciar_recurso(){
 	lista_pcb=list_create();
 	cola_new = queue_create();
 	cola_ready = queue_create();
@@ -137,7 +137,7 @@ void iniciarRecurso(){
 
 }
 
-void enviarMensaje() {
+void enviar_mensaje() {
 	log_info(loggerConsola,"ingrese q que modulos deseas mandar mensaje"
 			"\n 1. modulo memoria"
 			"\n 2. modulo cpu"
@@ -163,7 +163,7 @@ void enviarMensaje() {
 	}
 }
 
-void generarConexion() {
+void generar_conexion() {
 
 	log_info(loggerConsola,"ingrese q que modulos deseas conectar"
 			"\n 1. modulo memoria"
@@ -194,26 +194,26 @@ void generarConexion() {
 }
 
 //hilo que espere consola,
-void iniciarProceso(char* archivo_test,int* size,t_planificador prioridad){
+void iniciarroceso(char* archivo_test,int* size,t_planificador prioridad){
 
 	//char* prueba = ruta_archivo_test;
 	//string_append(*prueba, archivo_test);
 
-	char*rutaAtestear = archivo_test;
+	char*ruta_a_testear = archivo_test;
 	t_list* instruccion = obtenerListaInstruccion(archivo_test);
 
 	crear_pcb(instruccion);
 
 	op_code op = INICIAR_PROCESO;
 	t_paquete* paquete =crear_paquete(op);
-	agregar_a_paquete(paquete, rutaAtestear, sizeof(rutaAtestear));
+	agregar_a_paquete(paquete, ruta_a_testear, sizeof(ruta_a_testear));
 	agregar_a_paquete(paquete, &size ,sizeof(size));
 
 	enviar_paquete(paquete, conexion_memoria);
 
 	//free(prueba);
 	eliminar_paquete(paquete);
-	free(rutaAtestear);
+	free(ruta_a_testear);
 
 }
 
@@ -221,16 +221,16 @@ void crear_pcb(t_list* instrucciones,t_planificador prioridad){
 	t_pcb* pcb = malloc(sizeof(pcb));
 	pcb->pid= contador_pid;
 	pcb->prioridad = prioridad;
-	t_contexto_ejecucion* contexto = crearContexto();
+	t_contexto_ejecucion* contexto = crear_contexto();
 	pcb->contexto =contexto;
 	//pcb->tabla_archivo_abierto;
 	pcb->estado=NEW;
 	contador_pid++;
 
-	agregarAColaNew(pcb);
+	agregar_a_cola_new(pcb);
 }
 
-t_contexto_ejecucion* crearContexto(){
+t_contexto_ejecucion* crear_contexto(){
 	t_contexto_ejecucion* contexto = malloc(sizeof(t_contexto_ejecucion));
 	contexto->pc =0;
 	t_registro_cpu* registro = crearRegistro();
@@ -238,7 +238,7 @@ t_contexto_ejecucion* crearContexto(){
 	return contexto;
 }
 
-t_registro_cpu* crearRegistro(){
+t_registro_cpu* crear_registro(){
 	t_registro_cpu* reg = malloc(sizeof(t_registro_cpu));
     memset(reg->AX, 0, sizeof(reg->AX));
     memset(reg->BX, 0, sizeof(reg->BX));
@@ -247,7 +247,7 @@ t_registro_cpu* crearRegistro(){
 	return reg;
 }
 
-t_list* obtenerListaInstruccion(char* ruta){
+t_list* obtener_lista_instruccion(char* ruta){
 	t_list *instrucciones = list_create();
 	FILE* pseucodigo;
 
@@ -257,35 +257,35 @@ t_list* obtenerListaInstruccion(char* ruta){
 	return instrucciones;
 }
 
-void agregarAColaNew(t_pcb* pcb){
+void agregar_a_cola_new(t_pcb* pcb){
 	sem_wait(&mutex_cola_new);
 	queue_push(cola_new,pcb);
 	sem_post(&mutex_cola_new);
 	log_info(logger,"El proceso [%d] fue agregado a la cola new",pcb->pid);
 }
 
-t_pcb* quitarDeColaNew(){
+t_pcb* quitar_de_cola_new(){
 	sem_wait(&mutex_cola_new);
 	t_pcb* pcb=queue_pop(cola_new);
 	sem_post(&mutex_cola_new);
 	log_info(logger,"El proceso [%d] fue quitado de la cola new",pcb->pid);
 	return pcb;
 }
-void agregarAColaReady(t_pcb* pcb){
+void agregar_a_cola_ready(t_pcb* pcb){
 	sem_wait(&mutex_cola_ready);
 	queue_push(cola_ready,pcb);
 	pcb->estado=READY;
 	sem_post(&mutex_cola_ready);
 	log_info(logger,"El proceso [%d] fue agregado a la cola ready",pcb->pid);
 }
-t_pcb* quitarDeColaReady(){
+t_pcb* quitar_de_cola_ready(){
 	sem_wait(&mutex_cola_ready);
 	t_pcb* pcb=queue_pop(cola_ready);
 	sem_post(&mutex_cola_ready);
 	log_info(logger,"El proceso [%d] fue quitado de la cola ready",pcb->pid);
 	return pcb;
 }
-void planificadorLargoPlazo(){
+void planificador_largo_plazo(){
 	while(1){
 		while(!queue_is_empty(cola_new)){
 			sem_wait(&gradoMultiprogramacion);
@@ -294,7 +294,7 @@ void planificadorLargoPlazo(){
 		}
 	}
 }
-void planificadorCortoPlazo(){
+void planificador_corto_plazo(){
 	while(1){
 			while(!queue_is_empty(cola_ready)){
 				switch(planificador){
@@ -316,8 +316,8 @@ void planificadorCortoPlazo(){
 			}
 		}
 }
-void deReadyAFifo(){
-	t_pcb* pcb =quitarDeColaReady();
+void de_ready_a_fifo(){
+	t_pcb* pcb =quitar_de_cola_ready();
 	pcb->estado=RUNNING;
 	enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
 }
@@ -366,7 +366,7 @@ struct t_pcb* procesoConMayorPrioridad() {
 }
 */
 
-bool controladorMultiProgramacion(){
+bool controlador_multi_programacion(){
 	return list_size(lista_pcb)<grado_multiprogramacion_ini;
 }
 
@@ -374,14 +374,14 @@ bool controladorMultiProgramacion(){
 
 
 
-t_contexto_ejecucion* obtenerContexto(char* archivo){
+t_contexto_ejecucion* obtener_contexto(char* archivo){
 	t_contexto_ejecucion *estructura_retornar ;
 
 	return estructura_retornar;
 }
 
 // ver como pasar int TODO
-void finalizarProceso(char *pid){
+void finalizar_roceso(char *pid){
 
 	t_paquete * paquete = crear_paquete(FINALIZAR);
 	agregar_a_paquete(paquete, pid, sizeof(pid));
@@ -417,28 +417,28 @@ int buscarPosicionQueEstaElPid(int valor){
 	return -1;
 }
 
-void iniciarPlanificacion(){
+void iniciar_planificacion(){
 	log_info(loggerConsola,"inicio el proceso de planificacion");
 
 }
-void detenerPlanificacion(){
+void detener_planificacion(){
 
 }
-void modificarGradoMultiprogramacion(){
+void modificar_grado_multiprogramacion(){
 
 }
-void listarProcesoPorEstado(){
+void listar_proceso_estado(){
 
 }
 
 
-void obtenerConfiguracion(){
+void obtener_configuracion(){
 
     ip_memoria = config_get_string_value(config, "IP_MEMORIA");
     ip_filesystem = config_get_string_value(config, "IP_FILESYSTEM");
     ip_cpu = config_get_string_value(config, "IP_CPU");
     char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
-    asignarAlgoritmo(algoritmo);
+    asignar_algoritmo(algoritmo);
     puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
     puerto_filesystem = config_get_string_value(config, "PUERTO_FILESYSTEM");
     puerto_cpu_dispatch = config_get_string_value(config, "PUERTO_CPU_DISPATCH");
@@ -451,7 +451,7 @@ void obtenerConfiguracion(){
     string_array_destroy(instancias);
 }
 
-void asignarAlgoritmo(char *algoritmo){
+void asignar_algoritmo(char *algoritmo){
 	if (strcmp(algoritmo, "FIFO") == 0) {
 		planificador = FIFO;
 	} else if (strcmp(algoritmo, "HRRN") == 0) {
