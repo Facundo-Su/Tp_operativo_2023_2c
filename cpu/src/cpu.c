@@ -198,8 +198,8 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		break;
 	case EXIT:
 		hayInterrupcion = true;
-		//enviar_pcb(pcb,conexion,FINALIZAR);
-		log_info(logger_consola,"entendi el mensaje MOV_IN");
+		enviar_pcb(pcb,cliente_fd,FINALIZAR);
+		log_info(logger_consola,"entendi el mensaje EXIT");
 		break;
 	}
 }

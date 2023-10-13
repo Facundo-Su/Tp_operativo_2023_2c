@@ -187,7 +187,7 @@ void generar_conexion() {
 		case '3':
 			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 	        log_info(logger_consola,"conexion generado correctamente\n");
-			//pthread_create(&conexion_cpu_hilo,NULL,(void*) manejar_respuesta,(void *)&conexion_cpu);
+			pthread_create(&conexion_cpu_hilo,NULL,(void*) manejar_respuesta,(void *)&conexion_cpu);
 			break;
 		default:
 			log_info(logger_consola,"no corresponde a ninguno\n");
@@ -195,10 +195,45 @@ void generar_conexion() {
 	}
 
 }
-
+/*
 void *manejar_respuesta(void* conexion){
+	//int * conexion = (int *) conexion
+	int cliente_fd = esperar_cliente(servidor_fd);
 
-}
+	t_list* lista;
+	while (1) {
+		int cod_op = recibir_operacion(cliente_fd);
+		switch (cod_op) {
+			case MENSAJE:
+				recibir_mensaje(cliente_fd);
+				break;
+			case PAQUETE:
+				lista = recibir_paquete(cliente_fd);
+				log_info(logger, "Me llegaron los siguientes valores:\n");
+				list_iterate(lista, (void*) iterator);
+				break;
+			case ENVIARREGISTROCPU:
+				t_list* valores_cpu = list_create();
+				valores_cpu= recibir_paquete(cliente_fd);
+				log_info(logger, "ME LLEGARON");
+				break;
+
+			case RECIBIR_PCB:
+				t_pcb* pcb = recibir_pcb(cliente_fd);
+				log_info(logger, "recibi el pid %i",pcb->pid);
+				hayInterrupcion = false;
+				ejecutar_ciclo_de_instruccion(pcb);
+				break;
+			case -1:
+				log_error(logger, "el cliente se desconecto. Terminando servidor");
+				return EXIT_FAILURE;
+			default:
+				log_warning(logger,"Operacion desconocida. No quieras meter la pata");
+				break;
+			}
+		}
+	return EXIT_SUCCESS;
+}*/
 
 //hilo que espere consola,
 void iniciar_proceso(char* archivo_test,int* size,t_planificador prioridad){
