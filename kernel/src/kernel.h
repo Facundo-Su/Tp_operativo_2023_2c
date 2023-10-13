@@ -108,6 +108,7 @@ void enviar_contexto_ejecucion(t_contexto_ejecucion * );
 t_contexto_ejecucion* crear_contexto();
 t_registro_cpu* crear_registro();
 t_list* obtener_lista_instruccion(char* ruta);
+void *manejar_respuesta(void* );
 
 void* procesar_conexion(char *);
 

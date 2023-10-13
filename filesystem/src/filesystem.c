@@ -60,7 +60,7 @@ void iniciar_consola(){
 }
 
 
-int iniciar_servidor(char *puerto){
+int iniciar_servidor_file_system(char *puerto){
 	int servidor_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
 	int cliente_fd = esperar_cliente(servidor_fd);

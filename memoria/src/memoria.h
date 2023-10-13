@@ -23,7 +23,7 @@ typedef struct{
 	int size;
 }estructura_inicial;
 
-estructura_Inicial* estrctura_inicial;
+estructura_inicial* estrctura_inicial;
 
 int conexion_filesystem;
 
@@ -40,7 +40,7 @@ t_algoritmo algoritmo;
 
 void iterator(char* value);
 void obtener_configuraciones();
-int iniciar_servidor(char*);
+int iniciar_servidor_memoria(char*);
 void iniciar_consola();
 void recibir_estructura_inicial(int);
 

@@ -64,7 +64,7 @@ void obtener_configuraciones() {
     ip_file_system = config_get_string_value(config, "IP_FILESYSTEM");
 }
 
-int iniciar_servidor(char *puerto) {
+int iniciar_servidor_memoria(char *puerto) {
     int memoria_fd = iniciar_servidor(puerto);
     log_info(logger, "Servidor listo para recibir al cliente");
 
@@ -94,7 +94,7 @@ int iniciar_servidor(char *puerto) {
 
             	t_list* valor_pid;
             	valor_pid= recibir_paquete(cliente_fd);
-            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %s :",list_get(valor_pid,0));
+            	//log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",list_get(valor_pid,0));
             case -1:
                 log_error(logger, "El cliente se desconectó. Terminando servidor");
                 close(cliente_fd);
@@ -105,41 +105,5 @@ int iniciar_servidor(char *puerto) {
             }
         }
     }
-}
-
-
-void recibir_estructura_inicial(int socket_cliente) {
-    int size;
-    void* buffer;
-    int tamanio;
-
-    buffer = recibir_buffer(&size, socket_cliente);
-    int desplazamiento = 0;
-
-    // Deserializar el tamaño
-    memcpy(&tamanio, buffer + desplazamiento, sizeof(int));
-    desplazamiento += sizeof(int);
-
-    // Deserializar la ruta
-    char* valor = malloc(tamanio);
-    memcpy(valor, buffer + desplazamiento, tamanio);
-    desplazamiento += tamanio;
-
-    // Crear la estructura_Inicial y asignar la ruta
-    estrctura_inicial = malloc(sizeof(estructura_Inicial));
-    estrctura_inicial->ruta = valor;
-
-    // Deserializar el segundo valor
-    int segundo_valor;
-    memcpy(&segundo_valor, buffer + desplazamiento, sizeof(int));
-    estrctura_inicial->size = segundo_valor;
-
-    // Realizar cualquier operación adicional necesaria
-
-    // Liberar el buffer
-    free(buffer);
-
-    // Importante: No olvides liberar la estructura_Inicial cuando ya no la necesites
-    //free(auxiliar);
 }
 

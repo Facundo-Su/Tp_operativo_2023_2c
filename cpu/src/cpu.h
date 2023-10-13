@@ -28,11 +28,14 @@ char *ip_memoria;
 char *puerto_memoria;
 char *puerto_escucha;
 t_log *logger_consola_cpu;
+bool hayInterrupcion;
+int cliente_fd;
+
 
 void obtener_configuracion();
 void terminar_programa();
 t_config* iniciar_config();
-int iniciar_servidor(char*);
+int iniciar_servidor_cpu(char*);
 void iterator(char*);
 void iniciar_consola();
 t_pcb* ejecutar_instruccion(t_pcb* );
@@ -42,9 +45,9 @@ t_estrucutra_cpu devolver_registro(char* );
 void fetch(t_pcb*);
 void decode(t_pcb* ,t_instruccion*);
 
+
 //archivos
 void leer_pseudocodigo(FILE* );
-int iniciar_servidor_cpu(char *);
 char** parsear_instruccion(char* );
 
 #endif /* SRC_CPU_H_ */

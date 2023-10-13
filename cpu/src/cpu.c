@@ -67,7 +67,7 @@ void obtener_configuracion(){
 int iniciar_servidor_cpu(char *puerto){
 	int servidor_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
-	int cliente_fd = esperar_cliente(servidor_fd);
+	cliente_fd = esperar_cliente(servidor_fd);
 
 	t_list* lista;
 	while (1) {
@@ -87,20 +87,10 @@ int iniciar_servidor_cpu(char *puerto){
 			log_info(logger, "ME LLEGARON");
 			break;
 
-/*		case EJECUTARINSTRUCIONES:
-			t_pcb* pcb = malloc(sizeof(t_pcb));
-			pcb = recibir_pcb(cliente_fd);
-			t_list* instrucciones = list_create();
-			instrucciones = pcb->lista_instruciones;
-			int cantidadInstrucciones = list_size(instrucciones);
-			for(int i =0;i<cantidadInstrucciones;i++){
-				t_instruccion* instruccion = list_get(instrucciones,i);
-				ejecutar(pcb,instruccion,cliente_fd);
-			}*/
-
 		case RECIBIR_PCB:
 			t_pcb* pcb = recibir_pcb(cliente_fd);
 			log_info(logger, "recibi el pid %i",pcb->pid);
+			hayInterrupcion = false;
 			ejecutar_ciclo_de_instruccion(pcb);
 			break;
 		case -1:
@@ -116,7 +106,8 @@ int iniciar_servidor_cpu(char *puerto){
 }
 
 void ejecutar_ciclo_de_instruccion(t_pcb* pcb){
-	while(list_size(pcb->lista_instruciones)>0){
+
+	while(!hayInterrupcion){
 		fetch(pcb);
 	}
 
@@ -141,6 +132,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		registro_aux = devolver_registro(parametro);
 		setear(pcb,registro_aux,parametro2);
 		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
+		//ADormir(x segundo);
 		break;
 	case SUB:
 		parametro= list_get(instrucciones->parametros,0);
@@ -158,8 +150,21 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		sumar(pcb, registro_aux, registro_aux2);
 		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		break;
+	case JNZ:
+		parametro = list_get(instrucciones->parametros,0);
+		parametro2 =list_get(instrucciones->parametros,1);
+		registro_aux = devolver_registro(parametro);
+		char* valorObtenido = obtener_valor(pcb, registro_aux);
+		if(strcmp(valorObtenido,"0") ==0){
+			int valorEntero = atoi(parametro2);
+			pcb->contexto->pc =valorEntero;
+		}
+		break;
 	case SLEEP:
-
+		hayInterrupcion = true;
+		parametro = list_get(instrucciones->parametros,0);
+		enviar_pcb(pcb,cliente_fd,MANEJAR_SLEEP);
+		enviar_char_dinamico(parametro, cliente_fd);
 		break;
 	case WAIT:
 		//enviar_pcb(pcb,conexion,WAIT);
@@ -167,8 +172,34 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 	case SIGNAL:
 		//enviar_pcb(pcb,conexion,SIGNAL);
 		break;
+	case MOV_IN:
+		log_info(logger_consola,"entendi el mensaje MOV_IN");
+		break;
+	case MOV_OUT:
+		log_info(logger_consola,"entendi el mensaje MOV_OUT");
+		break;
+	case F_OPEN:
+		log_info(logger_consola,"entendi el mensaje F_OPEN");
+		break;
+	case F_CLOSE:
+		log_info(logger_consola,"entendi el mensaje F_CLOSE");
+		break;
+	case F_SEEK:
+		log_info(logger_consola,"entendi el mensaje F_SEEK");
+		break;
+	case F_READ:
+		log_info(logger_consola,"entendi el mensaje F_READ");
+		break;
+	case F_WRITE:
+		log_info(logger_consola,"entendi el mensaje F_WRITE");
+		break;
+	case F_TRUNCATE:
+		log_info(logger_consola,"entendi el mensaje F_TRUNCATE");
+		break;
 	case EXIT:
+		hayInterrupcion = true;
 		//enviar_pcb(pcb,conexion,FINALIZAR);
+		log_info(logger_consola,"entendi el mensaje MOV_IN");
 		break;
 	}
 }

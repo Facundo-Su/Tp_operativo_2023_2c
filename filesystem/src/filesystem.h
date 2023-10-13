@@ -30,7 +30,7 @@ void obtener_configuracion();
 void terminar_programa();
 t_config* iniciar_config();
 void iterator(char*);
-int iniciar_servidor(char*);
+int iniciar_servidor_file_system(char*);
 void iniciar_consola();
 
 

@@ -164,6 +164,9 @@ void enviar_mensaje_kernel() {
 }
 
 void generar_conexion() {
+	//pthread_t conexion_memoria_hilo;
+	//pthread_t conexion_file_system_hilo;
+	//pthread_t conexion_cpu_hilo;
 
 	log_info(logger_consola,"ingrese q que modulos deseas conectar"
 			"\n 1. modulo memoria"
@@ -175,7 +178,6 @@ void generar_conexion() {
 		case '1':
 
 			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
-
 	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		case '2':
@@ -185,11 +187,16 @@ void generar_conexion() {
 		case '3':
 			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 	        log_info(logger_consola,"conexion generado correctamente\n");
+			//pthread_create(&conexion_cpu_hilo,NULL,(void*) manejar_respuesta,(void *)&conexion_cpu);
 			break;
 		default:
 			log_info(logger_consola,"no corresponde a ninguno\n");
 			break;
 	}
+
+}
+
+void *manejar_respuesta(void* conexion){
 
 }
 
@@ -319,7 +326,7 @@ void planificador_corto_plazo(){
 void de_ready_a_fifo(){
 	t_pcb* pcb =quitar_de_cola_ready();
 	pcb->estado=RUNNING;
-	enviar_pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
+	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
 }
 
 /*
