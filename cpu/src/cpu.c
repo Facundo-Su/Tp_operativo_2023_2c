@@ -100,7 +100,8 @@ int iniciar_servidor_cpu(char *puerto){
 
 		case RECIBIR_PCB:
 			t_pcb* pcb = recibir_pcb(cliente_fd);
-			log_info(logger, "%i",pcb->pid);
+			log_info(logger, "recibi el pid %i",pcb->pid);
+			ejecutar_ciclo_de_instruccion(pcb);
 			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
@@ -114,42 +115,60 @@ int iniciar_servidor_cpu(char *puerto){
 
 }
 
-void ejecutar(t_pcb* pcb, t_instruccion* instrucciones,int conexion){
+void ejecutar_ciclo_de_instruccion(t_pcb* pcb){
+	while(list_size(pcb->lista_instruciones)>0){
+		fetch(pcb);
+	}
+
+}
+
+void fetch(t_pcb* pcb){
+	t_instruccion* instruccion_a_realizar = list_get(pcb->lista_instruciones,pcb->contexto->pc);
+	pcb->contexto->pc+=1;
+	decode(pcb,instruccion_a_realizar);
+}
+
+void decode(t_pcb* pcb,t_instruccion* instrucciones){
 	t_estrucutra_cpu registro_aux;
 	t_estrucutra_cpu registro_aux2;
+
 	char* parametro;
 	char* parametro2;
 	switch(instrucciones->nombre){
 	case SET:
-		parametro2= list_get(instrucciones,1);
-		parametro= list_get(instrucciones,0);
+		parametro2= list_get(instrucciones->parametros,1);
+		parametro= list_get(instrucciones->parametros,0);
 		registro_aux = devolver_registro(parametro);
 		setear(pcb,registro_aux,parametro2);
+		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		break;
 	case SUB:
-		parametro= list_get(instrucciones,0);
-		parametro2= list_get(instrucciones,1);
+		parametro= list_get(instrucciones->parametros,0);
+		parametro2= list_get(instrucciones->parametros,1);
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
 		restar(pcb, registro_aux, registro_aux2);
+		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		break;
 	case SUM:
-		parametro= list_get(instrucciones,0);
-		parametro2= list_get(instrucciones,1);
+		parametro= list_get(instrucciones->parametros,0);
+		parametro2= list_get(instrucciones->parametros,1);
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
 		sumar(pcb, registro_aux, registro_aux2);
+		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		break;
 	case SLEEP:
+
 		break;
 	case WAIT:
-		enviar_pcb(pcb,conexion,WAIT);
+		//enviar_pcb(pcb,conexion,WAIT);
 		break;
 	case SIGNAL:
-		enviar_pcb(pcb,conexion,SIGNAL);
+		//enviar_pcb(pcb,conexion,SIGNAL);
 		break;
 	case EXIT:
-		enviar_pcb(pcb,conexion,FINALIZAR);
+		//enviar_pcb(pcb,conexion,FINALIZAR);
 		break;
 	}
 }

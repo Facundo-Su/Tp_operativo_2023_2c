@@ -39,7 +39,8 @@ t_pcb* ejecutar_instruccion(t_pcb* );
 char* obtener_valor(t_pcb* , t_estrucutra_cpu );
 void setear(t_pcb* , t_estrucutra_cpu , char* );
 t_estrucutra_cpu devolver_registro(char* );
-void ejecutar(t_pcb* ,t_instruccion*,int);
+void fetch(t_pcb*);
+void decode(t_pcb* ,t_instruccion*);
 
 //archivos
 void leer_pseudocodigo(FILE* );
