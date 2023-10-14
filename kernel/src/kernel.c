@@ -1,5 +1,6 @@
 #include "kernel.h"
 #include<readline/readline.h>
+
 int main(int argc, char **argv){
 
 
@@ -38,12 +39,27 @@ void* procesar_conexion(char *puerto){
 	t_list* lista;
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
+		t_pcb* pcb_aux;
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
 			break;
+		case EJECUTAR_SLEEP:
+			pcb_aux = recibir_pcb(cliente_fd);
+			int tiempo = atoi(obtener_mensaje(cliente_fd));
+			sleep(tiempo);
+			break;
+		case EJECUTAR_WAIT:
+			pcb_aux = recibir_pcb(cliente_fd);
+			char * nombre_recurso = obtener_mensaje(cliente_fd);
+			ejecutar_wait(nombre_recurso,pcb_aux);
+			break;
+		case EJECUTAR_SIGNAL:
+			pcb_aux = recibir_pcb(cliente_fd);
+			char * nombre_recurso2 = obtener_mensaje(cliente_fd);
+			ejecutar_signal(nombre_recurso2,pcb_aux);
+			break;
 		case FINALIZAR:
-			t_pcb* pcb_aux = malloc(sizeof(t_pcb));
 			pcb_aux = recibir_pcb(cliente_fd);
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
 			break;
@@ -131,6 +147,7 @@ void iniciar_recurso(){
 	lista_pcb=list_create();
 	cola_new = queue_create();
 	cola_ready = queue_create();
+	lista_recursos = list_create();
 	sem_init(&grado_multiprogramacion, 0, grado_multiprogramacion_ini);
 	sem_init(&mutex_cola_new, 0, 1);
 	sem_init(&mutex_cola_ready,0,1);
@@ -187,7 +204,7 @@ void generar_conexion() {
 		case '3':
 			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 	        log_info(logger_consola,"conexion generado correctamente\n");
-			pthread_create(&conexion_cpu_hilo,NULL,(void*) manejar_respuesta,(void *)&conexion_cpu);
+			//pthread_create(&conexion_cpu_hilo,NULL,(void*) manejar_respuesta,(void *)&conexion_cpu);
 			break;
 		default:
 			log_info(logger_consola,"no corresponde a ninguno\n");
@@ -513,5 +530,111 @@ int* string_to_int_array(char** array_de_strings){
 		numbers[i] = num;
 	}
 	return numbers;
+}
+
+void ejecutar_wait(char* recurso_a_encontrar, t_pcb * pcb){
+    bool encontrar_recurso(void * recurso){
+          t_recurso* un_recurso = (t_recurso*)recurso;
+          return strcmp(un_recurso->nombre, recurso_a_encontrar) == 0;
+    }
+    t_recurso *recurso_encontrado = list_find(lista_recursos, encontrar_recurso);
+        if(recurso_encontrado != NULL){
+            if(recurso_encontrado->instancias >0 ){
+            	pcb = agregar_recurso_pcb(pcb, recurso_a_encontrar);
+            	int posicion = buscar_posicion_lista_recurso(lista_recursos, recurso_encontrado);
+                recurso_encontrado->instancias -=1;
+                list_replace(lista_recursos,posicion,recurso_encontrado);
+            }else{
+                queue_push(recurso_encontrado->cola_bloqueados,pcb);
+            }
+        }else{
+            enviar_pcb(pcb,conexion_memoria,FINALIZAR);
+        }
+}
+
+t_pcb*agregar_recurso_pcb(t_pcb*pcb, char*nombre){
+	bool encontrar_recurso(void * recurso){
+	          t_recurso_pcb* un_recurso = (t_recurso_pcb*)recurso;
+	          return strcmp(un_recurso->nombre, nombre) == 0;
+	    }
+	    t_recurso_pcb *recurso_encontrado = list_find(pcb->recursos, encontrar_recurso);
+	    if(recurso_encontrado != NULL){
+	    	int posicion = buscar_posicion_lista_recurso_pcb(pcb->recursos,recurso_encontrado);
+	    	recurso_encontrado->instancias++;
+	    	list_replace(pcb->recursos,posicion,recurso_encontrado);
+	    }else{
+	    	t_recurso_pcb*recurso_nuevo;
+	    	recurso_nuevo=crear_recurso(nombre);
+	    	list_add(pcb->recursos, recurso_nuevo);
+	    }
+	    return pcb;
+}
+t_pcb*quitar_recurso_pcb(t_pcb*pcb, char*nombre){
+	bool encontrar_recurso(void * recurso){
+	          t_recurso_pcb* un_recurso = (t_recurso_pcb*)recurso;
+	          return strcmp(un_recurso->nombre, nombre) == 0;
+	    }
+	    t_recurso_pcb *recurso_encontrado = list_find(pcb->recursos, encontrar_recurso);
+	    	if(recurso_encontrado != NULL){
+				int posicion = buscar_posicion_lista_recurso_pcb(pcb->recursos,recurso_encontrado);
+				recurso_encontrado->instancias--;
+				list_replace(pcb->recursos,posicion,recurso_encontrado);
+	    	}
+	    return pcb;
+}
+
+t_recurso_pcb*crear_recurso(char*nombre){
+	t_recurso_pcb*recurso_nuevo=malloc(sizeof(t_recurso_pcb));
+	recurso_nuevo->nombre=nombre;
+	recurso_nuevo->instancias=1;
+	return recurso_nuevo;
+}
+void ejecutar_signal(char* recurso_a_encontrar, t_pcb * pcb){
+    bool encontrar_recurso(void * recurso){
+              t_recurso* un_recurso = (t_recurso*)recurso;
+              return strcmp(un_recurso->nombre, recurso_a_encontrar) == 0;
+    }
+    bool encontrar_recurso_pcb(void * recurso){
+                  t_recurso_pcb* un_recurso = (t_recurso_pcb*)recurso;
+                  return strcmp(un_recurso->nombre, recurso_a_encontrar) == 0;
+        }
+    t_recurso *recurso_encontrado = list_find(lista_recursos, encontrar_recurso);
+    t_recurso_pcb *recurso_pcb = list_find(pcb->recursos, encontrar_recurso_pcb);
+    if(recurso_encontrado != NULL){
+    	if(recurso_pcb->instancias > 0){
+    	 int posicion = buscar_posicion_lista_recurso(lista_recursos, recurso_encontrado);
+    	 recurso_encontrado->instancias ++;
+    	 list_replace(lista_recursos,posicion,recurso_encontrado);
+    	 pcb = quitar_recurso_pcb(pcb,recurso_a_encontrar);
+    	}else{
+    	enviar_pcb(pcb,conexion_memoria,FINALIZAR);
+    	}
+    }else{
+        enviar_pcb(pcb,conexion_memoria,FINALIZAR);
+    }
+}
+
+
+int buscar_posicion_lista_recurso_pcb(t_list*lista, t_recurso_pcb *recurso){
+	int cantidad= list_size(lista);
+	t_recurso_pcb* elemento ;
+	for(int i=0;i<cantidad;i++){
+		elemento = list_get(lista,cantidad);
+		if(elemento->nombre == recurso->nombre){
+			return cantidad;
+		}
+	}
+	return -1;
+}
+int buscar_posicion_lista_recurso(t_list*lista, t_recurso *recurso){
+	int cantidad= list_size(lista);
+	t_recurso* elemento ;
+	for(int i=0;i<cantidad;i++){
+		elemento = list_get(lista,cantidad);
+		if(elemento->nombre == recurso->nombre){
+			return cantidad;
+		}
+	}
+	return -1;
 }
 

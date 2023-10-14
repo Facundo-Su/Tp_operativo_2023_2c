@@ -27,7 +27,9 @@ typedef enum
 	RECIBIR_PCB,
 	INICIAR_PROCESO,
 	PLANIFICACION,
-	MANEJAR_SLEEP
+	EJECUTAR_WAIT,
+	EJECUTAR_SIGNAL,
+	EJECUTAR_SLEEP
 }op_code;
 
 typedef struct
@@ -79,7 +81,12 @@ typedef struct{
 	t_list* tabla_archivo_abierto;
 	t_estado estado;
 	t_list* lista_instruciones;
+	t_list* recursos;
 }t_pcb;
+typedef struct{
+	char*nombre;
+	int instancias;
+}t_recurso_pcb;
 
 t_log * logger_consola;
 

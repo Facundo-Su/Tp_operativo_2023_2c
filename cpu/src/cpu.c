@@ -161,16 +161,19 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		}
 		break;
 	case SLEEP:
-		hayInterrupcion = true;
-		parametro = list_get(instrucciones->parametros,0);
-		enviar_pcb(pcb,cliente_fd,MANEJAR_SLEEP);
-		enviar_char_dinamico(parametro, cliente_fd);
+		char * tiempo = list_get(instrucciones->parametros,0);
+		enviar_pcb(pcb,,EJECUTAR_SLEEP);
+		enviar_mensaje(tiempo,cliente_fd);
 		break;
-	case WAIT:
-		//enviar_pcb(pcb,conexion,WAIT);
+   case WAIT:
+		char * recurso = list_get(instrucciones->parametros,0);
+		enviar_pcb(pcb,cliente_fd,EJECUTAR_WAIT);
+		enviar_mensaje(recurso,cliente_fd);
 		break;
 	case SIGNAL:
-		//enviar_pcb(pcb,conexion,SIGNAL);
+		char * recurso = list_get(instrucciones->parametros,0);
+		enviar_pcb(pcb,cliente_fd,EJECUTAR_SIGNAL);
+		enviar_mensaje(recurso,cliente_fd);
 		break;
 	case MOV_IN:
 		log_info(logger_consola,"entendi el mensaje MOV_IN");

@@ -35,6 +35,12 @@ char * ruta_archivo_test = "./test/";
 int contador_pid =0;
 int contador_pc =0;
 
+typedef struct{
+    char* nombre;
+    int instancias;
+    t_queue* cola_bloqueados;
+    sem_t sem_recurso;
+}t_recurso;
 
 //configuraciones del archibo kernel.config
 
@@ -94,7 +100,7 @@ t_contexto_ejecucion* obtener_contexto(char*);
 void mandar_a_memoria(char* , int , int );
 void liberar_memoria_pcb(t_pcb*);
 int buscar_posicion_pid(int );
-
+t_list *lista_recursos;
 void agregar_a_cola_new(t_pcb* pcb);
 t_pcb* quitar_de_cola_new();
 void agregar_a_cola_ready(t_pcb* pcb);
@@ -109,9 +115,9 @@ t_contexto_ejecucion* crear_contexto();
 t_registro_cpu* crear_registro();
 t_list* obtener_lista_instruccion(char* ruta);
 void *manejar_respuesta(void* );
-
+t_pcb*agregar_recurso_pcb(t_pcb*, char*);
 void* procesar_conexion(char *);
-
+t_recurso_pcb*crear_recurso(char*);
 
 
 #endif /* KERNEL_H_ */
