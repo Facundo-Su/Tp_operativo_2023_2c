@@ -68,6 +68,8 @@ char *puerto_cpu_interrupt;
 int quantum;
 int grado_multiprogramacion_ini;
 t_planificador planificador;
+void* caso1;
+void* caso2;
 
 char **recursos;
 int *instancias_recursos;
@@ -110,6 +112,7 @@ void planificador_corto_plazo();
 void de_ready_a_fifo();
 void de_ready_a_round_robin();
 void de_ready_a_prioridades();
+bool comparador_prioridades();
 void enviar_contexto_ejecucion(t_contexto_ejecucion * );
 t_contexto_ejecucion* crear_contexto();
 t_registro_cpu* crear_registro();
