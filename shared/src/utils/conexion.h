@@ -29,7 +29,9 @@ typedef enum
 	PLANIFICACION,
 	EJECUTAR_WAIT,
 	EJECUTAR_SIGNAL,
-	EJECUTAR_SLEEP
+	EJECUTAR_SLEEP,
+	EJECUTAR_F_TRUNCATE,
+	OBTENER_INSTRUCCION
 }op_code;
 
 typedef struct
@@ -155,5 +157,6 @@ t_registro_cpu * desempaquetar_registros(t_list * ,int );
 t_instruccion * desempaquetar_instrucciones(t_list* ,int* );
 t_list* desempaquetar_parametros(t_list* ,int* );
 op_instrucciones convertir_a_op_instrucciones(char* );
+void atendiendo_pedido(int);
 
 #endif /* CONEXION_SERVIDOR_H_*/

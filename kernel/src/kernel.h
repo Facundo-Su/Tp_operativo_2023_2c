@@ -113,12 +113,12 @@ void de_ready_a_prioridades();
 bool comparador_prioridades();
 void enviar_contexto_ejecucion(t_contexto_ejecucion * );
 t_contexto_ejecucion* crear_contexto();
-t_registro_cpu* crear_registro();
 t_list* obtener_lista_instruccion(char* ruta);
 void *manejar_respuesta(void* );
 t_pcb*agregar_recurso_pcb(t_pcb*, char*);
 void procesar_conexion(void *);
 t_recurso_pcb*crear_recurso(char*);
+void crear_pcb(t_planificador );
 
 
 #endif /* KERNEL_H_ */

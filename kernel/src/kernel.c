@@ -16,9 +16,6 @@ int main(int argc, char **argv){
 
     //envio de mensajes
 
-    pthread_t servidor_kernel;
-
-    pthread_create(&servidor_kernel,NULL,(void*) procesar_conexion,NULL);
     //error
     //paquete(conexion_memoria);
 
@@ -33,10 +30,11 @@ int main(int argc, char **argv){
 
 void procesar_conexion(void *conexion1){
 	int *conexion = (int*)conexion1;
-	int cliente_fd = conexion;
+	int cliente_fd = *conexion;
 
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
+		log_info(logger_consola,"hola");
 		t_pcb* pcb_aux;
 		switch (cod_op) {
 		case MENSAJE:
@@ -56,6 +54,9 @@ void procesar_conexion(void *conexion1){
 			pcb_aux = recibir_pcb(cliente_fd);
 			char * nombre_recurso2 = obtener_mensaje(cliente_fd);
 			ejecutar_signal(nombre_recurso2,pcb_aux);
+			break;
+		case EJECUTAR_F_TRUNCATE:
+			log_info(logger,"me llegaron la instruccion ejecutar f truncate del cpu");
 			break;
 		case FINALIZAR:
 			pcb_aux = recibir_pcb(cliente_fd);
@@ -98,6 +99,7 @@ void iniciar_consola(){
 				int size = atoi(readline(">"));
 				log_info(logger_consola, "ingrese el prioridad");
 				int prioridad = atoi(readline(">"));
+
 				iniciar_proceso(ruta,size,prioridad);
 				break;
 			case '2':
@@ -126,9 +128,6 @@ void iniciar_consola(){
 				break;
 			case '9':
 				crear_pcb(NULL, FIFO);
-				/*t_pcb* auxiliar = malloc(sizeof(t_pcb));
-				auxiliar =queue_pop(cola_new);
-				log_info(loggerConsola,"el pid es %i",auxiliar->pid);*/
 				log_info(logger,"%i",list_size(cola_new));
 				enviar_pcb(queue_pop(cola_new),conexion_cpu,RECIBIR_PCB);
 				break;
@@ -159,7 +158,7 @@ void enviar_mensaje_kernel() {
 			"\n 1. modulo memoria"
 			"\n 2. modulo cpu"
 			"\n 3. modulo filesystem");
-
+	crear_pcb(NULL,FIFO);
     char *valor = readline(">");
 	switch (*valor) {
 		case '1':
@@ -221,25 +220,26 @@ void iniciar_proceso(char* archivo_test,int size,int prioridad){
 	//string_append(*prueba, archivo_test);
 
 	char*ruta_a_testear = archivo_test;
-	//t_list* instruccion = obtener_lista_instruccion(archivo_test);
+	t_list* instruccion = obtener_lista_instruccion(archivo_test);
 
-	//crear_pcb(instruccion);
+	crear_pcb(instruccion,FIFO);
 
 	op_code op = INICIAR_PROCESO;
 	t_paquete* paquete =crear_paquete(op);
 	agregar_a_paquete(paquete, ruta_a_testear, sizeof(ruta_a_testear));
 	agregar_a_paquete(paquete, &size ,sizeof(int));
 	agregar_a_paquete(paquete, &prioridad, sizeof(int));
+	agregar_a_paquete(paquete, &pid, sizeof(int))
 
 	enviar_paquete(paquete, conexion_memoria);
-
+	crear_pcb(prioridad);
 	//free(prueba);
 	eliminar_paquete(paquete);
 	free(ruta_a_testear);
 
 }
 
-void crear_pcb(t_list* instrucciones,t_planificador prioridad){
+void crear_pcb(t_planificador prioridad){
 	t_pcb* pcb = malloc(sizeof(pcb));
 	pcb->pid= contador_pid;
 	pcb->prioridad = prioridad;
@@ -344,7 +344,7 @@ void de_ready_a_fifo(){
 	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
 }
 
-
+//TODO timestamp
 void de_ready_a_round_robin(){
 	de_ready_a_fifo();
 }
@@ -361,7 +361,6 @@ bool comparador_prioridades(void* caso1,void* caso2){
 	t_pcb* pcb1 = ((t_pcb*) caso1);
 	t_pcb* pcb2 = ((t_pcb*) caso2);
 	log_info(logger,"El pcb[%i] tiene prioridad [%f] y el pcb[%i] tiene prioridad [%f]",pcb1->pid,pcb1->prioridad,pcb2->pid,pcb2->prioridad);
-
 	if(pcb1->prioridad > pcb2->prioridad){
 		return true;
 	} else return false;
@@ -476,10 +475,12 @@ int* string_to_int_array(char** array_de_strings){
 }
 
 void ejecutar_wait(char* recurso_a_encontrar, t_pcb * pcb){
+
     bool encontrar_recurso(void * recurso){
           t_recurso* un_recurso = (t_recurso*)recurso;
           return strcmp(un_recurso->nombre, recurso_a_encontrar) == 0;
     }
+
     t_recurso *recurso_encontrado = list_find(lista_recursos, encontrar_recurso);
         if(recurso_encontrado != NULL){
             if(recurso_encontrado->instancias >0 ){

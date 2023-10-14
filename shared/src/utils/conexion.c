@@ -194,6 +194,8 @@ int iniciar_servidor(char *puerto)
 	// Creamos el socket de escucha del servidor
 	socket_servidor = socket(servinfo->ai_family,servinfo->ai_socktype,servinfo->ai_protocol);
 	// Asociamos el socket a un puerto
+
+
 	bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen);
 	// Escuchamos las conexiones entrantes
 	listen(socket_servidor, SOMAXCONN);
@@ -367,10 +369,6 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, posicion_comienzo_contexto);
 	pcb->contexto = contexto;
 
-	//t_list* instrucciones = desempaquetar_instrucciones(paquete,posicion);
-	//pcb->lista_instruciones = instrucciones;
-	//int cantidad_instrucciones = list_size(instrucciones);
-
 	return pcb;
 }
 
@@ -406,6 +404,7 @@ t_registro_cpu * desempaquetar_registros(t_list * paquete,int posicion){
 
 	return registro;
 }
+
 
 t_instruccion * desempaquetar_instrucciones(t_list* paquete,int* posicion){
 	t_list* instrucciones = list_create();

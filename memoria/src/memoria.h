@@ -23,9 +23,16 @@ typedef struct{
 	int size;
 }estructura_inicial;
 
+typedef struct{
+	int pid;
+	t_list* instrucciones;
+}t_instrucciones;
+
 estructura_inicial* estrctura_inicial;
 
 int conexion_filesystem;
+
+t_list *lista_instrucciones;
 
 
 char *puerto_escucha;
@@ -43,6 +50,9 @@ void obtener_configuraciones();
 int iniciar_servidor_memoria(char*);
 void iniciar_consola();
 void recibir_estructura_inicial(int);
+void procesar_conexion(void *);
+void iniciar_recursos();
+void cargar_lista_instruccion(char*,int ,int,int);
 
 #endif /* KERNEL_H_ */
 

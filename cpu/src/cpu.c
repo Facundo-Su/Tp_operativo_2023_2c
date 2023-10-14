@@ -75,6 +75,7 @@ int iniciar_servidor_cpu(char *puerto){
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
+			enviar_mensaje("hola", cliente_fd);
 			break;
 		case PAQUETE:
 			lista = recibir_paquete(cliente_fd);
@@ -91,7 +92,7 @@ int iniciar_servidor_cpu(char *puerto){
 			t_pcb* pcb = recibir_pcb(cliente_fd);
 			log_info(logger, "recibi el pid %i",pcb->pid);
 			hayInterrupcion = false;
-			ejecutar_ciclo_de_instruccion(pcb);
+			//ejecutar_ciclo_de_instruccion(pcb);
 			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
@@ -106,9 +107,9 @@ int iniciar_servidor_cpu(char *puerto){
 }
 
 void ejecutar_ciclo_de_instruccion(t_pcb* pcb){
-
+//pide a memoria
 	while(!hayInterrupcion){
-		fetch(pcb);
+		//fetch(pcb);
 	}
 
 }
@@ -122,7 +123,7 @@ void fetch(t_pcb* pcb){
 void decode(t_pcb* pcb,t_instruccion* instrucciones){
 	t_estrucutra_cpu registro_aux;
 	t_estrucutra_cpu registro_aux2;
-
+	char * recurso;
 	char* parametro;
 	char* parametro2;
 	switch(instrucciones->nombre){
@@ -166,12 +167,12 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		enviar_mensaje(tiempo,cliente_fd);
 		break;
    case WAIT:
-		char * recurso = list_get(instrucciones->parametros,0);
+		recurso= list_get(instrucciones->parametros,0);
 		enviar_pcb(pcb,cliente_fd,EJECUTAR_WAIT);
 		enviar_mensaje(recurso,cliente_fd);
 		break;
 	case SIGNAL:
-		char * recurso = list_get(instrucciones->parametros,0);
+		recurso = list_get(instrucciones->parametros,0);
 		enviar_pcb(pcb,cliente_fd,EJECUTAR_SIGNAL);
 		enviar_mensaje(recurso,cliente_fd);
 		break;
@@ -197,6 +198,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		log_info(logger_consola,"entendi el mensaje F_WRITE");
 		break;
 	case F_TRUNCATE:
+		hayInterrupcion = true;
 		log_info(logger_consola,"entendi el mensaje F_TRUNCATE");
 		break;
 	case EXIT:
