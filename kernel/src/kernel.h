@@ -68,8 +68,6 @@ char *puerto_cpu_interrupt;
 int quantum;
 int grado_multiprogramacion_ini;
 t_planificador planificador;
-void* caso1;
-void* caso2;
 
 char **recursos;
 int *instancias_recursos;
@@ -119,7 +117,7 @@ t_registro_cpu* crear_registro();
 t_list* obtener_lista_instruccion(char* ruta);
 void *manejar_respuesta(void* );
 t_pcb*agregar_recurso_pcb(t_pcb*, char*);
-void* procesar_conexion(char *);
+void procesar_conexion(void *);
 t_recurso_pcb*crear_recurso(char*);
 
 

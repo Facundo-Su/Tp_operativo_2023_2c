@@ -162,7 +162,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		break;
 	case SLEEP:
 		char * tiempo = list_get(instrucciones->parametros,0);
-		enviar_pcb(pcb,,EJECUTAR_SLEEP);
+		enviar_pcb(pcb,cliente_fd,EJECUTAR_SLEEP);
 		enviar_mensaje(tiempo,cliente_fd);
 		break;
    case WAIT:
