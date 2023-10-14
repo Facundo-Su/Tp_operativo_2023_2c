@@ -364,49 +364,29 @@ void de_ready_a_fifo(){
 	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
 }
 
-/*
-void deReadyARoundRobin(){
-	t_pcb* pcbEnEjecucion = NULL;
 
-	enviar_Pcb(queue_pop(cola_ready),conexion_cpu,PLANIFICACION);
-
+void de_ready_a_round_robin(){
+	de_ready_a_fifo();
 }
 
-//alternativa agregar una cola de ejecucion
-
-void deReadyAPrioridades(){
-
-	t_pcb* pcb = procesoConMayorPrioridad();
-
-	for(int i=0)
-
-
-	if(pcb->prioridad > pcbEnEjecucion->prioridad){ //Conseguir contexto del pcb en ejecucion
-		//Enviar interrupcion a CPU y desalojar proceso
-		pcb->estado=RUNNING;
-		if(pcbEnEjecucion->prioridad !=-1){
-			desalojar();
-		}
-
-		enviar_Pcb(pcb,conexion_cpu,EJECUTARINSTRUCIONES);
-	}
+void de_ready_a_prioridades(){
+	list_sort(cola_ready->elements,comparador_prioridades);
+	t_pcb* pcb = quitar_de_cola_ready();
+	pcb->estado=RUNNING;
+	log_info(logger,"“El PID: %d paso de ready a running ”",pcb->pid);
+	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
 }
 
+bool comparador_prioridades(){
+	t_pcb* pcb1 = ((t_pcb*) caso1);
+	t_pcb* pcb2 = ((t_pcb*) caso2);
+	log_info(logger,"El pcb[%i] tiene prioridad [%f] y el pcb[%i] tiene prioridad [%f]",pcb1->pid,pcb1->prioridad,pcb2->pid,pcb2->prioridad);
 
-struct t_pcb* procesoConMayorPrioridad() {
-    struct t_pcb* procesoElegido = NULL;
-    int prioridadMaxima = -1; // Inicializar con un valor alto
-    t_list * lista = list_create();
-    for (int i = 0; i < cantProcesos; i++) {
-        if (colaReady[i].prioridad < prioridadMaxima) {
-        	procesoElegido = &colaReady[i];
-        	prioridadMaxima = colaReady[i].prioridad;
-        }
-    }
+	if(pcb1->prioridad > pcb2->prioridad){
+		return true;
+	} else return false;
 
-    return procesoElegido;
 }
-*/
 
 bool controlador_multi_programacion(){
 	return list_size(lista_pcb)<grado_multiprogramacion_ini;
