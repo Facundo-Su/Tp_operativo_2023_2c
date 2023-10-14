@@ -95,8 +95,10 @@ void iniciar_consola(){
 				log_info(logger_consola, "ingrese la ruta");
 				char* ruta = readline(">");
 				log_info(logger_consola, "ingrese el tamanio");
-				int* size = atoi(readline(">"));
-				iniciar_proceso(ruta,&size,planificador);
+				int size = atoi(readline(">"));
+				log_info(logger_consola, "ingrese el prioridad");
+				int prioridad = atoi(readline(">"));
+				iniciar_proceso(ruta,size,prioridad);
 				break;
 			case '2':
 				log_info(logger_consola, "ingrese pid");
@@ -213,20 +215,21 @@ void generar_conexion() {
 
 
 //hilo que espere consola,
-void iniciar_proceso(char* archivo_test,int* size,t_planificador prioridad){
+void iniciar_proceso(char* archivo_test,int size,int prioridad){
 
 	//char* prueba = ruta_archivo_test;
 	//string_append(*prueba, archivo_test);
 
 	char*ruta_a_testear = archivo_test;
-	t_list* instruccion = obtener_lista_instruccion(archivo_test);
+	//t_list* instruccion = obtener_lista_instruccion(archivo_test);
 
-	crear_pcb(instruccion);
+	//crear_pcb(instruccion);
 
 	op_code op = INICIAR_PROCESO;
 	t_paquete* paquete =crear_paquete(op);
 	agregar_a_paquete(paquete, ruta_a_testear, sizeof(ruta_a_testear));
-	agregar_a_paquete(paquete, &size ,sizeof(size));
+	agregar_a_paquete(paquete, &size ,sizeof(int));
+	agregar_a_paquete(paquete, &prioridad, sizeof(int));
 
 	enviar_paquete(paquete, conexion_memoria);
 
@@ -380,10 +383,10 @@ t_contexto_ejecucion* obtener_contexto(char* archivo){
 }
 
 // ver como pasar int TODO
-void finalizar_proceso(char *pid){
+void finalizar_proceso(int pid){
 
 	t_paquete * paquete = crear_paquete(FINALIZAR);
-	agregar_a_paquete(paquete, pid, sizeof(pid));
+	agregar_a_paquete(paquete, &pid, sizeof(int));
 	enviar_paquete(paquete, conexion_memoria);
 
 	eliminar_paquete(paquete);

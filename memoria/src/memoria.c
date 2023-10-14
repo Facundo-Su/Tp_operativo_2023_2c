@@ -4,7 +4,7 @@
 int main(int argc, char* argv[]) {
 
 
-	char *rutaConfig = argv[1];
+	char *rutaConfig = "./memoria.config";
 
 	config = cargar_config(rutaConfig);
 
@@ -43,7 +43,7 @@ void iniciar_consola(){
 				break;
 			case '3':
 				log_info(logger_consola_memoria, "se inicio el servidor\n");
-				iniciar_servidor(puerto_escucha);
+				iniciar_servidor_memoria(puerto_escucha);
 				break;
 			default:
 				log_info(logger_consola_memoria,"no corresponde a ninguno");
@@ -83,18 +83,25 @@ int iniciar_servidor_memoria(char *puerto) {
                 log_info(logger, "Me llegaron los siguientes valores:\n");
                 list_iterate(lista, (void*) iterator);
                 break;
-            case ENVIARRUTAPARAINICIAR:
+            case INICIAR_PROCESO:
             	t_list* valorRecibido;
 				valorRecibido=recibir_paquete(cliente_fd);
    //         	recibir_estructura_Inicial(cliente_fd);
-                log_info(logger, "Me llegaron los siguientes valores: %s",list_get(valorRecibido,0));
-                log_info(logger, "Me llegaron los siguientes valores: %i",list_get(valorRecibido,1));
+				char* ruta = list_get(valorRecibido,0);
+				int* size = list_get(valorRecibido,1);
+				int* prioridad = list_get(valorRecibido,2);
+
+                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
+                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
+                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
                 break;
             case FINALIZAR:
 
             	t_list* valor_pid;
             	valor_pid= recibir_paquete(cliente_fd);
-            	//log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",list_get(valor_pid,0));
+            	int* valor = list_get(valor_pid,0);
+            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",*valor);
+            	realizar_proceso_finalizar(valor);
             case -1:
                 log_error(logger, "El cliente se desconectó. Terminando servidor");
                 close(cliente_fd);
@@ -105,5 +112,9 @@ int iniciar_servidor_memoria(char *puerto) {
             }
         }
     }
+}
+
+void realizar_proceso_finalizar(int valor){
+
 }
 
