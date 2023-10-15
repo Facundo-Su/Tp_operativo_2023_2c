@@ -53,6 +53,17 @@ void iniciar_consola(){
 				pthread_create(&atendiendo,NULL,(void*)iniciar_servidor_memoria,(void *) puerto_escucha);
 				iniciar_servidor_memoria(puerto_escucha);
 				break;
+			case '4':
+
+				char * ruta = "./prueba.txt";
+				FILE * archivo = fopen(ruta,"r");
+
+				t_list* prueba = leer_pseudocodigo(archivo);
+
+				//t_instruccion * inst_prueba = list_get(prueba,0);
+
+				//log_info(logger_consola_memoria,"el pid es ");
+				break;
 			default:
 				log_info(logger_consola_memoria,"no corresponde a ninguno");
 				exit(2);
@@ -146,7 +157,193 @@ void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
 	instruccion->instrucciones = lista_instrucciones_parseada;
 
 }
+
+
+t_list* leer_pseudocodigo(FILE* pseudocodigo){
+    // Creo las variables para parsear el archivo
+    char* instruccion = NULL;
+    size_t len = 0;
+    int cantidad_parametros;
+    t_list* instrucciones_correspondiente_al_archivo = list_create();
+
+
+    // Recorro el archivo de pseudocodigo y parseo las instrucciones
+    while (getline(&instruccion, &len, pseudocodigo) != -1){
+
+        t_instruccion *instruct = malloc(sizeof(t_instruccion));
+        instruct->parametros= list_create();
+
+    	log_info(logger_consola_memoria,"el valor es %s" ,instruccion);
+        // Parseo la instruccion
+        char** instruccion_parseada = parsear_instruccion(instruccion);
+
+        if (strcmp(instruccion_parseada[0], "SET") == 0) {
+            instruct->nombre = SET;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "SUB") == 0) {
+            instruct->nombre = SUB;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "SUM") == 0) {
+            instruct->nombre = SUM;
+            cantidad_parametros = 2;
+        }
+
+        if (strcmp(instruccion_parseada[0], "JNZ") == 0) {
+            instruct->nombre = JNZ;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "SLEEP") == 0) {
+            instruct->nombre = SLEEP;
+            cantidad_parametros = 1;
+        }
+        if (strcmp(instruccion_parseada[0], "WAIT") == 0) {
+            instruct->nombre = WAIT;
+            cantidad_parametros = 1;
+        }
+        if (strcmp(instruccion_parseada[0], "SIGNAL") == 0) {
+            instruct->nombre = SIGNAL;
+            cantidad_parametros = 1;
+        }
+        if (strcmp(instruccion_parseada[0], "MOV_IN") == 0) {
+            instruct->nombre = MOV_IN;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "MOV_OUT") == 0) {
+            instruct->nombre = MOV_OUT;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "F_OPEN") == 0) {
+            instruct->nombre = F_OPEN;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "F_CLOSE") == 0) {
+            instruct->nombre = F_CLOSE;
+            cantidad_parametros = 1;
+        }
+        if (strcmp(instruccion_parseada[0], "F_SEEK") == 0) {
+            instruct->nombre = F_SEEK;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "F_READ") == 0) {
+            instruct->nombre = F_READ;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "F_WRITE") == 0) {
+            instruct->nombre = F_WRITE;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "F_TRUNCATE") == 0) {
+            instruct->nombre = F_TRUNCATE;
+            cantidad_parametros = 2;
+        }
+        if (strcmp(instruccion_parseada[0], "EXIT") == 0) {
+            instruct->nombre = EXIT;
+            cantidad_parametros = 0;
+        }
+
+    	t_list* parametros = list_create();
+
+        for(int i=1;i<cantidad_parametros+1;i++){
+            list_add(parametros,instruccion_parseada[i]);
+        }
+        log_info(logger_consola_memoria, "codigo de operacion a ejecutar es %d",instruct->nombre);
+    	char* parametro1 = list_get(parametros,0);
+    	char* parametro2 = list_get(parametros,1);
+    	log_info(logger_consola_memoria,"el valor es %s" ,parametro1);
+    	log_info(logger_consola_memoria,"el valor es %s" ,parametro2);
+
+
+        list_add_all(instruct->parametros,parametros);
+    	log_info(logger_consola_memoria,"el tamanio de la lista es %i",list_size(instruct->parametros));
+
+    	char* parametro3 = list_get(instruct->parametros,0);
+    	log_info(logger_consola_memoria,"el valor de la PARAMETRO 1 es : %s",parametro3);
+
+
+        list_add(instrucciones_correspondiente_al_archivo,instruct);
+        list_destroy(parametros);
+        free(instruct);
+
+        // Añado la instruccion parseada a la lista de instrucciones
+
+    }
+
+
+	t_instruccion* parametrox = list_get(instrucciones_correspondiente_al_archivo,0);
+	log_info(logger_consola_memoria,"------------------------------------------------");
+	log_info(logger_consola_memoria,"el tamanio de la lista general es %i" ,list_size(instrucciones_correspondiente_al_archivo));
+	log_info(logger_consola_memoria,"el valor es %d" ,parametrox->nombre);
+	char* parametrosss = list_get(parametrox->parametros,0);
+	log_info(logger_consola_memoria,"el parametro es %s",parametrosss);
+    return instrucciones_correspondiente_al_archivo;
+}
+
+char** parsear_instruccion(char* instruccion){
+
+    // Parseo la instruccion
+    char** instruccion_parseada = string_split(instruccion, " ");
+
+    // Retorno la instruccion parseada
+    return instruccion_parseada;
+}
+
+
+
 void realizar_proceso_finalizar(int valor){
+
+}
+
+op_instrucciones asignar_cod_instruccion(char* instruccion){
+	if (strcmp(instruccion, "SET") == 0) {
+	        return SET;
+	    }
+	    if (strcmp(instruccion, "SUB") == 0) {
+	        return SUB;
+	    }
+	    if (strcmp(instruccion, "SUM") == 0) {
+	        return SUM;
+	    }
+	    if (strcmp(instruccion, "JNZ") == 0) {
+	        return JNZ;
+	    }
+	    if (strcmp(instruccion, "SLEEP") == 0) {
+	        return SLEEP;
+	    }
+	    if (strcmp(instruccion, "WAIT") == 0) {
+	        return WAIT;
+	    }
+	    if (strcmp(instruccion, "SIGNAL") == 0) {
+	        return SIGNAL;
+	    }
+	    if (strcmp(instruccion, "MOV_IN") == 0) {
+	        return MOV_IN;
+	    }
+	    if (strcmp(instruccion, "MOV_OUT") == 0) {
+	        return MOV_OUT;
+	    }
+	    if (strcmp(instruccion, "F_OPEN") == 0) {
+	        return F_OPEN;
+	    }
+	    if (strcmp(instruccion, "F_CLOSE") == 0) {
+	        return F_CLOSE;
+	    }
+	    if (strcmp(instruccion, "F_SEEK") == 0) {
+	        return F_SEEK;
+	    }
+	    if (strcmp(instruccion, "F_READ") == 0) {
+	        return F_READ;
+	    }
+	    if (strcmp(instruccion, "F_WRITE") == 0) {
+	        return F_WRITE;
+	    }
+	    if (strcmp(instruccion, "F_TRUNCATE") == 0) {
+	        return F_TRUNCATE;
+	    }
+	    if (strcmp(instruccion, "EXIT") == 0) {
+	        return EXIT;
+	    }
 
 }
 

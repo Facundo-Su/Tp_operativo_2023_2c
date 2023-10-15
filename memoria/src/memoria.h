@@ -53,6 +53,9 @@ void recibir_estructura_inicial(int);
 void procesar_conexion(void *);
 void iniciar_recursos();
 void cargar_lista_instruccion(char*,int ,int,int);
+t_list* leer_pseudocodigo(FILE*);
+char** parsear_instruccion(char*);
+op_instrucciones asignar_cod_instruccion(char* );
 
 #endif /* KERNEL_H_ */
 

@@ -9,8 +9,7 @@
 #include<readline/readline.h>
 #include <utils/conexion.h>
 
-t_list* leer_pseudocodigo(FILE*);
-char** parsear_instruccion(char*);
+
 
 
 #endif /* ARCHIVOS_H_*/
