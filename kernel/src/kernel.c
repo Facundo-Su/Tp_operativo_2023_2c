@@ -100,7 +100,7 @@ void iniciar_consola(){
 				log_info(logger_consola, "ingrese el prioridad");
 				int prioridad = atoi(readline(">"));
 
-				iniciar_proceso(ruta,size,prioridad);
+				iniciar_proceso(ruta,size,prioridad,contador_pid);
 				break;
 			case '2':
 				log_info(logger_consola, "ingrese pid");
@@ -127,7 +127,7 @@ void iniciar_consola(){
 				enviar_mensaje_kernel();
 				break;
 			case '9':
-				crear_pcb(NULL, FIFO);
+				crear_pcb(FIFO);
 				log_info(logger,"%i",list_size(cola_new));
 				enviar_pcb(queue_pop(cola_new),conexion_cpu,RECIBIR_PCB);
 				break;
@@ -158,7 +158,7 @@ void enviar_mensaje_kernel() {
 			"\n 1. modulo memoria"
 			"\n 2. modulo cpu"
 			"\n 3. modulo filesystem");
-	crear_pcb(NULL,FIFO);
+	crear_pcb(FIFO);
     char *valor = readline(">");
 	switch (*valor) {
 		case '1':
@@ -214,22 +214,21 @@ void generar_conexion() {
 
 
 //hilo que espere consola,
-void iniciar_proceso(char* archivo_test,int size,int prioridad){
+void iniciar_proceso(char* archivo_test,int size,int prioridad,int pid){
 
 	//char* prueba = ruta_archivo_test;
 	//string_append(*prueba, archivo_test);
 
 	char*ruta_a_testear = archivo_test;
-	t_list* instruccion = obtener_lista_instruccion(archivo_test);
 
-	crear_pcb(instruccion,FIFO);
+	crear_pcb(FIFO);
 
 	op_code op = INICIAR_PROCESO;
 	t_paquete* paquete =crear_paquete(op);
 	agregar_a_paquete(paquete, ruta_a_testear, sizeof(ruta_a_testear));
 	agregar_a_paquete(paquete, &size ,sizeof(int));
 	agregar_a_paquete(paquete, &prioridad, sizeof(int));
-	agregar_a_paquete(paquete, &pid, sizeof(int))
+	agregar_a_paquete(paquete, &pid, sizeof(int));
 
 	enviar_paquete(paquete, conexion_memoria);
 	crear_pcb(prioridad);
@@ -269,15 +268,6 @@ t_registro_cpu* crear_registro(){
 	return reg;
 }
 
-t_list* obtener_lista_instruccion(char* ruta){
-	t_list *instrucciones = list_create();
-	FILE* pseucodigo;
-
-	pseucodigo =fopen(ruta,"r");
-	instrucciones =leer_pseudocodigo(pseucodigo);
-
-	return instrucciones;
-}
 
 void agregar_a_cola_new(t_pcb* pcb){
 	sem_wait(&mutex_cola_new);

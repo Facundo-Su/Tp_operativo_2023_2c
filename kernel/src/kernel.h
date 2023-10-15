@@ -83,7 +83,7 @@ void iterator(char*);
 void interactuar_con_modulo();
 t_config* iniciar_config();
 void iniciar_consola();
-void iniciar_proceso(char*,int,int);
+void iniciar_proceso(char*,int,int,int);
 void finalizar_proceso(int);
 void iniciar_planificacion();
 void detener_planificacion();
@@ -119,7 +119,7 @@ t_pcb*agregar_recurso_pcb(t_pcb*, char*);
 void procesar_conexion(void *);
 t_recurso_pcb*crear_recurso(char*);
 void crear_pcb(t_planificador );
-
+t_registro_cpu* crear_registro();
 
 #endif /* KERNEL_H_ */
 

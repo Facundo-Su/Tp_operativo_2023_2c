@@ -10,6 +10,8 @@ int main(int argc, char* argv[]) {
 
     obtener_configuraciones();
 
+    iniciar_recursos();
+
     logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
 
     log_info(logger, "Soy el Memoria!");
@@ -58,10 +60,13 @@ void iniciar_consola(){
 				char * ruta = "./prueba.txt";
 				FILE * archivo = fopen(ruta,"r");
 
-				t_list* prueba = leer_pseudocodigo(archivo);
+				t_list* lista_aux_prueba =leer_pseudocodigo(archivo);
+				log_info(logger_consola_memoria, "hola\n");
+				log_info(logger_consola_memoria,"el resultado final de la lista es %i",list_size(lista_aux_prueba));
 
-				//t_instruccion * inst_prueba = list_get(prueba,0);
-
+				t_instruccion * inst_prueba = list_get(lista_aux_prueba,0);
+				char* valor_prueba = list_get(inst_prueba->parametros,0);
+				log_info(logger_consola_memoria,"el resultado del cod_op es %d",inst_prueba->nombre);
 				//log_info(logger_consola_memoria,"el pid es ");
 				break;
 			default:
@@ -123,6 +128,8 @@ void atendiendo_pedido(int cliente_fd){
 	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
 	                log_info(logger, "Me llegaron los siguientes valores de pid: %i",*pid);
+
+
 	                cargar_lista_instruccion(ruta,size,prioridad,pid);
 	                break;
 	            case FINALIZAR:
@@ -153,8 +160,11 @@ void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
 	t_instrucciones * instruccion = malloc(sizeof(t_instruccion));
 	instruccion->pid = pid;
 	t_list* lista_instrucciones_parseada = list_create();
-
+	FILE * archivo = fopen(ruta,"r");
+	lista_instrucciones_parseada = leer_pseudocodigo(archivo);
 	instruccion->instrucciones = lista_instrucciones_parseada;
+
+	log_info(logger_consola,list_size(instruccion->instrucciones));
 
 }
 
@@ -165,10 +175,11 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
     size_t len = 0;
     int cantidad_parametros;
     t_list* instrucciones_correspondiente_al_archivo = list_create();
-
+	t_list * instrucciones_del_pcb = list_create();
 
     // Recorro el archivo de pseudocodigo y parseo las instrucciones
     while (getline(&instruccion, &len, pseudocodigo) != -1){
+
 
         t_instruccion *instruct = malloc(sizeof(t_instruccion));
         instruct->parametros= list_create();
@@ -260,24 +271,16 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
 
     	char* parametro3 = list_get(instruct->parametros,0);
     	log_info(logger_consola_memoria,"el valor de la PARAMETRO 1 es : %s",parametro3);
+    	char* parametro4 = list_get(instruct->parametros,1);
+    	log_info(logger_consola_memoria,"el valor de la PARAMETRO 2 es : %s",parametro4);
 
-
-        list_add(instrucciones_correspondiente_al_archivo,instruct);
-        list_destroy(parametros);
-        free(instruct);
-
+        list_add(instrucciones_del_pcb,instruct);
+		log_info(logger_consola_memoria, "hola\n");
         // Añado la instruccion parseada a la lista de instrucciones
 
     }
+    return instrucciones_del_pcb;
 
-
-	t_instruccion* parametrox = list_get(instrucciones_correspondiente_al_archivo,0);
-	log_info(logger_consola_memoria,"------------------------------------------------");
-	log_info(logger_consola_memoria,"el tamanio de la lista general es %i" ,list_size(instrucciones_correspondiente_al_archivo));
-	log_info(logger_consola_memoria,"el valor es %d" ,parametrox->nombre);
-	char* parametrosss = list_get(parametrox->parametros,0);
-	log_info(logger_consola_memoria,"el parametro es %s",parametrosss);
-    return instrucciones_correspondiente_al_archivo;
 }
 
 char** parsear_instruccion(char* instruccion){
