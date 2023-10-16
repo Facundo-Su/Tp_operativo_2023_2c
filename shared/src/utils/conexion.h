@@ -16,6 +16,7 @@
 #include<readline/readline.h>
 #include <commons/collections/queue.h>
 #include <semaphore.h>
+#include <time.h>
 
 typedef enum
 {
@@ -89,6 +90,9 @@ typedef struct{
 	char*nombre;
 	int instancias;
 }t_recurso_pcb;
+
+time_t tiempo_inicial, tiempo_final;
+double tiempo_transcurrido;
 
 t_log * logger_consola;
 

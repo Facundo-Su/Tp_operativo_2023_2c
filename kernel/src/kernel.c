@@ -297,6 +297,20 @@ t_pcb* quitar_de_cola_ready(){
 	log_info(logger,"El proceso [%d] fue quitado de la cola ready",pcb->pid);
 	return pcb;
 }
+void agregar_a_cola_ejecucion(t_pcb* pcb){
+	sem_wait(&mutex_cola_ejecucion);
+	queue_push(cola_ready,pcb);
+	pcb->estado=RUNNING;
+	sem_post(&mutex_cola_ejecucion);
+	log_info(logger,"El proceso [%d] fue agregado a la cola ejecucion",pcb->pid);
+}
+t_pcb* quitar_de_cola_ejecucion(){
+	sem_wait(&mutex_cola_ejecucion);
+	t_pcb* pcb=queue_pop(cola_ejecucion);
+	sem_post(&mutex_cola_ejecucion);
+	log_info(logger,"El proceso [%d] fue quitado de la cola ejecucion",pcb->pid);
+	return pcb;
+}
 void planificador_largo_plazo(){
 	while(1){
 		while(!queue_is_empty(cola_new)){
@@ -307,22 +321,62 @@ void planificador_largo_plazo(){
 	}
 }
 void planificador_corto_plazo(){
+/*  Desmarcar para probar los planificadores
+	planificador = ROUND_ROBIN;
+	t_pcb pcb1 = {
+		1,
+		2,
+		1,
+		NULL,
+		NULL,
+		NEW,
+		NULL,
+		NULL
+	};
+	t_pcb pcb2 = {
+		2,
+		1,
+		1,
+		NULL,
+		NULL,
+		NEW,
+		NULL,
+		NULL
+	};
+	t_pcb pcb3 = {
+		3,
+	    5,
+	    1,
+		NULL,
+		NULL,
+		NEW,
+		NULL,
+	    NULL
+	};
+    t_pcb *ppcb1;
+	ppcb1 = &pcb1;
+	t_pcb *ppcb2;
+	ppcb2 = &pcb2;
+	t_pcb *ppcb3;
+	ppcb3 = &pcb3;
+	agregar_a_cola_ready(ppcb1);
+	agregar_a_cola_ready(ppcb2);
+	agregar_a_cola_ready(ppcb3);
+*/
 	while(1){
 			while(!queue_is_empty(cola_ready)){
 				switch(planificador){
 				case FIFO:
-					//Transcionarlo a Running
 					log_info(logger,"Planificador FIFO");
 					de_ready_a_fifo();
-					//Enviar su contexto de ejecucion al CPU a traves del puerto dispatch
 					break;
 				case ROUND_ROBIN:
 					log_info(logger,"Planificador Round Robin");
-					//deReadyARoundRobin();
+					de_ready_a_round_robin();
 					break;
 				case PRIORIDADES:
 					log_info(logger,"Planificador Prioridades");
-					//deReadyAPrioridades();
+					de_ready_a_prioridades();
 					break;
 				}
 			}
@@ -331,12 +385,23 @@ void planificador_corto_plazo(){
 void de_ready_a_fifo(){
 	t_pcb* pcb =quitar_de_cola_ready();
 	pcb->estado=RUNNING;
+	log_info(logger,"El proceso [%d] fue agregado a la cola ejecucion",pcb->pid);
 	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
 }
 
-//TODO timestamp
+//TODO Revisar el if que crashea
 void de_ready_a_round_robin(){
-	de_ready_a_fifo();
+	if(!queue_is_empty(cola_ejecucion)){
+		t_pcb* pcb = queue_peek(cola_ejecucion);
+		if(pcb->tiempo_cpu > quantum){
+		 quitar_de_cola_ejecucion();
+		 de_ready_a_fifo();
+		} else {
+		 de_ready_a_fifo();
+	    }
+	} else {
+		de_ready_a_fifo();
+	}
 }
 
 void de_ready_a_prioridades(){
@@ -350,11 +415,9 @@ void de_ready_a_prioridades(){
 bool comparador_prioridades(void* caso1,void* caso2){
 	t_pcb* pcb1 = ((t_pcb*) caso1);
 	t_pcb* pcb2 = ((t_pcb*) caso2);
-	log_info(logger,"El pcb[%i] tiene prioridad [%f] y el pcb[%i] tiene prioridad [%f]",pcb1->pid,pcb1->prioridad,pcb2->pid,pcb2->prioridad);
 	if(pcb1->prioridad > pcb2->prioridad){
 		return true;
 	} else return false;
-
 }
 
 bool controlador_multi_programacion(){
@@ -410,8 +473,10 @@ int buscarPosicionQueEstaElPid(int valor){
 
 void iniciar_planificacion(){
 	log_info(logger_consola,"inicio el proceso de planificacion");
-
+	planificador_corto_plazo();
 }
+
+
 void detener_planificacion(){
 
 }

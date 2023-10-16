@@ -126,6 +126,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 	char * recurso;
 	char* parametro;
 	char* parametro2;
+	tiempo_inicial = time(NULL);
 	switch(instrucciones->nombre){
 	case SET:
 		parametro2= list_get(instrucciones->parametros,1);
@@ -207,6 +208,9 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		log_info(logger_consola,"entendi el mensaje EXIT");
 		break;
 	}
+	tiempo_final = time(NULL);
+	tiempo_transcurrido = difftime(tiempo_final, tiempo_inicial);
+	pcb->tiempo_cpu = tiempo_transcurrido;
 }
 
 void setear(t_pcb* pcb, t_estrucutra_cpu pos, char* valor) {

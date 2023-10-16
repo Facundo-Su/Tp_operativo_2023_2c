@@ -53,9 +53,11 @@ t_log *logger_consola;
 t_list* lista_pcb;
 t_queue* cola_new;
 t_queue* cola_ready;
+t_queue* cola_ejecucion;
 
 sem_t mutex_cola_new;
 sem_t mutex_cola_ready;
+sem_t mutex_cola_ejecucion;
 //sem_t sem_new;
 //sem_t sem_ready;
 t_planificador tipo_planificador;
@@ -94,6 +96,8 @@ void enviar_mensaje();
 
 bool controlador_multiprogramacion();
 
+time_t start_time, end_time;
+double elapsed_time;
 
 
 t_contexto_ejecucion* obtener_contexto(char*);
@@ -105,6 +109,8 @@ void agregar_a_cola_new(t_pcb* pcb);
 t_pcb* quitar_de_cola_new();
 void agregar_a_cola_ready(t_pcb* pcb);
 t_pcb* quitar_de_cola_ready();
+void agregar_a_cola_ejecucion(t_pcb* pcb);
+t_pcb* quitar_de_cola_ejecucion();
 void planificador_largo_plazo();
 void planificador_corto_plazo();
 void de_ready_a_fifo();
