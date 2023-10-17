@@ -332,14 +332,10 @@ void empaquetar_registro(t_paquete* paquete, t_registro_cpu* registroCpu){
 }
 
 
-void empaquetar_instrucciones(t_paquete* paquete, t_list* lista_de_instrucciones){
-	int cantidad_instrucciones = list_size(lista_de_instrucciones);
-	agregar_a_paquete(paquete, &(cantidad_instrucciones), sizeof(int));
-	for(int i=0; i<cantidad_instrucciones; i++){
-		t_instruccion* instruccion = list_get(lista_de_instrucciones, i);
-		agregar_a_paquete(paquete, &(instruccion->nombre), sizeof(op_instrucciones));
-		empaquetarParametros(paquete,instruccion->parametros);
-	}
+void empaquetar_instrucciones(t_paquete* paquete, t_instruccion* instruccion){
+
+	agregar_a_paquete(paquete, &(instruccion->nombre), sizeof(op_instrucciones));
+	empaquetarParametros(paquete,instruccion->parametros);
 }
 
 
@@ -406,32 +402,28 @@ t_registro_cpu * desempaquetar_registros(t_list * paquete,int posicion){
 }
 
 
-t_instruccion * desempaquetar_instrucciones(t_list* paquete,int* posicion){
-	t_list* instrucciones = list_create();
-	int* cantidad_instrucciones = list_get(paquete, posicion);
-	(*posicion)++;
+t_instruccion * desempaquetar_instrucciones(t_list* paquete){
+	t_instruccion* instruccion = malloc(sizeof(t_instruccion));
+	int posicion_usado =0;
 
-	for(int i =0;i<cantidad_instrucciones;i++){
-		t_instruccion* instruccion = malloc(sizeof(t_instruccion));
-		char* nombre = list_get(paquete,posicion);
-		op_instrucciones operacion = convertir_a_op_instrucciones(nombre);
-		instruccion->nombre = operacion;
-		(*posicion)++;
+	char* nombre = list_get(paquete,posicion_usado);
+	posicion_usado+=1;
+	op_instrucciones operacion = convertir_a_op_instrucciones(nombre);
+	instruccion->nombre = operacion;
+	posicion_usado+=1;
+	t_list* parametros = desempaquetar_parametros(paquete,posicion_usado);
 
-		t_list* parametros = desempaquetar_parametros(paquete,posicion);
-	}
-
-	return instrucciones;
+	return instruccion;
 }
 
 
-t_list* desempaquetar_parametros(t_list* paquete,int* posicion){
+t_list* desempaquetar_parametros(t_list* paquete,int posicion){
 	t_list*parametros = list_create();
 	int cantidad_parametro = list_get(paquete,posicion);
 	posicion++;
 	for(int i=0;i<cantidad_parametro;i++){
 		char* parametro = list_get(paquete,posicion);
-		(*posicion)++;
+		posicion++;
 		list_add(parametros,parametro);
 	}
 	return parametros;

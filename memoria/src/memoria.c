@@ -86,9 +86,10 @@ void obtener_configuraciones() {
     puerto_escucha = config_get_string_value(config, "PUERTO_ESCUCHA");
     puerto_filesystem = config_get_string_value(config, "PUERTO_FILESYSTEM");
     ip_file_system = config_get_string_value(config, "IP_FILESYSTEM");
+    path_instrucciones = strcat(config_get_string_value(config,"PATH_INSTRUCCIONES"),"/") ;
 }
 
-int iniciar_servidor_memoria(char *puerto) {
+void iniciar_servidor_memoria(char *puerto) {
 
     int memoria_fd = iniciar_servidor(puerto);
     log_info(logger, "Servidor listo para recibir al cliente");
@@ -109,6 +110,8 @@ void atendiendo_pedido(int cliente_fd){
 	            switch (cod_op) {
 	            case MENSAJE:
 	                recibir_mensaje(cliente_fd);
+	                log_info(logger,"hola como estas");
+	                enviar_mensaje("hola", cliente_fd);
 	                break;
 	            case PAQUETE:
 	                lista = recibir_paquete(cliente_fd);
@@ -116,13 +119,15 @@ void atendiendo_pedido(int cliente_fd){
 	                list_iterate(lista, (void*) iterator);
 	                break;
 	            case INICIAR_PROCESO:
+
 	            	t_list* valorRecibido;
 					valorRecibido=recibir_paquete(cliente_fd);
 	   //         	recibir_estructura_Inicial(cliente_fd);
-					char* ruta = list_get(valorRecibido,0);
+					//char* ruta = strcat(path_instrucciones,list_get(valorRecibido,0));
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
+					char *ruta = "./prueba.txt";
 
 	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
 	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
@@ -140,9 +145,23 @@ void atendiendo_pedido(int cliente_fd){
 	            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",*valor);
 	            	//realizar_proceso_finalizar(valor);
 	            	break;
-	    		case OBTENER_INSTRUCCION:
-	    			t_list* lista = list_create();
+	    		case INSTRUCCIONES_A_MEMORIA:
+
+	    			t_list* lista;
 	    			lista = recibir_paquete(cliente_fd);
+	    			int* pc_recibido = list_get(lista,0);
+	    			int* pid_recibido = list_get(lista,1);
+	    			log_info(logger_consola_memoria,"me llegaron el siguiente pc %i",*pc_recibido);
+	    			log_info(logger_consola_memoria,"me llegaron el siguiente pid %i",pid_recibido);
+
+	    		    bool encontrar_instrucciones(void * instruccion){
+	    		          t_instrucciones* un_instruccion = (t_instrucciones*)un_instruccion;
+	    		          return strcmp(un_instruccion->pid, *pid) == 0;
+	    		    }
+	    			t_instruccion* instrucciones =list_find(lista_instrucciones,encontrar_instrucciones);
+	    			t_paquete* paquete = crear_paquete(INSTRUCCIONES_A_MEMORIA);
+	    			empaquetar_instrucciones(paquete,instrucciones);
+	    			enviar_paquete(paquete, cliente_fd);
 	    			break;
 	            case -1:
 	                log_error(logger, "El cliente se desconectó. Terminando servidor");
@@ -159,12 +178,15 @@ void atendiendo_pedido(int cliente_fd){
 void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
 	t_instrucciones * instruccion = malloc(sizeof(t_instruccion));
 	instruccion->pid = pid;
-	t_list* lista_instrucciones_parseada = list_create();
+	instruccion->instrucciones = list_create();
 	FILE * archivo = fopen(ruta,"r");
-	lista_instrucciones_parseada = leer_pseudocodigo(archivo);
-	instruccion->instrucciones = lista_instrucciones_parseada;
+	t_list* auxiliar = leer_pseudocodigo(archivo);
 
-	log_info(logger_consola,list_size(instruccion->instrucciones));
+	list_add_all(instruccion->instrucciones,auxiliar);
+	log_info(logger_consola_memoria,"pepe");
+	int cantidad = list_size(instruccion->instrucciones);
+	log_info(logger_consola_memoria,"la lista total total es %i",cantidad);
+	fclose(archivo);
 
 }
 
@@ -276,8 +298,6 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
 
         list_add(instrucciones_del_pcb,instruct);
 		log_info(logger_consola_memoria, "hola\n");
-        // Añado la instruccion parseada a la lista de instrucciones
-
     }
     return instrucciones_del_pcb;
 

@@ -12,13 +12,47 @@ int main(int argc, char* argv[]) {
 
     //iniciar configuraciones
 	 obtener_configuracion();
-
+	 iniciar_recurso();
 	iniciar_consola();
 
 
 	terminar_programa(conexion_memoria, logger, config);
     return 0;
 }
+
+void iniciar_recurso(){
+	recibi_archivo=false;
+}
+
+
+void procesar_conexion(void *conexion1){
+	int *conexion = (int*)conexion1;
+	int cliente_fd = *conexion;
+	t_list* lista = list_create();
+
+	while (1) {
+		int cod_op = recibir_operacion(cliente_fd);
+		log_info(logger_consola_cpu,"hola");
+		t_pcb* pcb_aux;
+		switch (cod_op) {
+		case MENSAJE:
+			recibir_mensaje(cliente_fd);
+			break;
+		case INSTRUCCIONES_A_MEMORIA:
+			lista = recibir_paquete(cliente_fd);
+			instruccion_a_realizar = desempaquetar_instrucciones(lista);
+			hayInterrupcion = true;
+		case -1:
+			log_error(logger, "el cliente se desconecto. Terminando servidor");
+			return;
+		default:
+			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
+			break;
+		}
+	}
+	return;
+}
+
 
 void iniciar_consola(){
 	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
@@ -33,8 +67,8 @@ void iniciar_consola(){
 		valor = readline(">");
 		switch (*valor) {
 			case '1':
-				log_info(logger_consola_cpu, "generar conexion con memoria\n");
-				conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+
+				generar_conexion_memoria();
 				break;
 			case '2':
 				log_info(logger_consola_cpu, "enviar mensaje a memoria\n");
@@ -43,12 +77,6 @@ void iniciar_consola(){
 			case '3':
 				log_info(logger_consola_cpu, "se inicio el servidor\n");
 				iniciar_servidor_cpu(puerto_escucha);
-				break;
-			case '4':
-				FILE* archivos = fopen("./test.txt","r");
-				log_info(logger_consola_cpu, "estos son los valores\n");
-				leer_pseudocodigo(archivos);
-				printf("estos son los valores %i",list_size(instrucciones));
 				break;
 			default:
 				log_info(logger_consola_cpu,"no corresponde a ninguno");
@@ -64,11 +92,32 @@ void obtener_configuracion(){
 	puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
 	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA_DISPATCH");
 }
-int iniciar_servidor_cpu(char *puerto){
-	int servidor_fd = iniciar_servidor(puerto);
-	log_info(logger, "Servidor listo para recibir al cliente");
-	cliente_fd = esperar_cliente(servidor_fd);
+void iniciar_servidor_cpu(char *puerto){
 
+	int cpu_fd = iniciar_servidor(puerto);
+	log_info(logger, "Servidor listo para recibir al cliente");
+
+	generar_conexion_memoria();
+
+	log_info(logger, "genere conexion con memoria");
+
+	while(1){
+	    int cliente_fd = esperar_cliente(cpu_fd);
+		pthread_t atendiendo_cpu;
+		pthread_create(&atendiendo_cpu,NULL,(void*)atendiendo_pedido,(void *) cliente_fd);
+		pthread_detach(atendiendo_cpu);
+	}
+
+}
+
+void generar_conexion_memoria(){
+	log_info(logger_consola_cpu, "generar conexion con memoria\n");
+	pthread_t conexion_memoria_hilo_cpu;
+	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+	pthread_create(&conexion_memoria_hilo_cpu,NULL,(void*) procesar_conexion,(void *)&conexion_memoria);
+}
+
+void atendiendo_pedido(int cliente_fd){
 	t_list* lista;
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
@@ -91,33 +140,49 @@ int iniciar_servidor_cpu(char *puerto){
 		case RECIBIR_PCB:
 			t_pcb* pcb = recibir_pcb(cliente_fd);
 			log_info(logger, "recibi el pid %i",pcb->pid);
-			hayInterrupcion = false;
-			//ejecutar_ciclo_de_instruccion(pcb);
+			ejecutar_ciclo_de_instruccion(pcb);
+			break;
+		case CPU_ENVIA_A_MEMORIA:
+			enviar_mensaje("hola capo", conexion_memoria);
 			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
-			return EXIT_FAILURE;
+            close(cliente_fd);
+            break;
 		default:
 			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
 	}
-	return EXIT_SUCCESS;
-
+	return;
 }
 
 void ejecutar_ciclo_de_instruccion(t_pcb* pcb){
 //pide a memoria
 	while(!hayInterrupcion){
-		//fetch(pcb);
+		fetch(pcb);
 	}
 
 }
 
 void fetch(t_pcb* pcb){
-	t_instruccion* instruccion_a_realizar = list_get(pcb->lista_instruciones,pcb->contexto->pc);
+	int pc = pcb->contexto->pc;
+	int pid =pcb->pid;
+	solicitar_instruccion_ejecutar_segun_pc(pc, pid);
 	pcb->contexto->pc+=1;
 	decode(pcb,instruccion_a_realizar);
+}
+
+void solicitar_instruccion_ejecutar_segun_pc(int pc,int pid){
+	t_paquete* paquete = crear_paquete(INSTRUCCIONES_A_MEMORIA);
+	agregar_a_paquete(paquete, &pc, sizeof(int));
+	agregar_a_paquete(paquete, &pid, sizeof(int));
+	enviar_paquete(paquete, conexion_memoria);
+
+	while (!recibi_archivo) {
+		int i=0;
+	}
+
 }
 
 void decode(t_pcb* pcb,t_instruccion* instrucciones){
@@ -211,6 +276,8 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 	tiempo_final = time(NULL);
 	tiempo_transcurrido = difftime(tiempo_final, tiempo_inicial);
 	pcb->tiempo_cpu = tiempo_transcurrido;
+
+	recibi_archivo = false;
 }
 
 void setear(t_pcb* pcb, t_estrucutra_cpu pos, char* valor) {
@@ -287,5 +354,3 @@ char* obtener_valor(t_pcb* pcb, t_estrucutra_cpu pos) {
 void iterator(char* value) {
 	log_info(logger,"%s", value);
 }
-
-

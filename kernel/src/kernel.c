@@ -34,7 +34,7 @@ void procesar_conexion(void *conexion1){
 
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
-		log_info(logger_consola,"hola");
+		log_info(logger,"hola");
 		t_pcb* pcb_aux;
 		switch (cod_op) {
 		case MENSAJE:
@@ -86,7 +86,7 @@ void iniciar_consola(){
 				"\n 3. iniciar Planificacion"
 				"\n 4. detener Planificacion"
 				"\n 5. modificar grado multiprogramacion"
-				"\n 6. listar procesos por estado"
+				"\n 6. hacer que cpu mande mensaje a memoria"
 				"\n 7. generar conexion"
 				"\n 8. enviar mensaje");
 		variable = readline(">");
@@ -158,7 +158,6 @@ void enviar_mensaje_kernel() {
 			"\n 1. modulo memoria"
 			"\n 2. modulo cpu"
 			"\n 3. modulo filesystem");
-	crear_pcb(FIFO);
     char *valor = readline(">");
 	switch (*valor) {
 		case '1':
@@ -321,11 +320,11 @@ void planificador_largo_plazo(){
 	}
 }
 void planificador_corto_plazo(){
-/*  Desmarcar para probar los planificadores
-	planificador = ROUND_ROBIN;
+//  Desmarcar para probar los planificadores
+	/*planificador = PRIORIDADES;
 	t_pcb pcb1 = {
 		1,
-		2,
+		1,
 		1,
 		NULL,
 		NULL,
@@ -335,7 +334,7 @@ void planificador_corto_plazo(){
 	};
 	t_pcb pcb2 = {
 		2,
-		1,
+		4,
 		1,
 		NULL,
 		NULL,
@@ -345,7 +344,7 @@ void planificador_corto_plazo(){
 	};
 	t_pcb pcb3 = {
 		3,
-	    5,
+	    2,
 	    1,
 		NULL,
 		NULL,
@@ -372,6 +371,7 @@ void planificador_corto_plazo(){
 					break;
 				case ROUND_ROBIN:
 					log_info(logger,"Planificador Round Robin");
+
 					de_ready_a_round_robin();
 					break;
 				case PRIORIDADES:
@@ -391,7 +391,9 @@ void de_ready_a_fifo(){
 
 //TODO Revisar el if que crashea
 void de_ready_a_round_robin(){
-	if(!queue_is_empty(cola_ejecucion)){
+
+	if(!queue_is_empty(cola_ready)){
+		log_info(logger,"cantidad de elemento en cola es %i",queue_size(cola_ready));
 		t_pcb* pcb = queue_peek(cola_ejecucion);
 		if(pcb->tiempo_cpu > quantum){
 		 quitar_de_cola_ejecucion();
@@ -484,7 +486,8 @@ void modificar_grado_multiprogramacion(){
 
 }
 void listar_proceso_estado(){
-
+	t_paquete * aux = crear_paquete(CPU_ENVIA_A_MEMORIA);
+	enviar_paquete(aux, conexion_cpu);
 }
 
 

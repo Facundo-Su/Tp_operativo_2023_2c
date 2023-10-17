@@ -32,7 +32,9 @@ typedef enum
 	EJECUTAR_SIGNAL,
 	EJECUTAR_SLEEP,
 	EJECUTAR_F_TRUNCATE,
-	OBTENER_INSTRUCCION
+	OBTENER_INSTRUCCION,
+	INSTRUCCIONES_A_MEMORIA,
+	CPU_ENVIA_A_MEMORIA// BORRAR
 }op_code;
 
 typedef struct
@@ -86,6 +88,7 @@ typedef struct{
 	t_list* lista_instruciones;
 	t_list* recursos;
 }t_pcb;
+
 typedef struct{
 	char*nombre;
 	int instancias;
@@ -148,7 +151,7 @@ void mandar_a_memoria(char* , int , int );
 void empaquetar_pcb(t_paquete* , t_pcb* );
 void empaquetar_contexto_ejecucion(t_paquete* , t_contexto_ejecucion* );
 void empaquetar_registro(t_paquete* , t_registro_cpu* );
-void empaquetar_instrucciones(t_paquete* , t_list* );
+void empaquetar_instrucciones(t_paquete* , t_instruccion*);
 
 //enviar pcb
 void enviar_pcb(t_pcb* , int conexion, op_code);
@@ -158,8 +161,8 @@ void enviar_pcb(t_pcb* , int conexion, op_code);
 t_pcb* desempaquetar_pcb(t_list* );
 t_contexto_ejecucion *desempaquetar_contexto(t_list *,int );
 t_registro_cpu * desempaquetar_registros(t_list * ,int );
-t_instruccion * desempaquetar_instrucciones(t_list* ,int* );
-t_list* desempaquetar_parametros(t_list* ,int* );
+t_instruccion * desempaquetar_instrucciones(t_list*);
+t_list* desempaquetar_parametros(t_list* ,int );
 op_instrucciones convertir_a_op_instrucciones(char* );
 void atendiendo_pedido(int);
 

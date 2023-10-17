@@ -47,7 +47,7 @@ t_algoritmo algoritmo;
 
 void iterator(char* value);
 void obtener_configuraciones();
-int iniciar_servidor_memoria(char*);
+void iniciar_servidor_memoria(char*);
 void iniciar_consola();
 void recibir_estructura_inicial(int);
 void procesar_conexion(void *);
@@ -56,6 +56,8 @@ void cargar_lista_instruccion(char*,int ,int,int);
 t_list* leer_pseudocodigo(FILE*);
 char** parsear_instruccion(char*);
 op_instrucciones asignar_cod_instruccion(char* );
+bool encontrar_instrucciones(void * );
+
 
 #endif /* KERNEL_H_ */
 
