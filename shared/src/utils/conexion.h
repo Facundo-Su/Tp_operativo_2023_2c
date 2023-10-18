@@ -145,13 +145,15 @@ void recibir_mensaje(int);
 int recibir_operacion(int);
 t_config* cargar_config(char *);
 void mandar_a_memoria(char* , int , int );
-
+char* recibir_instruccion(int socket_cliente);
 
 //empaquetar pcb
 void empaquetar_pcb(t_paquete* , t_pcb* );
 void empaquetar_contexto_ejecucion(t_paquete* , t_contexto_ejecucion* );
 void empaquetar_registro(t_paquete* , t_registro_cpu* );
 void empaquetar_instrucciones(t_paquete* , t_instruccion*);
+char* obtener_nombre_instruccion(op_instrucciones );
+void enviar_mensaje_instrucciones(char* , int ,op_code );
 
 //enviar pcb
 void enviar_pcb(t_pcb* , int conexion, op_code);

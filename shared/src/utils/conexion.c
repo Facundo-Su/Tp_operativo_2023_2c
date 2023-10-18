@@ -97,6 +97,27 @@ void enviar_mensaje(char* mensaje, int socket_cliente)
 	eliminar_paquete(paquete);
 }
 
+
+void enviar_mensaje_instrucciones(char* mensaje, int socket_cliente,op_code operacion)
+{
+	t_paquete* paquete = malloc(sizeof(t_paquete));
+
+	paquete->codigo_operacion = operacion;
+	paquete->buffer = malloc(sizeof(t_buffer));
+	paquete->buffer->size = strlen(mensaje) + 1;
+	paquete->buffer->stream = malloc(paquete->buffer->size);
+	memcpy(paquete->buffer->stream, mensaje, paquete->buffer->size);
+
+	int bytes = paquete->buffer->size + 2*sizeof(int);
+
+	void* a_enviar = serializar_paquete(paquete, bytes);
+
+	send(socket_cliente, a_enviar, bytes, 0);
+
+	free(a_enviar);
+	eliminar_paquete(paquete);
+}
+
 void enviar_char_dinamico(char* mensaje, int socket_cliente, op_code operacion)
 {
 	t_paquete* paquete = malloc(sizeof(t_paquete));
@@ -243,6 +264,13 @@ void recibir_mensaje(int socket_cliente)
 	char* buffer = recibir_buffer(&size, socket_cliente);
 	log_info(logger, "Me llego el mensaje %s", buffer);
 	free(buffer);
+}
+char* recibir_instruccion(int socket_cliente)
+{
+	int size;
+	char* buffer = recibir_buffer(&size, socket_cliente);
+	log_info(logger, "Me llego el mensaje %s", buffer);
+	return buffer;
 }
 char* obtener_mensaje(int socket_cliente)
 {
@@ -447,6 +475,27 @@ op_instrucciones convertir_a_op_instrucciones(char* operacion) {
     }
 }
 
+char* obtener_nombre_instruccion(op_instrucciones instruccion) {
+    switch(instruccion) {
+        case SET: return "SET";
+        case SUB: return "SUB";
+        case SUM: return "SUM";
+        case JNZ: return "JNZ";
+        case SLEEP: return "SLEEP";
+        case WAIT: return "WAIT";
+        case SIGNAL: return "SIGNAL";
+        case MOV_IN: return "MOV_IN";
+        case MOV_OUT: return "MOV_OUT";
+        case F_OPEN: return "F_OPEN";
+        case F_CLOSE: return "F_CLOSE";
+        case F_SEEK: return "F_SEEK";
+        case F_READ: return "F_READ";
+        case F_WRITE: return "F_WRITE";
+        case F_TRUNCATE: return "F_TRUNCATE";
+        case EXIT: return "EXIT";
+        default: return "UNKNOWN";
+    }
+}
 
 
 

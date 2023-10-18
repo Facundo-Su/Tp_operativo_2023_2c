@@ -18,6 +18,8 @@ int main(int argc, char **argv){
 
     //error
     //paquete(conexion_memoria);
+    pthread_t servidor;
+
 
     terminar_programa(conexion_memoria, logger, config);
     terminar_programa(conexion_cpu, logger, config);
@@ -34,7 +36,6 @@ void procesar_conexion(void *conexion1){
 
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
-		log_info(logger,"hola");
 		t_pcb* pcb_aux;
 		switch (cod_op) {
 		case MENSAJE:
@@ -219,9 +220,6 @@ void iniciar_proceso(char* archivo_test,int size,int prioridad,int pid){
 	//string_append(*prueba, archivo_test);
 
 	char*ruta_a_testear = archivo_test;
-
-	crear_pcb(FIFO);
-
 	op_code op = INICIAR_PROCESO;
 	t_paquete* paquete =crear_paquete(op);
 	agregar_a_paquete(paquete, ruta_a_testear, sizeof(ruta_a_testear));
@@ -311,17 +309,18 @@ t_pcb* quitar_de_cola_ejecucion(){
 	return pcb;
 }
 void planificador_largo_plazo(){
-	while(1){
-		while(!queue_is_empty(cola_new)){
+	while(!queue_is_empty(cola_new)){
 			sem_wait(&grado_multiprogramacion);
 			t_pcb* pcb =quitar_de_cola_new();
+			log_info(logger, "el pid del proceso es %i",pcb->pid);
 			agregar_a_cola_ready(pcb);
-		}
 	}
+
 }
 void planificador_corto_plazo(){
 //  Desmarcar para probar los planificadores
 	/*planificador = PRIORIDADES;
+
 	t_pcb pcb1 = {
 		1,
 		1,
@@ -362,6 +361,8 @@ void planificador_corto_plazo(){
 	agregar_a_cola_ready(ppcb2);
 	agregar_a_cola_ready(ppcb3);
 */
+
+	log_info(logger,"ando hasta aca");
 	while(1){
 			while(!queue_is_empty(cola_ready)){
 				switch(planificador){
@@ -475,6 +476,7 @@ int buscarPosicionQueEstaElPid(int valor){
 
 void iniciar_planificacion(){
 	log_info(logger_consola,"inicio el proceso de planificacion");
+	planificador_largo_plazo();
 	planificador_corto_plazo();
 }
 

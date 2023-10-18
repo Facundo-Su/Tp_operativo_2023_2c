@@ -51,8 +51,9 @@ void iniciar_consola(){
 				break;
 			case '3':
 				log_info(logger_consola_memoria, "se inicio el servidor\n");
-				pthread_t atendiendo;
-				pthread_create(&atendiendo,NULL,(void*)iniciar_servidor_memoria,(void *) puerto_escucha);
+				//TODO
+				//pthread_t atendiendo;
+				//pthread_create(&atendiendo,NULL,(void*)iniciar_servidor_memoria,(void *) puerto_escucha);
 				iniciar_servidor_memoria(puerto_escucha);
 				break;
 			case '4':
@@ -86,7 +87,7 @@ void obtener_configuraciones() {
     puerto_escucha = config_get_string_value(config, "PUERTO_ESCUCHA");
     puerto_filesystem = config_get_string_value(config, "PUERTO_FILESYSTEM");
     ip_file_system = config_get_string_value(config, "IP_FILESYSTEM");
-    path_instrucciones = strcat(config_get_string_value(config,"PATH_INSTRUCCIONES"),"/") ;
+    path_instrucciones =config_get_string_value(config,"PATH_INSTRUCCIONES");
 }
 
 void iniciar_servidor_memoria(char *puerto) {
@@ -97,20 +98,21 @@ void iniciar_servidor_memoria(char *puerto) {
     while (1) {
         int cliente_fd = esperar_cliente(memoria_fd);
 		pthread_t atendiendo;
-		pthread_create(&atendiendo,NULL,(void*)atendiendo_pedido,(void *) cliente_fd);
+		pthread_create(&atendiendo,NULL,(void*)procesar_conexion,(void *) cliente_fd);
 		pthread_detach(atendiendo);
 
     }
 }
 
-void atendiendo_pedido(int cliente_fd){
+void procesar_conexion(int cliente_fd){
+
 	while (1) {
 	            int cod_op = recibir_operacion(cliente_fd);
 	            t_list * lista;
 	            switch (cod_op) {
 	            case MENSAJE:
 	                recibir_mensaje(cliente_fd);
-	                log_info(logger,"hola como estas");
+	                log_info(logger,"hola como estas capo");
 	                enviar_mensaje("hola", cliente_fd);
 	                break;
 	            case PAQUETE:
@@ -152,16 +154,33 @@ void atendiendo_pedido(int cliente_fd){
 	    			int* pc_recibido = list_get(lista,0);
 	    			int* pid_recibido = list_get(lista,1);
 	    			log_info(logger_consola_memoria,"me llegaron el siguiente pc %i",*pc_recibido);
-	    			log_info(logger_consola_memoria,"me llegaron el siguiente pid %i",pid_recibido);
+	    			log_info(logger_consola_memoria,"me llegaron el siguiente pid %i",*pid_recibido);
 
 	    		    bool encontrar_instrucciones(void * instruccion){
-	    		          t_instrucciones* un_instruccion = (t_instrucciones*)un_instruccion;
-	    		          return strcmp(un_instruccion->pid, *pid) == 0;
+	    		          t_instrucciones* un_instruccion = (t_instrucciones*)instruccion;
+	    		          log_info(logger_consola_memoria,"comparando pid %i",*pid_recibido);
+	    		          int *valor_comparar =un_instruccion->pid;
+	    		          log_info(logger_consola_memoria,"comparando el pid %i",*valor_comparar);
+	    		          return *valor_comparar == *pid_recibido;
 	    		    }
-	    			t_instruccion* instrucciones =list_find(lista_instrucciones,encontrar_instrucciones);
-	    			t_paquete* paquete = crear_paquete(INSTRUCCIONES_A_MEMORIA);
-	    			empaquetar_instrucciones(paquete,instrucciones);
-	    			enviar_paquete(paquete, cliente_fd);
+	    		    t_instrucciones* instrucciones = list_find(lista_instrucciones, encontrar_instrucciones);
+
+	    		    if (instrucciones != NULL) {
+	    		        // Se encontró un elemento que cumple con la condición
+	    		        log_info(logger, "Se encontraron instrucciones para el PID %i", *pid_recibido);
+	    		        log_info(logger, "Cantidad de instrucciones: %i", list_size(instrucciones->instrucciones));
+
+	    		        // Luego puedes realizar las operaciones que necesites con 'instrucciones'
+	    		    } else {
+	    		        // No se encontraron instrucciones que cumplan con la condición
+	    		        log_info(logger, "No se encontraron instrucciones para el PID %i", *pid_recibido);
+	    		    }
+	    			char*valor_obtenido = list_get(instrucciones->instrucciones,*pc_recibido);
+	    			enviar_mensaje_instrucciones(valor_obtenido,cliente_fd,INSTRUCCIONES_A_MEMORIA);
+	    			//log_info(logger_consola_memoria,"pid encontrado bien ahi es %i",instrucciones->pid);
+	    			//t_paquete* paquete = crear_paquete(INSTRUCCIONES_A_MEMORIA);
+	    			//empaquetar_instrucciones(paquete,instrucciones->instrucciones);
+	    			//enviar_paquete(paquete, cliente_fd);
 	    			break;
 	            case -1:
 	                log_error(logger, "El cliente se desconectó. Terminando servidor");
@@ -183,9 +202,13 @@ void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
 	t_list* auxiliar = leer_pseudocodigo(archivo);
 
 	list_add_all(instruccion->instrucciones,auxiliar);
-	log_info(logger_consola_memoria,"pepe");
-	int cantidad = list_size(instruccion->instrucciones);
-	log_info(logger_consola_memoria,"la lista total total es %i",cantidad);
+	list_add(lista_instrucciones,instruccion);
+	int cantidad = list_size(auxiliar);
+	t_instrucciones* instruuu = list_get(lista_instrucciones,0);
+	int cantidad2 = list_size(lista_instrucciones);
+	int *auxiliar2 = instruuu->pid;
+	log_info(logger_consola_memoria,"la lista total total de general es %i",cantidad2);
+	log_info(logger_consola_memoria,"el valor de la pid primero es  %i",*auxiliar2);
 	fclose(archivo);
 
 }
@@ -202,114 +225,15 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
     // Recorro el archivo de pseudocodigo y parseo las instrucciones
     while (getline(&instruccion, &len, pseudocodigo) != -1){
 
-
-        t_instruccion *instruct = malloc(sizeof(t_instruccion));
-        instruct->parametros= list_create();
-
     	log_info(logger_consola_memoria,"el valor es %s" ,instruccion);
         // Parseo la instruccion
-        char** instruccion_parseada = parsear_instruccion(instruccion);
 
-        if (strcmp(instruccion_parseada[0], "SET") == 0) {
-            instruct->nombre = SET;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "SUB") == 0) {
-            instruct->nombre = SUB;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "SUM") == 0) {
-            instruct->nombre = SUM;
-            cantidad_parametros = 2;
-        }
-
-        if (strcmp(instruccion_parseada[0], "JNZ") == 0) {
-            instruct->nombre = JNZ;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "SLEEP") == 0) {
-            instruct->nombre = SLEEP;
-            cantidad_parametros = 1;
-        }
-        if (strcmp(instruccion_parseada[0], "WAIT") == 0) {
-            instruct->nombre = WAIT;
-            cantidad_parametros = 1;
-        }
-        if (strcmp(instruccion_parseada[0], "SIGNAL") == 0) {
-            instruct->nombre = SIGNAL;
-            cantidad_parametros = 1;
-        }
-        if (strcmp(instruccion_parseada[0], "MOV_IN") == 0) {
-            instruct->nombre = MOV_IN;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "MOV_OUT") == 0) {
-            instruct->nombre = MOV_OUT;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "F_OPEN") == 0) {
-            instruct->nombre = F_OPEN;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "F_CLOSE") == 0) {
-            instruct->nombre = F_CLOSE;
-            cantidad_parametros = 1;
-        }
-        if (strcmp(instruccion_parseada[0], "F_SEEK") == 0) {
-            instruct->nombre = F_SEEK;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "F_READ") == 0) {
-            instruct->nombre = F_READ;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "F_WRITE") == 0) {
-            instruct->nombre = F_WRITE;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "F_TRUNCATE") == 0) {
-            instruct->nombre = F_TRUNCATE;
-            cantidad_parametros = 2;
-        }
-        if (strcmp(instruccion_parseada[0], "EXIT") == 0) {
-            instruct->nombre = EXIT;
-            cantidad_parametros = 0;
-        }
-
-    	t_list* parametros = list_create();
-
-        for(int i=1;i<cantidad_parametros+1;i++){
-            list_add(parametros,instruccion_parseada[i]);
-        }
-        log_info(logger_consola_memoria, "codigo de operacion a ejecutar es %d",instruct->nombre);
-    	char* parametro1 = list_get(parametros,0);
-    	char* parametro2 = list_get(parametros,1);
-    	log_info(logger_consola_memoria,"el valor es %s" ,parametro1);
-    	log_info(logger_consola_memoria,"el valor es %s" ,parametro2);
-
-
-        list_add_all(instruct->parametros,parametros);
-    	log_info(logger_consola_memoria,"el tamanio de la lista es %i",list_size(instruct->parametros));
-
-    	char* parametro3 = list_get(instruct->parametros,0);
-    	log_info(logger_consola_memoria,"el valor de la PARAMETRO 1 es : %s",parametro3);
-    	char* parametro4 = list_get(instruct->parametros,1);
-    	log_info(logger_consola_memoria,"el valor de la PARAMETRO 2 es : %s",parametro4);
-
-        list_add(instrucciones_del_pcb,instruct);
-		log_info(logger_consola_memoria, "hola\n");
+        list_add(instrucciones_del_pcb,instruccion);
     }
+
     return instrucciones_del_pcb;
 
-}
 
-char** parsear_instruccion(char* instruccion){
-
-    // Parseo la instruccion
-    char** instruccion_parseada = string_split(instruccion, " ");
-
-    // Retorno la instruccion parseada
-    return instruccion_parseada;
 }
 
 
@@ -369,4 +293,6 @@ op_instrucciones asignar_cod_instruccion(char* instruccion){
 	    }
 
 }
+
+
 

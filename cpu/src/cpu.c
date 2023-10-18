@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
 
 void iniciar_recurso(){
 	recibi_archivo=false;
+	instruccion_a_realizar= malloc(sizeof(t_instruccion));
 }
 
 
@@ -39,19 +40,124 @@ void procesar_conexion(void *conexion1){
 			recibir_mensaje(cliente_fd);
 			break;
 		case INSTRUCCIONES_A_MEMORIA:
-			lista = recibir_paquete(cliente_fd);
-			instruccion_a_realizar = desempaquetar_instrucciones(lista);
+			char* auxiliar =recibir_instruccion(cliente_fd);
+			log_info(logger_consola_cpu,"me llego la siguiente instruccion %s",auxiliar);
+			transformar_en_instrucciones(auxiliar);
 			hayInterrupcion = true;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
 			return;
 		default:
+			log_info(logger,"hola pepe");
 			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
 	}
 	return;
 }
+
+void transformar_en_instrucciones(char* auxiliar){
+	instruccion_a_realizar->parametros= list_create();
+	int cantidad_parametros;
+	char** instruccion_parseada = parsear_instruccion(auxiliar);
+
+	        if (strcmp(instruccion_parseada[0], "SET") == 0) {
+	        	instruccion_a_realizar->nombre = SET;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "SUB") == 0) {
+	        	instruccion_a_realizar->nombre = SUB;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "SUM") == 0) {
+	        	instruccion_a_realizar->nombre = SUM;
+	            cantidad_parametros = 2;
+	        }
+
+	        if (strcmp(instruccion_parseada[0], "JNZ") == 0) {
+	        	instruccion_a_realizar->nombre = JNZ;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "SLEEP") == 0) {
+	        	instruccion_a_realizar->nombre = SLEEP;
+	            cantidad_parametros = 1;
+	        }
+	        if (strcmp(instruccion_parseada[0], "WAIT") == 0) {
+	        	instruccion_a_realizar->nombre = WAIT;
+	            cantidad_parametros = 1;
+	        }
+	        if (strcmp(instruccion_parseada[0], "SIGNAL") == 0) {
+	        	instruccion_a_realizar->nombre = SIGNAL;
+	            cantidad_parametros = 1;
+	        }
+	        if (strcmp(instruccion_parseada[0], "MOV_IN") == 0) {
+	        	instruccion_a_realizar->nombre = MOV_IN;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "MOV_OUT") == 0) {
+	        	instruccion_a_realizar->nombre = MOV_OUT;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "F_OPEN") == 0) {
+	        	instruccion_a_realizar->nombre = F_OPEN;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "F_CLOSE") == 0) {
+	        	instruccion_a_realizar->nombre = F_CLOSE;
+	            cantidad_parametros = 1;
+	        }
+	        if (strcmp(instruccion_parseada[0], "F_SEEK") == 0) {
+	        	instruccion_a_realizar->nombre = F_SEEK;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "F_READ") == 0) {
+	        	instruccion_a_realizar->nombre = F_READ;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "F_WRITE") == 0) {
+	        	instruccion_a_realizar->nombre = F_WRITE;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "F_TRUNCATE") == 0) {
+	        	instruccion_a_realizar->nombre = F_TRUNCATE;
+	            cantidad_parametros = 2;
+	        }
+	        if (strcmp(instruccion_parseada[0], "EXIT") == 0) {
+	        	instruccion_a_realizar->nombre = EXIT;
+	            cantidad_parametros = 0;
+	        }
+
+	    	t_list* parametros = list_create();
+
+	        for(int i=1;i<cantidad_parametros+1;i++){
+	            list_add(parametros,instruccion_parseada[i]);
+	        }
+
+	        list_add_all(instruccion_a_realizar->parametros,parametros);
+
+
+	        char* parametro2 = obtener_nombre_instruccion(instruccion_a_realizar->nombre);
+	    	log_info(logger_consola_cpu,"el valor de instruccion es %s",parametro2);
+
+	    	int i=0;
+	    	while(i<cantidad_parametros){
+	    		char* parametro1 = list_get(instruccion_a_realizar->parametros,i);
+	    		log_info(logger_consola_cpu,"el parametro %i es %s",i,parametro1);
+	    		i++;
+	    	}
+
+}
+
+
+char** parsear_instruccion(char* instruccion){
+
+    // Parseo la instruccion
+    char** instruccion_parseada = string_split(instruccion, " ");
+
+    // Retorno la instruccion parseada
+    return instruccion_parseada;
+}
+
 
 
 void iniciar_consola(){
@@ -124,7 +230,7 @@ void atendiendo_pedido(int cliente_fd){
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
-			enviar_mensaje("hola", cliente_fd);
+			enviar_mensaje("te respondi el mensaje ", cliente_fd);
 			break;
 		case PAQUETE:
 			lista = recibir_paquete(cliente_fd);

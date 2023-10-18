@@ -15,7 +15,6 @@
 #include<commons/config.h>
 #include<readline/readline.h>
 #include <utils/conexion.h>
-#include "instrucciones.h"
 
 t_log* logger;
 t_config* config;
@@ -46,7 +45,8 @@ void fetch(t_pcb*);
 void decode(t_pcb* ,t_instruccion*);
 void solicitar_instruccion_ejecutar_segun_pc(int,int);
 void generar_conexion_memoria();
-
+char** parsear_instruccion(char* );
+void transformar_en_instrucciones(char*);
 
 void atendiendo_pedido(int);
 //archivos

@@ -71,6 +71,7 @@ int iniciar_servidor_file_system(char *puerto){
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
+			enviar_mensaje("te respondi el mensaje", cliente_fd)
 			break;
 		case PAQUETE:
 			lista = recibir_paquete(cliente_fd);

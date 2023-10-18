@@ -50,13 +50,14 @@ void obtener_configuraciones();
 void iniciar_servidor_memoria(char*);
 void iniciar_consola();
 void recibir_estructura_inicial(int);
-void procesar_conexion(void *);
+void procesar_conexion(int);
 void iniciar_recursos();
 void cargar_lista_instruccion(char*,int ,int,int);
 t_list* leer_pseudocodigo(FILE*);
 char** parsear_instruccion(char*);
 op_instrucciones asignar_cod_instruccion(char* );
 bool encontrar_instrucciones(void * );
+char* obtener_nombre_instruccion(op_instrucciones ) ;
 
 
 #endif /* KERNEL_H_ */
