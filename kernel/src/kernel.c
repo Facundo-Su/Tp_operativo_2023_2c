@@ -308,6 +308,7 @@ t_pcb* quitar_de_cola_ejecucion(){
 	log_info(logger,"El proceso [%d] fue quitado de la cola ejecucion",pcb->pid);
 	return pcb;
 }
+
 void planificador_largo_plazo(){
 	while(!queue_is_empty(cola_new)){
 			sem_wait(&grado_multiprogramacion);
@@ -317,6 +318,8 @@ void planificador_largo_plazo(){
 	}
 
 }
+
+//TODO MOTIVO DE QUE DESPUES DE INICIAR PLANIFICACION NO ME DEJA INGRESAR OTRA OPERACION
 void planificador_corto_plazo(){
 //  Desmarcar para probar los planificadores
 	/*planificador = PRIORIDADES;
@@ -383,6 +386,8 @@ void planificador_corto_plazo(){
 			}
 		}
 }
+
+//TODO AGREGAR DISPATCH
 void de_ready_a_fifo(){
 	t_pcb* pcb =quitar_de_cola_ready();
 	pcb->estado=RUNNING;
@@ -393,8 +398,8 @@ void de_ready_a_fifo(){
 //TODO Revisar el if que crashea
 void de_ready_a_round_robin(){
 
-	if(!queue_is_empty(cola_ready)){
-		log_info(logger,"cantidad de elemento en cola es %i",queue_size(cola_ready));
+	if(!queue_is_empty(cola_ejecucion)){
+		log_info(logger,"cantidad de elemento en cola es %i",queue_size(cola_ejecucion));
 		t_pcb* pcb = queue_peek(cola_ejecucion);
 		if(pcb->tiempo_cpu > quantum){
 		 quitar_de_cola_ejecucion();

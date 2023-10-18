@@ -156,6 +156,8 @@ void procesar_conexion(int cliente_fd){
 	    			log_info(logger_consola_memoria,"me llegaron el siguiente pc %i",*pc_recibido);
 	    			log_info(logger_consola_memoria,"me llegaron el siguiente pid %i",*pid_recibido);
 
+
+
 	    		    bool encontrar_instrucciones(void * instruccion){
 	    		          t_instrucciones* un_instruccion = (t_instrucciones*)instruccion;
 	    		          log_info(logger_consola_memoria,"comparando pid %i",*pid_recibido);
@@ -176,6 +178,7 @@ void procesar_conexion(int cliente_fd){
 	    		        log_info(logger, "No se encontraron instrucciones para el PID %i", *pid_recibido);
 	    		    }
 	    			char*valor_obtenido = list_get(instrucciones->instrucciones,*pc_recibido);
+    		        log_info(logger, "el instruccion que se envio es  %s", valor_obtenido);
 	    			enviar_mensaje_instrucciones(valor_obtenido,cliente_fd,INSTRUCCIONES_A_MEMORIA);
 	    			//log_info(logger_consola_memoria,"pid encontrado bien ahi es %i",instrucciones->pid);
 	    			//t_paquete* paquete = crear_paquete(INSTRUCCIONES_A_MEMORIA);
@@ -204,6 +207,7 @@ void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
 	list_add_all(instruccion->instrucciones,auxiliar);
 	list_add(lista_instrucciones,instruccion);
 	int cantidad = list_size(auxiliar);
+
 	t_instrucciones* instruuu = list_get(lista_instrucciones,0);
 	int cantidad2 = list_size(lista_instrucciones);
 	int *auxiliar2 = instruuu->pid;
@@ -226,16 +230,19 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
     while (getline(&instruccion, &len, pseudocodigo) != -1){
 
     	log_info(logger_consola_memoria,"el valor es %s" ,instruccion);
-        // Parseo la instruccion
-
         list_add(instrucciones_del_pcb,instruccion);
+        log_info(logger_consola_memoria,"el itamanio es  %s",list_size(instrucciones_del_pcb));
     }
 
+    char *instruc_aux_nose = list_get(instruc_aux_nose,0);
+    log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose);
+    char *instruc_aux_nose2 = list_get(instruc_aux_nose,1);
+    log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose2);
+    char *instruc_aux_nose3 = list_get(instruc_aux_nose,2);
+    log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose3);
     return instrucciones_del_pcb;
 
-
 }
-
 
 
 void realizar_proceso_finalizar(int valor){
