@@ -286,7 +286,7 @@ void atendiendo_pedido(int cliente_fd){
 
 void ejecutar_ciclo_de_instruccion(t_pcb* pcb){
 //pide a memoria
-	while(!hayInterrupcion){
+	while(1){
 		fetch(pcb);
 	}
 	hayInterrupcion =true;
@@ -294,11 +294,13 @@ void ejecutar_ciclo_de_instruccion(t_pcb* pcb){
 }
 
 void fetch(t_pcb* pcb){
+
 	int pc = pcb->contexto->pc;
 	int pid =pcb->pid;
 	solicitar_instruccion_ejecutar_segun_pc(pc, pid);
 	pcb->contexto->pc+=1;
 	decode(pcb,instruccion_a_realizar);
+
 }
 
 void solicitar_instruccion_ejecutar_segun_pc(int pc,int pid){
@@ -396,6 +398,8 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		log_info(logger_consola_cpu,"entendi el mensaje F_TRUNCATE");
 		break;
 	case EXIT:
+		//TODO semaforo
+		log_info(logger_consola, "llego hasta aca sssssss");
 		hayInterrupcion = true;
 		enviar_pcb(pcb,cliente_fd,FINALIZAR);
 		log_info(logger_consola,"entendi el mensaje EXIT");

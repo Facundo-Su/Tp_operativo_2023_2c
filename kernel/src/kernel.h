@@ -58,6 +58,7 @@ t_queue* cola_ejecucion;
 sem_t mutex_cola_new;
 sem_t mutex_cola_ready;
 sem_t mutex_cola_ejecucion;
+sem_t contador_ejecutando_cpu;
 //sem_t sem_new;
 //sem_t sem_ready;
 t_planificador tipo_planificador;

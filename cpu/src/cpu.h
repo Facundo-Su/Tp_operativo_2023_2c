@@ -31,6 +31,9 @@ bool hayInterrupcion;
 int cliente_fd;
 t_instruccion* instruccion_a_realizar;
 
+
+sem_t contador_recibiendoArchivo;
+
 void obtener_configuracion();
 void terminar_programa();
 t_config* iniciar_config();

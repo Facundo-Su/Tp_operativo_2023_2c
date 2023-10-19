@@ -62,6 +62,7 @@ void procesar_conexion(void *conexion1){
 		case FINALIZAR:
 			pcb_aux = recibir_pcb(cliente_fd);
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
+			sem_post(&contador_ejecutando_cpu);
 			break;
 
 		case -1:
@@ -150,7 +151,9 @@ void iniciar_recurso(){
 	lista_recursos = list_create();
 	sem_init(&grado_multiprogramacion, 0, grado_multiprogramacion_ini);
 	sem_init(&mutex_cola_new, 0, 1);
+	sem_init(&contador_ejecutando_cpu,0,1);
 	sem_init(&mutex_cola_ready,0,1);
+
 
 }
 
@@ -311,13 +314,14 @@ t_pcb* quitar_de_cola_ejecucion(){
 }
 
 void planificador_largo_plazo(){
+	while(1){
 	while(!queue_is_empty(cola_new)){
 			sem_wait(&grado_multiprogramacion);
 			t_pcb* pcb =quitar_de_cola_new();
 			log_info(logger, "el pid del proceso es %i",pcb->pid);
 			agregar_a_cola_ready(pcb);
+		}
 	}
-
 }
 
 //TODO MOTIVO DE QUE DESPUES DE INICIAR PLANIFICACION NO ME DEJA INGRESAR OTRA OPERACION
@@ -366,9 +370,11 @@ void planificador_corto_plazo(){
 	agregar_a_cola_ready(ppcb3);
 */
 
+
 	log_info(logger,"ando hasta aca");
 	while(1){
 			while(!queue_is_empty(cola_ready)){
+				sem_wait(&contador_ejecutando_cpu);
 				switch(planificador){
 				case FIFO:
 					log_info(logger,"Planificador FIFO");
@@ -481,10 +487,20 @@ int buscarPosicionQueEstaElPid(int valor){
 	return -1;
 }
 
+
 void iniciar_planificacion(){
+	pthread_t * hilo_corto_plazo;
+	pthread_t * hilo_largo_plazo;
 	log_info(logger_consola,"inicio el proceso de planificacion");
+	pthread_create(&hilo_largo_plazo,NULL,(void*) planificador_largo_plazo,NULL);
+	pthread_create(&hilo_corto_plazo,NULL,(void*) planificador_corto_plazo,NULL);
+	pthread_detach(*hilo_largo_plazo);
+	pthread_detach(*hilo_corto_plazo);
 	planificador_largo_plazo();
 	planificador_corto_plazo();
+
+	log_info(logger_consola, "llego hasta aca asddddddddddddddd");
+
 }
 
 
