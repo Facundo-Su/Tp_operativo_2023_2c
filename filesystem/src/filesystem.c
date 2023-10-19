@@ -3,7 +3,7 @@
 #include<readline/readline.h>
 int main(int argc, char* argv[]) {
 
-	char *ruta_config = argv[1];
+	char *ruta_config = "./filesystem.config";
 
 	config = cargar_config(ruta_config);
 
@@ -35,7 +35,8 @@ void iniciar_consola(){
 		log_info(logger_consola_filesystem,"ingrese la operacion que deseas realizar"
 				"\n 1. generar conexion"
 				"\n 2. enviar mensaje"
-				"\n 3. iniciarComoServidor");
+				"\n 3. iniciarComoServidor"
+				"\n 4. levantar Archivos");
 		valor = readline("<");
 		switch (*valor) {
 			case '1':
@@ -49,6 +50,11 @@ void iniciar_consola(){
 			case '3':
 				log_info(logger_consola_filesystem, "se inicio el servidor\n");
 				iniciar_servidor(puerto_escucha);
+				break;
+			case '4':
+				log_info(logger_consola_filesystem, "levantando archivos \n");
+				levantar_archivos_binario(archivo_bloques);
+				levantar_archivos_binario(archivo_fat);
 				break;
 			default:
 				log_info(logger_consola_filesystem,"no corresponde a ninguno");
@@ -71,7 +77,7 @@ int iniciar_servidor_file_system(char *puerto){
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
-			enviar_mensaje("te respondi el mensaje", cliente_fd)
+			enviar_mensaje("te respondi el mensaje", cliente_fd);
 			break;
 		case PAQUETE:
 			lista = recibir_paquete(cliente_fd);
@@ -92,3 +98,34 @@ int iniciar_servidor_file_system(char *puerto){
 void iterator(char* value) {
 	log_info(logger,"%s", value);
 }
+
+
+int levantar_archivos_binario(char* ruta){
+	FILE* file;
+	file = fopen(ruta, "wb");
+	if(file == NULL){
+		return 0;
+	}
+	log_info(logger_consola_filesystem, "Se levanto el archivo %s\n", ruta);
+	// ESTO ES PARA PROBAR
+	char datos[] = "datos de prueba";
+	fwrite(&datos,sizeof(datos), 1, file);
+	log_info(logger_consola_filesystem, "Se escribio el archivo \n");
+	fclose(file);
+	return 1;
+}
+
+int levantar_fcb(){
+
+	return 1;
+}
+
+
+
+
+
+
+
+
+
+

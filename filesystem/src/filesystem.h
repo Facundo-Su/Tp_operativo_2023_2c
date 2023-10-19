@@ -25,6 +25,14 @@ int conexion_memoria;
 char *ip_memoria;
 char *puerto_memoria;
 char *puerto_escucha;
+char * archivo_fat = "archivo_fat.dat";
+char * archivo_bloques = "archivo_bloques.dat";
+
+typedef struct{
+    char* nombre_archivo;
+    int tamanio_archivo;
+    int bloque_inicial;
+}t_fcb;
 
 void obtener_configuracion();
 void terminar_programa();
@@ -32,6 +40,7 @@ t_config* iniciar_config();
 void iterator(char*);
 int iniciar_servidor_file_system(char*);
 void iniciar_consola();
-
+int levantar_FAT();
+int levantar_archivos_binario(char* ruta);
 
 #endif /* SRC_FILESYSTEM_H_ */
