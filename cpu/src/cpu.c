@@ -44,8 +44,29 @@ void procesar_conexion(void *conexion1){
 			log_info(logger_consola_cpu,"me llego la siguiente instruccion %s",auxiliar);
 			transformar_en_instrucciones(auxiliar);
 			hayInterrupcion = true;
+			recibi_archivo=true;
+		case PAQUETE:
+			lista = recibir_paquete(cliente_fd);
+			log_info(logger, "Me llegaron los siguientes valores:\n");
+			list_iterate(lista, (void*) iterator);
+			break;
+		case ENVIARREGISTROCPU:
+			t_list* valores_cpu = list_create();
+			valores_cpu= recibir_paquete(cliente_fd);
+			log_info(logger, "ME LLEGARON");
+			break;
+
+		case RECIBIR_PCB:
+			t_pcb* pcb = recibir_pcb(cliente_fd);
+			log_info(logger, "recibi el pid %i",pcb->pid);
+			ejecutar_ciclo_de_instruccion(pcb);
+			break;
+		case CPU_ENVIA_A_MEMORIA:
+			enviar_mensaje("hola capo", conexion_memoria);
+			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
+			close(cliente_fd);
 			return;
 		default:
 			log_info(logger,"hola pepe");
@@ -210,7 +231,7 @@ void iniciar_servidor_cpu(char *puerto){
 	while(1){
 	    int cliente_fd = esperar_cliente(cpu_fd);
 		pthread_t atendiendo_cpu;
-		pthread_create(&atendiendo_cpu,NULL,(void*)atendiendo_pedido,(void *) cliente_fd);
+		pthread_create(&atendiendo_cpu,NULL,(void*)procesar_conexion,(void *) &cliente_fd);
 		pthread_detach(atendiendo_cpu);
 	}
 
@@ -222,7 +243,7 @@ void generar_conexion_memoria(){
 	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
 	pthread_create(&conexion_memoria_hilo_cpu,NULL,(void*) procesar_conexion,(void *)&conexion_memoria);
 }
-
+/*
 void atendiendo_pedido(int cliente_fd){
 	t_list* lista;
 	while (1) {
@@ -254,20 +275,21 @@ void atendiendo_pedido(int cliente_fd){
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
             close(cliente_fd);
-            break;
+            return;
 		default:
 			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
 	}
 	return;
-}
+}*/
 
 void ejecutar_ciclo_de_instruccion(t_pcb* pcb){
 //pide a memoria
 	while(!hayInterrupcion){
 		fetch(pcb);
 	}
+	hayInterrupcion =true;
 
 }
 
@@ -349,29 +371,29 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		enviar_mensaje(recurso,cliente_fd);
 		break;
 	case MOV_IN:
-		log_info(logger_consola,"entendi el mensaje MOV_IN");
+		log_info(logger_consola_cpu,"entendi el mensaje MOV_IN");
 		break;
 	case MOV_OUT:
-		log_info(logger_consola,"entendi el mensaje MOV_OUT");
+		log_info(logger_consola_cpu,"entendi el mensaje MOV_OUT");
 		break;
 	case F_OPEN:
-		log_info(logger_consola,"entendi el mensaje F_OPEN");
+		log_info(logger_consola_cpu,"entendi el mensaje F_OPEN");
 		break;
 	case F_CLOSE:
-		log_info(logger_consola,"entendi el mensaje F_CLOSE");
+		log_info(logger_consola_cpu,"entendi el mensaje F_CLOSE");
 		break;
 	case F_SEEK:
-		log_info(logger_consola,"entendi el mensaje F_SEEK");
+		log_info(logger_consola_cpu,"entendi el mensaje F_SEEK");
 		break;
 	case F_READ:
-		log_info(logger_consola,"entendi el mensaje F_READ");
+		log_info(logger_consola_cpu,"entendi el mensaje F_READ");
 		break;
 	case F_WRITE:
-		log_info(logger_consola,"entendi el mensaje F_WRITE");
+		log_info(logger_consola_cpu,"entendi el mensaje F_WRITE");
 		break;
 	case F_TRUNCATE:
 		hayInterrupcion = true;
-		log_info(logger_consola,"entendi el mensaje F_TRUNCATE");
+		log_info(logger_consola_cpu,"entendi el mensaje F_TRUNCATE");
 		break;
 	case EXIT:
 		hayInterrupcion = true;
@@ -379,10 +401,10 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		log_info(logger_consola,"entendi el mensaje EXIT");
 		break;
 	}
-	tiempo_final = time(NULL);
-	tiempo_transcurrido = difftime(tiempo_final, tiempo_inicial);
-	pcb->tiempo_cpu = tiempo_transcurrido;
-
+//	tiempo_final = time(NULL);
+//	tiempo_transcurrido = difftime(tiempo_final, tiempo_inicial);
+//	pcb->tiempo_cpu = tiempo_transcurrido;
+//
 	recibi_archivo = false;
 }
 

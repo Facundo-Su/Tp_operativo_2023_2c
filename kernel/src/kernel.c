@@ -194,6 +194,7 @@ void generar_conexion() {
 		case '1':
 
 			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+			pthread_create(&conexion_cpu_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_memoria);
 	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		case '2':
@@ -387,7 +388,8 @@ void planificador_corto_plazo(){
 		}
 }
 
-//TODO AGREGAR DISPATCH
+//TODO AGREGAR DISPATCH agregar semaforo
+
 void de_ready_a_fifo(){
 	t_pcb* pcb =quitar_de_cola_ready();
 	pcb->estado=RUNNING;

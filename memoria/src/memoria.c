@@ -225,20 +225,23 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
     int cantidad_parametros;
     t_list* instrucciones_correspondiente_al_archivo = list_create();
 	t_list * instrucciones_del_pcb = list_create();
-
+	int j=0;
     // Recorro el archivo de pseudocodigo y parseo las instrucciones
     while (getline(&instruccion, &len, pseudocodigo) != -1){
 
     	log_info(logger_consola_memoria,"el valor es %s" ,instruccion);
-        list_add(instrucciones_del_pcb,instruccion);
-        log_info(logger_consola_memoria,"el itamanio es  %s",list_size(instrucciones_del_pcb));
+    	char* valor_remplazo = strdup(instruccion);
+        list_add(instrucciones_del_pcb,valor_remplazo);
+        char *instruc_aux_nose23 = list_get(instrucciones_del_pcb,j);
+        j++;
+        log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose23);
     }
 
-    char *instruc_aux_nose = list_get(instruc_aux_nose,0);
+    char *instruc_aux_nose = list_get(instrucciones_del_pcb,0);
     log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose);
-    char *instruc_aux_nose2 = list_get(instruc_aux_nose,1);
+    char *instruc_aux_nose2 = list_get(instrucciones_del_pcb,1);
     log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose2);
-    char *instruc_aux_nose3 = list_get(instruc_aux_nose,2);
+    char *instruc_aux_nose3 = list_get(instrucciones_del_pcb,2);
     log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose3);
     return instrucciones_del_pcb;
 
