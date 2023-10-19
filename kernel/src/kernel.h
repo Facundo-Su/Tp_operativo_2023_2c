@@ -26,7 +26,8 @@ typedef enum{
 	PRIORIDADES
 }t_planificador;
 
-
+bool hay_proceso_en_ejecucion;
+int prioridad_de_proceso_en_ejecucion;
 
 //ruta de archivo test
 //variable global
@@ -119,6 +120,7 @@ void de_ready_a_round_robin();
 void de_ready_a_prioridades();
 bool comparador_prioridades();
 void enviar_contexto_ejecucion(t_contexto_ejecucion * );
+void enviar_por_dispatch(t_pcb* pcb);
 t_contexto_ejecucion* crear_contexto();
 t_list* obtener_lista_instruccion(char* ruta);
 void *manejar_respuesta(void* );

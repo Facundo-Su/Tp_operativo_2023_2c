@@ -405,9 +405,9 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		log_info(logger_consola,"entendi el mensaje EXIT");
 		break;
 	}
-//	tiempo_final = time(NULL);
-//	tiempo_transcurrido = difftime(tiempo_final, tiempo_inicial);
-//	pcb->tiempo_cpu = tiempo_transcurrido;
+	tiempo_final = time(NULL);
+	tiempo_transcurrido = difftime(tiempo_final, tiempo_inicial);
+
 //
 	recibi_archivo = false;
 }

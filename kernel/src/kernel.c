@@ -298,20 +298,6 @@ t_pcb* quitar_de_cola_ready(){
 	log_info(logger,"El proceso [%d] fue quitado de la cola ready",pcb->pid);
 	return pcb;
 }
-void agregar_a_cola_ejecucion(t_pcb* pcb){
-	sem_wait(&mutex_cola_ejecucion);
-	queue_push(cola_ready,pcb);
-	pcb->estado=RUNNING;
-	sem_post(&mutex_cola_ejecucion);
-	log_info(logger,"El proceso [%d] fue agregado a la cola ejecucion",pcb->pid);
-}
-t_pcb* quitar_de_cola_ejecucion(){
-	sem_wait(&mutex_cola_ejecucion);
-	t_pcb* pcb=queue_pop(cola_ejecucion);
-	sem_post(&mutex_cola_ejecucion);
-	log_info(logger,"El proceso [%d] fue quitado de la cola ejecucion",pcb->pid);
-	return pcb;
-}
 
 void planificador_largo_plazo(){
 	while(1){
@@ -327,11 +313,11 @@ void planificador_largo_plazo(){
 //TODO MOTIVO DE QUE DESPUES DE INICIAR PLANIFICACION NO ME DEJA INGRESAR OTRA OPERACION
 void planificador_corto_plazo(){
 //  Desmarcar para probar los planificadores
-	/*planificador = PRIORIDADES;
+	planificador = FIFO;
 
 	t_pcb pcb1 = {
 		1,
-		1,
+		2,
 		1,
 		NULL,
 		NULL,
@@ -341,7 +327,7 @@ void planificador_corto_plazo(){
 	};
 	t_pcb pcb2 = {
 		2,
-		4,
+		1,
 		1,
 		NULL,
 		NULL,
@@ -351,7 +337,7 @@ void planificador_corto_plazo(){
 	};
 	t_pcb pcb3 = {
 		3,
-	    2,
+	    5,
 	    1,
 		NULL,
 		NULL,
@@ -368,8 +354,6 @@ void planificador_corto_plazo(){
 	agregar_a_cola_ready(ppcb1);
 	agregar_a_cola_ready(ppcb2);
 	agregar_a_cola_ready(ppcb3);
-*/
-
 
 	log_info(logger,"ando hasta aca");
 	while(1){
@@ -398,34 +382,27 @@ void planificador_corto_plazo(){
 
 void de_ready_a_fifo(){
 	t_pcb* pcb =quitar_de_cola_ready();
-	pcb->estado=RUNNING;
-	log_info(logger,"El proceso [%d] fue agregado a la cola ejecucion",pcb->pid);
-	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
+	enviar_por_dispatch(pcb);
 }
 
-//TODO Revisar el if que crashea
 void de_ready_a_round_robin(){
-
-	if(!queue_is_empty(cola_ejecucion)){
-		log_info(logger,"cantidad de elemento en cola es %i",queue_size(cola_ejecucion));
-		t_pcb* pcb = queue_peek(cola_ejecucion);
-		if(pcb->tiempo_cpu > quantum){
-		 quitar_de_cola_ejecucion();
-		 de_ready_a_fifo();
+	if(hay_proceso_en_ejecucion && tiempo_transcurrido > quantum){
+			//DESALOJAR
+			de_ready_a_fifo();
 		} else {
-		 de_ready_a_fifo();
-	    }
-	} else {
-		de_ready_a_fifo();
-	}
+			de_ready_a_fifo();
+		}
 }
 
 void de_ready_a_prioridades(){
 	list_sort(cola_ready->elements,comparador_prioridades);
-	t_pcb* pcb = quitar_de_cola_ready();
-	pcb->estado=RUNNING;
-	log_info(logger,"“El PID: %d paso de ready a running ”",pcb->pid);
-	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
+	t_pcb* pcb = queue_peek(cola_ready);
+	if(hay_proceso_en_ejecucion && pcb->prioridad > prioridad_de_proceso_en_ejecucion){
+			//DESALOJAR
+			de_ready_a_fifo();
+		} else {
+			de_ready_a_fifo();
+		}
 }
 
 bool comparador_prioridades(void* caso1,void* caso2){
@@ -440,13 +417,16 @@ bool controlador_multi_programacion(){
 	return list_size(lista_pcb)<grado_multiprogramacion_ini;
 }
 
-
-
-
+void enviar_por_dispatch(t_pcb* pcb) {
+	pcb->estado=RUNNING;
+	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
+	hay_proceso_en_ejecucion = true;
+	prioridad_de_proceso_en_ejecucion = pcb->prioridad;
+	log_info(logger,"El proceso [%d] fue pasado al estado de running y enviado al CPU",pcb->pid);
+}
 
 t_contexto_ejecucion* obtener_contexto(char* archivo){
 	t_contexto_ejecucion *estructura_retornar ;
-
 	return estructura_retornar;
 }
 
