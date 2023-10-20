@@ -262,12 +262,12 @@ t_contexto_ejecucion* crear_contexto(){
 }
 
 t_registro_cpu* crear_registro(){
-	t_registro_cpu* reg = malloc(sizeof(t_registro_cpu));
-    memset(reg->ax, 0, sizeof(reg->ax));
-    memset(reg->bx, 0, sizeof(reg->bx));
-    memset(reg->cx, 0, sizeof(reg->cx));
-    memset(reg->dx, 0, sizeof(reg->dx));
-	return reg;
+    t_registro_cpu* reg = malloc(sizeof(t_registro_cpu));
+    reg->ax = 0;
+    reg->bx = 0;
+    reg->cx = 0;
+    reg->dx = 0;
+    return reg;
 }
 
 

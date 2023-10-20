@@ -323,17 +323,22 @@ void solicitar_instruccion_ejecutar_segun_pc(int pc,int pid){
 void decode(t_pcb* pcb,t_instruccion* instrucciones,int cliente_fd){
 	t_estrucutra_cpu registro_aux;
 	t_estrucutra_cpu registro_aux2;
-	char * recurso;
-	char* parametro;
-	char* parametro2;
+	char * recurso ="";
+	char* parametro="";
+	char* parametro2="";
+	uint32_t valor_uint1;
+	uint32_t valor_uint2;
 	tiempo_inicial = time(NULL);
 	switch(instrucciones->nombre){
 	case SET:
 		hayInterrupcion= false;
+
 		parametro2= list_get(instrucciones->parametros,1);
 		parametro= list_get(instrucciones->parametros,0);
+
+		valor_uint1 = strtoul(parametro2, NULL, 10);
 		registro_aux = devolver_registro(parametro);
-		setear(pcb,registro_aux,parametro2);
+		setear(pcb,registro_aux,valor_uint1);
 		imprimir_valores_registros(pcb->contexto->registros_cpu);
 		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		//ADormir(x segundo);
@@ -424,16 +429,12 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones,int cliente_fd){
 	recibi_archivo = false;
 }
 
-void setear(t_pcb* pcb, t_estrucutra_cpu pos, char* valor) {
+void setear(t_pcb* pcb, t_estrucutra_cpu pos, uint32_t valor) {
     switch(pos) {
-        case AX: memcpy(&(pcb->contexto->registros_cpu->ax), valor, strlen(valor)+1);
-                 break;
-        case BX: memcpy(&(pcb->contexto->registros_cpu->bx), valor, strlen(valor)+1);
-                 break;
-        case CX: memcpy(&(pcb->contexto->registros_cpu->cx), valor, strlen(valor)+1);
-                 break;
-        case DX: memcpy(&(pcb->contexto->registros_cpu->dx), valor, strlen(valor)+1);
-                 break;
+        case AX: pcb->contexto->registros_cpu->ax = valor; break;
+        case BX: pcb->contexto->registros_cpu->bx = valor; break;
+        case CX: pcb->contexto->registros_cpu->cx = valor; break;
+        case DX: pcb->contexto->registros_cpu->dx = valor; break;
         default: log_info(logger, "Registro de destino no válido");
     }
 }
@@ -456,39 +457,31 @@ t_estrucutra_cpu devolver_registro(char* registro){
     return v;
 }
 
-void sumar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu inicio) {
-	char valor_destino;
-	char valor_origen;
-	valor_destino =obtener_valor(pcb, destino);
-	valor_origen = obtener_valor(pcb, inicio);
-    char *resultado = valor_destino+ valor_origen;
-    setear(pcb, destino, resultado);
-
-}
-
-
-
-
-void restar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu inicio) {
-	char valor_destino;
-	char valor_origen;
-
-	valor_destino =obtener_valor(pcb, destino);
-	valor_origen = obtener_valor(pcb, inicio);
-
-    char resultado = valor_destino- valor_origen;
+void sumar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
+    uint32_t valor_destino = obtener_valor(pcb, destino);
+    uint32_t valor_origen = obtener_valor(pcb, origen);
+    uint32_t resultado = valor_destino + valor_origen;
     setear(pcb, destino, resultado);
 }
 
 
 
-char* obtener_valor(t_pcb* pcb, t_estrucutra_cpu pos) {
+
+void restar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
+    uint32_t valor_destino = obtener_valor(pcb, destino);
+    uint32_t valor_origen = obtener_valor(pcb, origen);
+    uint32_t resultado = valor_destino - valor_origen;  // Ensure underflow handling if needed
+    setear(pcb, destino, resultado);
+}
+
+
+uint32_t obtener_valor(t_pcb* pcb, t_estrucutra_cpu pos) {
     switch(pos) {
-        case AX: return (char) pcb->contexto->registros_cpu->ax;
-        case BX: return (char) pcb->contexto->registros_cpu->bx;
-        case CX: return (char) pcb->contexto->registros_cpu->cx;
-        case DX: return (char) pcb->contexto->registros_cpu->dx;
-        default: log_info(logger, "Registro no reconocido"); return NULL;
+        case AX: return  pcb->contexto->registros_cpu->ax;
+        case BX: return  pcb->contexto->registros_cpu->bx;
+        case CX: return  pcb->contexto->registros_cpu->cx;
+        case DX: return  pcb->contexto->registros_cpu->dx;
+        default: log_info(logger, "Registro no reconocido"); return 0;
     }
 }
 
@@ -498,9 +491,9 @@ void iterator(char* value) {
 }
 
 void imprimir_valores_registros(t_registro_cpu* registros) {
-    log_info(logger, "Valor de AX: %s", registros->ax);
-    log_info(logger, "Valor de BX: %s", registros->bx);
-    log_info(logger, "Valor de CX: %s", registros->cx);
-    log_info(logger, "Valor de DX: %s", registros->dx);
+    log_info(logger, "Valor de AX: %u", registros->ax);
+    log_info(logger, "Valor de BX: %u", registros->bx);
+    log_info(logger, "Valor de CX: %u", registros->cx);
+    log_info(logger, "Valor de DX: %u", registros->dx);
 }
 

@@ -353,10 +353,10 @@ void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* con
 }
 
 void empaquetar_registro(t_paquete* paquete, t_registro_cpu* registroCpu){
-	agregar_a_paquete(paquete,&(registroCpu->ax), strlen(registroCpu->ax)+1);
-	agregar_a_paquete(paquete,&(registroCpu->bx), strlen(registroCpu->bx)+1);
-	agregar_a_paquete(paquete,&(registroCpu->cx), strlen(registroCpu->cx)+1);
-	agregar_a_paquete(paquete,&(registroCpu->dx), strlen(registroCpu->dx)+1);
+	agregar_a_paquete(paquete,&(registroCpu->ax), sizeof(uint32_t));
+	agregar_a_paquete(paquete,&(registroCpu->bx), sizeof(uint32_t));
+	agregar_a_paquete(paquete,&(registroCpu->cx), sizeof(uint32_t));
+	agregar_a_paquete(paquete,&(registroCpu->dx), sizeof(uint32_t));
 }
 
 
@@ -406,28 +406,20 @@ t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int posicion){
 	contexto->registros_cpu = registros;
 	return contexto;
 }
+t_registro_cpu* desempaquetar_registros(t_list* paquete, int posicion) {
+    t_registro_cpu* registro = malloc(sizeof(t_registro_cpu));
 
-t_registro_cpu * desempaquetar_registros(t_list * paquete,int posicion){
-	t_registro_cpu *registro = malloc(sizeof(t_registro_cpu));
+    uint32_t* ax = list_get(paquete, posicion);
 
-	char* ax = list_get(paquete,posicion);
-	strcpy(registro->ax, ax);
-	free(ax);
+    uint32_t* bx = list_get(paquete, posicion + 1);
 
-	char* bx = list_get(paquete,posicion+1);
-	strcpy(registro->bx, bx);
-	free(bx);
+    uint32_t* cx = list_get(paquete, posicion + 2);
 
-	char* cx = list_get(paquete,posicion+2);
-	strcpy(registro->cx, cx);
-	free(cx);
+    uint32_t* dx = list_get(paquete, posicion + 3);
 
-	char* dx = list_get(paquete,posicion+3);
-	strcpy(registro->dx, dx);
-	free(dx);
-
-	return registro;
+    return registro;
 }
+
 
 
 t_instruccion * desempaquetar_instrucciones(t_list* paquete){

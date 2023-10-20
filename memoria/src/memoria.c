@@ -137,7 +137,7 @@ void procesar_conexion(int cliente_fd){
 	                log_info(logger, "Me llegaron los siguientes valores de pid: %i",*pid);
 
 
-	                cargar_lista_instruccion(ruta,size,prioridad,pid);
+	                cargar_lista_instruccion(ruta,size,prioridad,*pid);
 	                break;
 	            case FINALIZAR:
 
@@ -158,9 +158,9 @@ void procesar_conexion(int cliente_fd){
 	    		    bool encontrar_instrucciones(void * instruccion){
 	    		          t_instrucciones* un_instruccion = (t_instrucciones*)instruccion;
 	    		          log_info(logger_consola_memoria,"comparando pid %i",*pid_recibido);
-	    		          int *valor_comparar =un_instruccion->pid;
-	    		          log_info(logger_consola_memoria,"comparando el pid %i",*valor_comparar);
-	    		          return *valor_comparar == *pid_recibido;
+	    		          int valor_comparar =un_instruccion->pid;
+	    		          log_info(logger_consola_memoria,"comparando el pid %i",valor_comparar);
+	    		          return valor_comparar == *pid_recibido;
 	    		    }
 	    		    t_instrucciones* instrucciones = list_find(lista_instrucciones, encontrar_instrucciones);
 
@@ -197,6 +197,7 @@ void procesar_conexion(int cliente_fd){
 
 void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
 	t_instrucciones * instruccion = malloc(sizeof(t_instruccion));
+	log_info(logger_consola_memoria,"%i",pid);
 	instruccion->pid = pid;
 	instruccion->instrucciones = list_create();
 	FILE * archivo = fopen(ruta,"r");
@@ -208,9 +209,9 @@ void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
 
 	t_instrucciones* instruuu = list_get(lista_instrucciones,0);
 	int cantidad2 = list_size(lista_instrucciones);
-	int *auxiliar2 = instruuu->pid;
 	log_info(logger_consola_memoria,"la lista total total de general es %i",cantidad2);
-	log_info(logger_consola_memoria,"el valor de la pid primero es  %i",*auxiliar2);
+
+	log_info(logger_consola_memoria,"el valor de la pid primero es  %i",instruuu->pid);
 	fclose(archivo);
 
 }
