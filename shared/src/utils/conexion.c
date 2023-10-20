@@ -353,10 +353,10 @@ void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* con
 }
 
 void empaquetar_registro(t_paquete* paquete, t_registro_cpu* registroCpu){
-	agregar_a_paquete(paquete,&(registroCpu->AX), strlen(registroCpu->AX)+1);
-	agregar_a_paquete(paquete,&(registroCpu->BX), strlen(registroCpu->BX)+1);
-	agregar_a_paquete(paquete,&(registroCpu->CX), strlen(registroCpu->CX)+1);
-	agregar_a_paquete(paquete,&(registroCpu->DX), strlen(registroCpu->DX)+1);
+	agregar_a_paquete(paquete,&(registroCpu->ax), strlen(registroCpu->ax)+1);
+	agregar_a_paquete(paquete,&(registroCpu->bx), strlen(registroCpu->bx)+1);
+	agregar_a_paquete(paquete,&(registroCpu->cx), strlen(registroCpu->cx)+1);
+	agregar_a_paquete(paquete,&(registroCpu->dx), strlen(registroCpu->dx)+1);
 }
 
 
@@ -411,19 +411,19 @@ t_registro_cpu * desempaquetar_registros(t_list * paquete,int posicion){
 	t_registro_cpu *registro = malloc(sizeof(t_registro_cpu));
 
 	char* ax = list_get(paquete,posicion);
-	strcpy(registro->AX, ax);
+	strcpy(registro->ax, ax);
 	free(ax);
 
 	char* bx = list_get(paquete,posicion+1);
-	strcpy(registro->BX, bx);
+	strcpy(registro->bx, bx);
 	free(bx);
 
 	char* cx = list_get(paquete,posicion+2);
-	strcpy(registro->CX, cx);
+	strcpy(registro->cx, cx);
 	free(cx);
 
 	char* dx = list_get(paquete,posicion+3);
-	strcpy(registro->DX, dx);
+	strcpy(registro->dx, dx);
 	free(dx);
 
 	return registro;

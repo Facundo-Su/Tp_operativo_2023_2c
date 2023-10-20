@@ -28,7 +28,7 @@ char *puerto_memoria;
 char *puerto_escucha;
 t_log *logger_consola_cpu;
 bool hayInterrupcion;
-int cliente_fd;
+
 t_instruccion* instruccion_a_realizar;
 
 
@@ -40,16 +40,18 @@ t_config* iniciar_config();
 void iniciar_servidor_cpu(char*);
 void iterator(char*);
 void iniciar_consola();
-t_pcb* ejecutar_instruccion(t_pcb* );
+t_pcb* ejecutar_instruccion(t_pcb*,int );
 char* obtener_valor(t_pcb* , t_estrucutra_cpu );
 void setear(t_pcb* , t_estrucutra_cpu , char* );
 t_estrucutra_cpu devolver_registro(char* );
-void fetch(t_pcb*);
-void decode(t_pcb* ,t_instruccion*);
+void fetch(t_pcb*, int);
+void decode(t_pcb* ,t_instruccion*,int);
 void solicitar_instruccion_ejecutar_segun_pc(int,int);
 void generar_conexion_memoria();
 char** parsear_instruccion(char* );
 void transformar_en_instrucciones(char*);
+void imprimir_valores_registros(t_registro_cpu* );
+
 
 void atendiendo_pedido(int);
 //archivos

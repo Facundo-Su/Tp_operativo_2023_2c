@@ -21,9 +21,7 @@ int main(int argc, char **argv){
     pthread_t servidor;
 
 
-    terminar_programa(conexion_memoria, logger, config);
-    terminar_programa(conexion_cpu, logger, config);
-    terminar_programa(conexion_file_system, logger, config);
+
 
 
     return EXIT_SUCCESS;
@@ -39,6 +37,7 @@ void procesar_conexion(void *conexion1){
 		t_pcb* pcb_aux;
 		switch (cod_op) {
 		case MENSAJE:
+			log_info(logger,"hola");
 			recibir_mensaje(cliente_fd);
 			break;
 		case EJECUTAR_SLEEP:
@@ -61,6 +60,8 @@ void procesar_conexion(void *conexion1){
 			break;
 		case FINALIZAR:
 			pcb_aux = recibir_pcb(cliente_fd);
+			log_info(logger,"el pid del proceso finalizado es %i",pcb_aux->pid);
+			enviar_mensaje("hola se finalizo el proceso ", conexion);
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
 			sem_post(&contador_ejecutando_cpu);
 			break;
@@ -87,7 +88,7 @@ void iniciar_consola(){
 				"\n 2. finalizar proceso"
 				"\n 3. iniciar Planificacion"
 				"\n 4. detener Planificacion"
-				"\n 5. modificar grado multiprogramacion"
+				"\n 5. modificar grado multiprogramacion terminar programa"
 				"\n 6. hacer que cpu mande mensaje a memoria"
 				"\n 7. generar conexion"
 				"\n 8. enviar mensaje");
@@ -254,7 +255,7 @@ void crear_pcb(t_planificador prioridad){
 
 t_contexto_ejecucion* crear_contexto(){
 	t_contexto_ejecucion* contexto = malloc(sizeof(t_contexto_ejecucion));
-	contexto->pc =NULL;
+	contexto->pc =0;
 	t_registro_cpu* registro = crear_registro();
 	contexto->registros_cpu = registro;
 	return contexto;
@@ -262,10 +263,10 @@ t_contexto_ejecucion* crear_contexto(){
 
 t_registro_cpu* crear_registro(){
 	t_registro_cpu* reg = malloc(sizeof(t_registro_cpu));
-    memset(reg->AX, 0, sizeof(reg->AX));
-    memset(reg->BX, 0, sizeof(reg->BX));
-    memset(reg->CX, 0, sizeof(reg->CX));
-    memset(reg->DX, 0, sizeof(reg->DX));
+    memset(reg->ax, 0, sizeof(reg->ax));
+    memset(reg->bx, 0, sizeof(reg->bx));
+    memset(reg->cx, 0, sizeof(reg->cx));
+    memset(reg->dx, 0, sizeof(reg->dx));
 	return reg;
 }
 
@@ -369,8 +370,6 @@ void planificador_corto_plazo(){
 	agregar_a_cola_ready(ppcb2);
 	agregar_a_cola_ready(ppcb3);
 */
-
-
 	log_info(logger,"ando hasta aca");
 	while(1){
 			while(!queue_is_empty(cola_ready)){
@@ -496,9 +495,6 @@ void iniciar_planificacion(){
 	pthread_create(&hilo_corto_plazo,NULL,(void*) planificador_corto_plazo,NULL);
 	pthread_detach(*hilo_largo_plazo);
 	pthread_detach(*hilo_corto_plazo);
-	planificador_largo_plazo();
-	planificador_corto_plazo();
-
 	log_info(logger_consola, "llego hasta aca asddddddddddddddd");
 
 }
@@ -508,6 +504,9 @@ void detener_planificacion(){
 
 }
 void modificar_grado_multiprogramacion(){
+    terminar_programa(conexion_memoria, logger, config);
+    terminar_programa(conexion_cpu, logger, config);
+    terminar_programa(conexion_file_system, logger, config);
 
 }
 void listar_proceso_estado(){

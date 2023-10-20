@@ -141,11 +141,10 @@ void procesar_conexion(int cliente_fd){
 	                break;
 	            case FINALIZAR:
 
-	            	t_list* valor_pid;
-	            	valor_pid= recibir_paquete(cliente_fd);
-	            	int* valor = list_get(valor_pid,0);
-	            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",*valor);
-	            	//realizar_proceso_finalizar(valor);
+	            	t_pcb* valor_pid;
+	            	valor_pid= recibir_pcb(cliente_fd);
+	            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",valor_pid->pid);
+	            	//realizar_proceso_finalizar(valor_pid->pid);
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
 
@@ -155,8 +154,6 @@ void procesar_conexion(int cliente_fd){
 	    			int* pid_recibido = list_get(lista,1);
 	    			log_info(logger_consola_memoria,"me llegaron el siguiente pc %i",*pc_recibido);
 	    			log_info(logger_consola_memoria,"me llegaron el siguiente pid %i",*pid_recibido);
-
-
 
 	    		    bool encontrar_instrucciones(void * instruccion){
 	    		          t_instrucciones* un_instruccion = (t_instrucciones*)instruccion;
@@ -177,6 +174,7 @@ void procesar_conexion(int cliente_fd){
 	    		        // No se encontraron instrucciones que cumplan con la condición
 	    		        log_info(logger, "No se encontraron instrucciones para el PID %i", *pid_recibido);
 	    		    }
+
 	    			char*valor_obtenido = list_get(instrucciones->instrucciones,*pc_recibido);
     		        log_info(logger, "el instruccion que se envio es  %s", valor_obtenido);
 	    			enviar_mensaje_instrucciones(valor_obtenido,cliente_fd,INSTRUCCIONES_A_MEMORIA);
@@ -248,8 +246,28 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
 }
 
 
-void realizar_proceso_finalizar(int valor){
+//TODO liberar memoria uszando la funcion void list_remove_and_destroy_by_condition(t_list *, bool(*condition)(void*), void(*element_destroyer)(void*));
+void realizar_proceso_finalizar(int pid){
 
+    bool encontrar_instrucciones(void * instruccion){
+          t_instrucciones* un_instruccion = (t_instrucciones*)instruccion;
+          log_info(logger_consola_memoria,"comparando pid %i",pid);
+          int *valor_comparar =un_instruccion->pid;
+          log_info(logger_consola_memoria,"comparando el pid %i",*valor_comparar);
+          return *valor_comparar == pid;
+    }
+    t_instrucciones* instrucciones = list_find(lista_instrucciones, encontrar_instrucciones);
+
+    if (instrucciones != NULL) {
+        // Se encontró un elemento que cumple con la condición
+        log_info(logger, "Se encontraron instrucciones para el PID %i", pid);
+        log_info(logger, "Cantidad de instrucciones: %i", list_size(instrucciones->instrucciones));
+
+        // Luego puedes realizar las operaciones que necesites con 'instrucciones'
+    } else {
+        // No se encontraron instrucciones que cumplan con la condición
+        log_info(logger, "No se encontraron instrucciones para el PID %i", pid);
+    }
 }
 
 op_instrucciones asignar_cod_instruccion(char* instruccion){

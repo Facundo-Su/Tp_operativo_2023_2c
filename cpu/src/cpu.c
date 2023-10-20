@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
 
 void iniciar_recurso(){
 	recibi_archivo=false;
+	hayInterrupcion = false;
 	instruccion_a_realizar= malloc(sizeof(t_instruccion));
 }
 
@@ -33,11 +34,12 @@ void procesar_conexion(void *conexion1){
 
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
-		log_info(logger_consola_cpu,"hola");
+
 		t_pcb* pcb_aux;
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
+			enviar_mensaje("hola che",cliente_fd);
 			break;
 		case INSTRUCCIONES_A_MEMORIA:
 			char* auxiliar =recibir_instruccion(cliente_fd);
@@ -45,6 +47,7 @@ void procesar_conexion(void *conexion1){
 			transformar_en_instrucciones(auxiliar);
 			hayInterrupcion = true;
 			recibi_archivo=true;
+			break;
 		case PAQUETE:
 			lista = recibir_paquete(cliente_fd);
 			log_info(logger, "Me llegaron los siguientes valores:\n");
@@ -55,11 +58,12 @@ void procesar_conexion(void *conexion1){
 			valores_cpu= recibir_paquete(cliente_fd);
 			log_info(logger, "ME LLEGARON");
 			break;
-
+			//TODO
 		case RECIBIR_PCB:
 			t_pcb* pcb = recibir_pcb(cliente_fd);
 			log_info(logger, "recibi el pid %i",pcb->pid);
-			ejecutar_ciclo_de_instruccion(pcb);
+			ejecutar_ciclo_de_instruccion(pcb,cliente_fd);
+			hayInterrupcion = false;
 			break;
 		case CPU_ENVIA_A_MEMORIA:
 			enviar_mensaje("hola capo", conexion_memoria);
@@ -180,7 +184,7 @@ char** parsear_instruccion(char* instruccion){
 }
 
 
-
+//TODO
 void iniciar_consola(){
 	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	char* valor;
@@ -284,22 +288,23 @@ void atendiendo_pedido(int cliente_fd){
 	return;
 }*/
 
-void ejecutar_ciclo_de_instruccion(t_pcb* pcb){
+void ejecutar_ciclo_de_instruccion(t_pcb* pcb, int cliente_fd){
 //pide a memoria
-	while(1){
-		fetch(pcb);
+	while(!hayInterrupcion){
+		fetch(pcb,cliente_fd);
+
 	}
-	hayInterrupcion =true;
+
 
 }
 
-void fetch(t_pcb* pcb){
+void fetch(t_pcb* pcb, int cliente_fd){
 
 	int pc = pcb->contexto->pc;
 	int pid =pcb->pid;
 	solicitar_instruccion_ejecutar_segun_pc(pc, pid);
 	pcb->contexto->pc+=1;
-	decode(pcb,instruccion_a_realizar);
+	decode(pcb,instruccion_a_realizar,cliente_fd);
 
 }
 
@@ -315,7 +320,7 @@ void solicitar_instruccion_ejecutar_segun_pc(int pc,int pid){
 
 }
 
-void decode(t_pcb* pcb,t_instruccion* instrucciones){
+void decode(t_pcb* pcb,t_instruccion* instrucciones,int cliente_fd){
 	t_estrucutra_cpu registro_aux;
 	t_estrucutra_cpu registro_aux2;
 	char * recurso;
@@ -324,14 +329,17 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 	tiempo_inicial = time(NULL);
 	switch(instrucciones->nombre){
 	case SET:
+		hayInterrupcion= false;
 		parametro2= list_get(instrucciones->parametros,1);
 		parametro= list_get(instrucciones->parametros,0);
 		registro_aux = devolver_registro(parametro);
 		setear(pcb,registro_aux,parametro2);
+		imprimir_valores_registros(pcb->contexto->registros_cpu);
 		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		//ADormir(x segundo);
 		break;
 	case SUB:
+		hayInterrupcion= false;
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 		registro_aux = devolver_registro(parametro);
@@ -340,6 +348,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		break;
 	case SUM:
+		hayInterrupcion= false;
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 		registro_aux = devolver_registro(parametro);
@@ -379,6 +388,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		log_info(logger_consola_cpu,"entendi el mensaje MOV_OUT");
 		break;
 	case F_OPEN:
+		hayInterrupcion=false;
 		log_info(logger_consola_cpu,"entendi el mensaje F_OPEN");
 		break;
 	case F_CLOSE:
@@ -388,21 +398,23 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 		log_info(logger_consola_cpu,"entendi el mensaje F_SEEK");
 		break;
 	case F_READ:
+		hayInterrupcion=false;
 		log_info(logger_consola_cpu,"entendi el mensaje F_READ");
 		break;
 	case F_WRITE:
 		log_info(logger_consola_cpu,"entendi el mensaje F_WRITE");
 		break;
 	case F_TRUNCATE:
-		hayInterrupcion = true;
+		//hayInterrupcion = true;
 		log_info(logger_consola_cpu,"entendi el mensaje F_TRUNCATE");
 		break;
 	case EXIT:
 		//TODO semaforo
-		log_info(logger_consola, "llego hasta aca sssssss");
+		log_info(logger_consola_cpu, "llego hasta aca sssssss");
 		hayInterrupcion = true;
+		imprimir_valores_registros(pcb->contexto->registros_cpu);
 		enviar_pcb(pcb,cliente_fd,FINALIZAR);
-		log_info(logger_consola,"entendi el mensaje EXIT");
+		log_info(logger_consola_cpu,"entendi el mensaje EXIT");
 		break;
 	}
 //	tiempo_final = time(NULL);
@@ -414,13 +426,13 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones){
 
 void setear(t_pcb* pcb, t_estrucutra_cpu pos, char* valor) {
     switch(pos) {
-        case AX: memcpy(&(pcb->contexto->registros_cpu->AX), valor, strlen(valor)+1);
+        case AX: memcpy(&(pcb->contexto->registros_cpu->ax), valor, strlen(valor)+1);
                  break;
-        case BX: memcpy(&(pcb->contexto->registros_cpu->BX), valor, strlen(valor)+1);
+        case BX: memcpy(&(pcb->contexto->registros_cpu->bx), valor, strlen(valor)+1);
                  break;
-        case CX: memcpy(&(pcb->contexto->registros_cpu->CX), valor, strlen(valor)+1);
+        case CX: memcpy(&(pcb->contexto->registros_cpu->cx), valor, strlen(valor)+1);
                  break;
-        case DX: memcpy(&(pcb->contexto->registros_cpu->DX), valor, strlen(valor)+1);
+        case DX: memcpy(&(pcb->contexto->registros_cpu->dx), valor, strlen(valor)+1);
                  break;
         default: log_info(logger, "Registro de destino no válido");
     }
@@ -447,11 +459,9 @@ t_estrucutra_cpu devolver_registro(char* registro){
 void sumar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu inicio) {
 	char valor_destino;
 	char valor_origen;
-
 	valor_destino =obtener_valor(pcb, destino);
 	valor_origen = obtener_valor(pcb, inicio);
-
-    char resultado = valor_destino+ valor_origen;
+    char *resultado = valor_destino+ valor_origen;
     setear(pcb, destino, resultado);
 
 }
@@ -474,10 +484,10 @@ void restar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu inicio) {
 
 char* obtener_valor(t_pcb* pcb, t_estrucutra_cpu pos) {
     switch(pos) {
-        case AX: return (char) pcb->contexto->registros_cpu->AX;
-        case BX: return (char) pcb->contexto->registros_cpu->BX;
-        case CX: return (char) pcb->contexto->registros_cpu->CX;
-        case DX: return (char) pcb->contexto->registros_cpu->DX;
+        case AX: return (char) pcb->contexto->registros_cpu->ax;
+        case BX: return (char) pcb->contexto->registros_cpu->bx;
+        case CX: return (char) pcb->contexto->registros_cpu->cx;
+        case DX: return (char) pcb->contexto->registros_cpu->dx;
         default: log_info(logger, "Registro no reconocido"); return NULL;
     }
 }
@@ -486,3 +496,11 @@ char* obtener_valor(t_pcb* pcb, t_estrucutra_cpu pos) {
 void iterator(char* value) {
 	log_info(logger,"%s", value);
 }
+
+void imprimir_valores_registros(t_registro_cpu* registros) {
+    log_info(logger, "Valor de AX: %s", registros->ax);
+    log_info(logger, "Valor de BX: %s", registros->bx);
+    log_info(logger, "Valor de CX: %s", registros->cx);
+    log_info(logger, "Valor de DX: %s", registros->dx);
+}
+

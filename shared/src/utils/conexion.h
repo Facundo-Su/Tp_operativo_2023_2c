@@ -59,10 +59,10 @@ typedef enum{
 
 // VER SI FUNCA SI FUNCA, CAMBIAR A UINT_32
 typedef struct{
-	char AX[4];
-	char BX[4];
-	char CX[4];
-	char DX[4];
+	uint32_t ax;
+	uint32_t bx;
+	uint32_t cx;
+	uint32_t dx;
 }t_registro_cpu;
 
 typedef enum{
