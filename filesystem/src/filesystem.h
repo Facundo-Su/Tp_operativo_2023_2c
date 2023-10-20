@@ -40,7 +40,7 @@ t_config* iniciar_config();
 void iterator(char*);
 int iniciar_servidor_file_system(char*);
 void iniciar_consola();
-int levantar_FAT();
 int levantar_archivos_binario(char* ruta);
+int levantar_fcb();
 
 #endif /* SRC_FILESYSTEM_H_ */
