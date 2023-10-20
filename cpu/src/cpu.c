@@ -24,6 +24,7 @@ void iniciar_recurso(){
 	recibi_archivo=false;
 	hayInterrupcion = false;
 	instruccion_a_realizar= malloc(sizeof(t_instruccion));
+	pcb = malloc(sizeof(t_pcb));
 }
 
 
@@ -60,9 +61,13 @@ void procesar_conexion(void *conexion1){
 			break;
 			//TODO
 		case RECIBIR_PCB:
-			t_pcb* pcb = recibir_pcb(cliente_fd);
-			log_info(logger, "recibi el pid %i",pcb->pid);
-			ejecutar_ciclo_de_instruccion(pcb,cliente_fd);
+			log_info(logger, "Estoy por recibir un PCB");
+			pcb = recibir_pcb(cliente_fd);
+			pcb = malloc(sizeof(t_pcb));
+			int pidd = pcb->pid;
+			log_info(logger, "recibi el pid %i en recibir pcb de cpu",pidd);
+			//TODO Falla de aca en adelante, probando con la instruccion WAIT
+			ejecutar_ciclo_de_instruccion(cliente_fd);
 			hayInterrupcion = false;
 			break;
 		case CPU_ENVIA_A_MEMORIA:
@@ -288,23 +293,24 @@ void atendiendo_pedido(int cliente_fd){
 	return;
 }*/
 
-void ejecutar_ciclo_de_instruccion(t_pcb* pcb, int cliente_fd){
+void ejecutar_ciclo_de_instruccion(int cliente_fd){
 //pide a memoria
 	while(!hayInterrupcion){
-		fetch(pcb,cliente_fd);
+		fetch(cliente_fd);
 
 	}
 
 
 }
 
-void fetch(t_pcb* pcb, int cliente_fd){
+void fetch(int cliente_fd){
 
 	int pc = pcb->contexto->pc;
 	int pid =pcb->pid;
+	log_info(logger, "estoy en fetch con pid %i ",pid);
 	solicitar_instruccion_ejecutar_segun_pc(pc, pid);
 	pcb->contexto->pc+=1;
-	decode(pcb,instruccion_a_realizar,cliente_fd);
+	decode(instruccion_a_realizar,cliente_fd);
 
 }
 
@@ -313,14 +319,14 @@ void solicitar_instruccion_ejecutar_segun_pc(int pc,int pid){
 	agregar_a_paquete(paquete, &pc, sizeof(int));
 	agregar_a_paquete(paquete, &pid, sizeof(int));
 	enviar_paquete(paquete, conexion_memoria);
-
+	log_info(logger, "estoy soliciantdo instrucciones pid %i ",pid);
 	while (!recibi_archivo) {
 		int i=0;
 	}
 
 }
 
-void decode(t_pcb* pcb,t_instruccion* instrucciones,int cliente_fd){
+void decode(t_instruccion* instrucciones,int cliente_fd){
 	t_estrucutra_cpu registro_aux;
 	t_estrucutra_cpu registro_aux2;
 	char * recurso ="";
@@ -338,7 +344,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones,int cliente_fd){
 
 		valor_uint1 = strtoul(parametro2, NULL, 10);
 		registro_aux = devolver_registro(parametro);
-		setear(pcb,registro_aux,valor_uint1);
+		setear(registro_aux,valor_uint1);
 		imprimir_valores_registros(pcb->contexto->registros_cpu);
 		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		//ADormir(x segundo);
@@ -365,7 +371,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones,int cliente_fd){
 		parametro = list_get(instrucciones->parametros,0);
 		parametro2 =list_get(instrucciones->parametros,1);
 		registro_aux = devolver_registro(parametro);
-		char* valorObtenido = obtener_valor(pcb, registro_aux);
+		char* valorObtenido = obtener_valor(registro_aux);
 		if(strcmp(valorObtenido,"0") ==0){
 			int valorEntero = atoi(parametro2);
 			pcb->contexto->pc =valorEntero;
@@ -377,6 +383,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones,int cliente_fd){
 		enviar_mensaje(tiempo,cliente_fd);
 		break;
    case WAIT:
+	    hayInterrupcion=true;
 		recurso= list_get(instrucciones->parametros,0);
 		enviar_pcb(pcb,cliente_fd,EJECUTAR_WAIT);
 		enviar_mensaje(recurso,cliente_fd);
@@ -429,7 +436,7 @@ void decode(t_pcb* pcb,t_instruccion* instrucciones,int cliente_fd){
 	recibi_archivo = false;
 }
 
-void setear(t_pcb* pcb, t_estrucutra_cpu pos, uint32_t valor) {
+void setear(t_estrucutra_cpu pos, uint32_t valor) {
     switch(pos) {
         case AX: pcb->contexto->registros_cpu->ax = valor; break;
         case BX: pcb->contexto->registros_cpu->bx = valor; break;
@@ -457,25 +464,25 @@ t_estrucutra_cpu devolver_registro(char* registro){
     return v;
 }
 
-void sumar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
-    uint32_t valor_destino = obtener_valor(pcb, destino);
-    uint32_t valor_origen = obtener_valor(pcb, origen);
+void sumar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
+    uint32_t valor_destino = obtener_valor(destino);
+    uint32_t valor_origen = obtener_valor(origen);
     uint32_t resultado = valor_destino + valor_origen;
-    setear(pcb, destino, resultado);
+    setear(destino, resultado);
 }
 
 
 
 
-void restar(t_pcb* pcb, t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
-    uint32_t valor_destino = obtener_valor(pcb, destino);
-    uint32_t valor_origen = obtener_valor(pcb, origen);
+void restar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
+    uint32_t valor_destino = obtener_valor(destino);
+    uint32_t valor_origen = obtener_valor(origen);
     uint32_t resultado = valor_destino - valor_origen;  // Ensure underflow handling if needed
-    setear(pcb, destino, resultado);
+    setear(destino, resultado);
 }
 
 
-uint32_t obtener_valor(t_pcb* pcb, t_estrucutra_cpu pos) {
+uint32_t obtener_valor(t_estrucutra_cpu pos) {
     switch(pos) {
         case AX: return  pcb->contexto->registros_cpu->ax;
         case BX: return  pcb->contexto->registros_cpu->bx;

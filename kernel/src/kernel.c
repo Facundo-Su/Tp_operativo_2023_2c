@@ -71,7 +71,6 @@ void procesar_conexion(void *conexion1){
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
 			sem_post(&contador_ejecutando_cpu);
 			break;
-
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
 			return;
@@ -82,7 +81,6 @@ void procesar_conexion(void *conexion1){
 	}
 	return;
 }
-
 
 void iniciar_consola(){
 	logger_consola = log_create("./kernelConsola.log", "consola", 1, LOG_LEVEL_INFO);

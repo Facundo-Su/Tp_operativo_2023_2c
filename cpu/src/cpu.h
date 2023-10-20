@@ -31,6 +31,7 @@ bool hayInterrupcion;
 
 t_instruccion* instruccion_a_realizar;
 
+t_pcb* pcb;
 
 sem_t contador_recibiendoArchivo;
 
@@ -40,12 +41,12 @@ t_config* iniciar_config();
 void iniciar_servidor_cpu(char*);
 void iterator(char*);
 void iniciar_consola();
-t_pcb* ejecutar_instruccion(t_pcb*,int );
-uint32_t obtener_valor(t_pcb* , t_estrucutra_cpu );
-void setear(t_pcb* , t_estrucutra_cpu , uint32_t );
+t_pcb* ejecutar_instruccion(int );
+uint32_t obtener_valor( t_estrucutra_cpu );
+void setear(t_estrucutra_cpu , uint32_t );
 t_estrucutra_cpu devolver_registro(char* );
-void fetch(t_pcb*, int);
-void decode(t_pcb* ,t_instruccion*,int);
+void fetch( int);
+void decode(t_instruccion*,int);
 void solicitar_instruccion_ejecutar_segun_pc(int,int);
 void generar_conexion_memoria();
 char** parsear_instruccion(char* );

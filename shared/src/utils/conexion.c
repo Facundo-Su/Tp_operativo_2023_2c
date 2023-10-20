@@ -327,9 +327,11 @@ void enviar_pcb(t_pcb* pcb, int conexion,op_code operacion){
 
 //recibir_pcb
 t_pcb* recibir_pcb(int socket_cliente){
-	t_pcb* pcb = malloc(sizeof(t_pcb));
+	log_info(logger, "estoy por recibir un pcb");
+	t_pcb* pcb;
 	t_list*paquete = recibir_paquete(socket_cliente);
 	pcb = desempaquetar_pcb(paquete);
+	log_info(logger, "Pude desempaquetar pcb");
 	return pcb;
 }
 
@@ -384,6 +386,7 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	int * pid = list_get(paquete, 0);
 	pcb->pid = *pid;
 	free(pid);
+	log_info(logger, "estoy desempaquetando el pcb");
 
 	t_estado* estado = list_get(paquete, 1);
 	pcb->estado = *estado;
