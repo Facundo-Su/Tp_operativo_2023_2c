@@ -47,8 +47,14 @@ void procesar_conexion(void *conexion1){
 			break;
 		case EJECUTAR_WAIT:
 			pcb_aux = recibir_pcb(cliente_fd);
-			char * nombre_recurso = obtener_mensaje(cliente_fd);
+			char * nombre_recurso = "RA";//obtener_mensaje(cliente_fd);
+			t_recurso *recurso = list_get(lista_recursos,0);
+			int instacias = recurso->instancias;
+			log_info(logger,"ejecutando wait %i",instacias);
 			ejecutar_wait(nombre_recurso,pcb_aux);
+			t_recurso *recurso2 = list_get(lista_recursos,0);
+			instacias= recurso2->instancias;
+			log_info(logger,"ejecutando wait %i",instacias);
 			break;
 		case EJECUTAR_SIGNAL:
 			pcb_aux = recibir_pcb(cliente_fd);
@@ -150,6 +156,12 @@ void iniciar_recurso(){
 	cola_new = queue_create();
 	cola_ready = queue_create();
 	lista_recursos = list_create();
+	t_recurso* nuevo_recurso = (t_recurso*) malloc(sizeof(t_recurso));
+	nuevo_recurso->instancias =3;
+	nuevo_recurso->nombre = "RA";
+	log_info(logger,"llegue");
+	list_add(lista_recursos,nuevo_recurso);
+	free(nuevo_recurso);
 	sem_init(&grado_multiprogramacion, 0, grado_multiprogramacion_ini);
 	sem_init(&mutex_cola_new, 0, 1);
 	sem_init(&contador_ejecutando_cpu,0,1);
@@ -566,7 +578,7 @@ void ejecutar_wait(char* recurso_a_encontrar, t_pcb * pcb){
     t_recurso *recurso_encontrado = list_find(lista_recursos, encontrar_recurso);
         if(recurso_encontrado != NULL){
             if(recurso_encontrado->instancias >0 ){
-            	pcb = agregar_recurso_pcb(pcb, recurso_a_encontrar);
+            	//pcb = agregar_recurso_pcb(pcb, recurso_a_encontrar);
             	int posicion = buscar_posicion_lista_recurso(lista_recursos, recurso_encontrado);
                 recurso_encontrado->instancias -=1;
                 list_replace(lista_recursos,posicion,recurso_encontrado);
@@ -652,15 +664,16 @@ int buscar_posicion_lista_recurso_pcb(t_list*lista, t_recurso_pcb *recurso){
 	}
 	return -1;
 }
-int buscar_posicion_lista_recurso(t_list*lista, t_recurso *recurso){
-	int cantidad= list_size(lista);
-	t_recurso* elemento ;
-	for(int i=0;i<cantidad;i++){
-		elemento = list_get(lista,cantidad);
-		if(elemento->nombre == recurso->nombre){
-			return cantidad;
-		}
-	}
-	return -1;
+int buscar_posicion_lista_recurso(t_list *lista, t_recurso *recurso) {
+    int cantidad = list_size(lista);
+    t_recurso *elemento;
+
+    for (int i = 0; i < cantidad; i++) {
+        elemento = list_get(lista, i);
+        if (strcmp(elemento->nombre, recurso->nombre) == 0) {
+            return i;
+        }
+    }
+    return -1;
 }
 
