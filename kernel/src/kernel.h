@@ -56,6 +56,8 @@ t_queue* cola_ready;
 t_queue* cola_ejecucion;
 
 
+t_pcb* pcb_en_ejecucion;
+
 
 //SEMAFORO=================================================================================================
 sem_t mutex_cola_new;
