@@ -61,10 +61,9 @@ void procesar_conexion(void *conexion1){
 			//TODO
 		case RECIBIR_PCB:
 			log_info(logger, "Estoy por recibir un PCB");
-			t_pcb* pcbaux = recibir_pcb(cliente_fd);
-			log_pcb_info(pcbaux);
-			//TODO Falla de aca en adelante, probando con la instruccion WAIT
-			//ejecutar_ciclo_de_instruccion(cliente_fd);
+			pcb = recibir_pcb(cliente_fd);
+			log_pcb_info(pcb);
+			ejecutar_ciclo_de_instruccion(cliente_fd);
 			hayInterrupcion = false;
 			break;
 		case CPU_ENVIA_A_MEMORIA:
@@ -366,11 +365,16 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		hayInterrupcion= false;
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
-		log_info(logger_consola_cpu, "Valor de parametro: %s", parametro);
-		log_info(logger_consola_cpu, "Valor de parametro2: %s", parametro2);
+		log_info(logger_consola_cpu, "Valor de parametro %s", parametro);
+		log_info(logger_consola_cpu, "Valor de parametro2 %s", parametro2);
+		if(strcmp(parametro,"BX")==0){
+			log_info(logger_consola_cpu,"=================================================");
+		}else{
+			log_info(logger_consola_cpu,"++++++++++++++++++++++++++++++++++++++++++++++++++");
+		}
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
-		sumar(pcb, registro_aux, registro_aux2);
+		sumar(registro_aux, registro_aux2);
 		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		break;
 	case JNZ:
@@ -472,6 +476,8 @@ void sumar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
 
     uint32_t valor_destino = obtener_valor(destino);
     uint32_t valor_origen = obtener_valor(origen);
+    log_info(logger_consola_cpu,"el valor a sumar es %u",valor_destino);
+    log_info(logger_consola_cpu,"el valor a sumar es %u",valor_origen);
     uint32_t resultado = valor_destino + valor_origen;
     setear(destino, resultado);
 }
