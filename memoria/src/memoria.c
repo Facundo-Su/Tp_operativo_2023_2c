@@ -99,6 +99,8 @@ void iniciar_servidor_memoria(char *puerto) {
         int cliente_fd = esperar_cliente(memoria_fd);
 		pthread_t atendiendo;
 		pthread_create(&atendiendo,NULL,(void*)procesar_conexion,(void *) cliente_fd);
+		if (setsockopt(cliente_fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
+			    error("setsockopt(SO_REUSEADDR) failed");
 		pthread_detach(atendiendo);
 
     }
@@ -141,9 +143,10 @@ void procesar_conexion(int cliente_fd){
 	                break;
 	            case FINALIZAR:
 
-	            	t_pcb* valor_pid;
-	            	valor_pid= recibir_pcb(cliente_fd);
-	            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",valor_pid->pid);
+	            	t_list * paquete = recibir_paquete(cliente_fd);
+	            	t_pcb* pcb_recibido = desempaquetar_pcb(paquete);
+	            	//valor_pid= recibir_pcb(cliente_fd);
+	            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",pcb_recibido->pid);
 	            	//realizar_proceso_finalizar(valor_pid->pid);
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:

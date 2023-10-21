@@ -35,18 +35,21 @@ void procesar_conexion(void *conexion1){
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
 		t_pcb* pcb_aux;
+		t_list* paquete;
 		switch (cod_op) {
 		case MENSAJE:
 			log_info(logger,"hola");
 			recibir_mensaje(cliente_fd);
 			break;
 		case EJECUTAR_SLEEP:
-			pcb_aux = recibir_pcb(cliente_fd);
+			paquete = recibir_paquete(cliente_fd);
+			pcb_aux = desempaquetar_pcb(paquete);
 			int tiempo = atoi(obtener_mensaje(cliente_fd));
 			sleep(tiempo);
 			break;
 		case EJECUTAR_WAIT:
-			pcb_aux = recibir_pcb(cliente_fd);
+			paquete = recibir_paquete(cliente_fd);
+			pcb_aux = desempaquetar_pcb(paquete);
 			char * nombre_recurso = "RA";//obtener_mensaje(cliente_fd);
 			t_recurso *recurso = list_get(lista_recursos,0);
 			int instacias = recurso->instancias;
@@ -57,17 +60,23 @@ void procesar_conexion(void *conexion1){
 			log_info(logger,"ejecutando wait %i",instacias);
 			break;
 		case EJECUTAR_SIGNAL:
-			pcb_aux = recibir_pcb(cliente_fd);
+			paquete = recibir_paquete(cliente_fd);
+			pcb_aux = desempaquetar_pcb(paquete);
 			char * nombre_recurso2 = obtener_mensaje(cliente_fd);
-			ejecutar_signal(nombre_recurso2,pcb_aux);
+			//ejecutar_signal(nombre_recurso2,pcb_aux);
+			log_info(logger,"ejecutando wait %i",nombre_recurso2);
 			break;
 		case EJECUTAR_F_TRUNCATE:
 			log_info(logger,"me llegaron la instruccion ejecutar f truncate del cpu");
 			break;
 		case FINALIZAR:
-			pcb_aux = recibir_pcb(cliente_fd);
+			t_list * paquete = recibir_paquete(cliente_fd);
+			pcb_aux = desempaquetar_pcb(paquete);
 			log_info(logger,"el pid del proceso finalizado es %i",pcb_aux->pid);
+			//TODO VER SI NECESITA UNA LISTA PARA LAMACENAR LOS PROCESOS TERMINADO
+			log_pcb_info(pcb_aux);
 			enviar_mensaje("hola se finalizo el proceso ", conexion);
+			pcb_aux->estado = TERMINATED;
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
 			sem_post(&contador_ejecutando_cpu);
 			break;
@@ -164,6 +173,7 @@ void iniciar_recurso(){
 	sem_init(&mutex_cola_new, 0, 1);
 	sem_init(&contador_ejecutando_cpu,0,1);
 	sem_init(&mutex_cola_ready,0,1);
+	sem_init(&contador_agregando_new,0,0);
 
 
 }
@@ -237,20 +247,22 @@ void iniciar_proceso(char* archivo_test,int size,int prioridad,int pid){
 	char*ruta_a_testear = archivo_test;
 	op_code op = INICIAR_PROCESO;
 	t_paquete* paquete =crear_paquete(op);
-	agregar_a_paquete(paquete, ruta_a_testear, sizeof(ruta_a_testear));
+	agregar_a_paquete(paquete, ruta_a_testear, strlen(ruta_a_testear) + 1);
 	agregar_a_paquete(paquete, &size ,sizeof(int));
 	agregar_a_paquete(paquete, &prioridad, sizeof(int));
 	agregar_a_paquete(paquete, &pid, sizeof(int));
 
 	enviar_paquete(paquete, conexion_memoria);
 	crear_pcb(prioridad);
+	sem_post(&contador_agregando_new);
+
 	//free(prueba);
 	eliminar_paquete(paquete);
 	free(ruta_a_testear);
 
 }
 
-void crear_pcb(t_planificador prioridad){
+void crear_pcb(int prioridad){
 	t_pcb* pcb = malloc(sizeof(t_pcb));
 	pcb->pid= contador_pid;
 	pcb->prioridad = prioridad;
@@ -326,12 +338,11 @@ t_pcb* quitar_de_cola_ejecucion(){
 
 void planificador_largo_plazo(){
 	while(1){
-	while(!queue_is_empty(cola_new)){
-			sem_wait(&grado_multiprogramacion);
-			t_pcb* pcb =quitar_de_cola_new();
-			log_info(logger, "el pid del proceso es %i",pcb->pid);
-			agregar_a_cola_ready(pcb);
-		}
+		sem_wait(&contador_agregando_new);
+		sem_wait(&grado_multiprogramacion);
+		t_pcb* pcb =quitar_de_cola_new();
+		log_info(logger, "el pid del proceso es %i",pcb->pid);
+		agregar_a_cola_ready(pcb);
 	}
 }
 
@@ -479,7 +490,7 @@ void finalizar_proceso(int pid){
 
 void liberarMemoriaPcb(t_pcb* pcbABorrar){
 		free(pcbABorrar->contexto);
-		free(pcbABorrar->tabla_archivo_abierto);
+		//free(pcbABorrar->tabla_archivo_abierto);
 		free(pcbABorrar);
 }
 
@@ -587,7 +598,7 @@ void ejecutar_wait(char* recurso_a_encontrar, t_pcb * pcb){
             enviar_pcb(pcb,conexion_memoria,FINALIZAR);
         }
 }
-
+/*
 t_pcb*agregar_recurso_pcb(t_pcb*pcb, char*nombre){
 	bool encontrar_recurso(void * recurso){
 	          t_recurso_pcb* un_recurso = (t_recurso_pcb*)recurso;
@@ -649,7 +660,8 @@ void ejecutar_signal(char* recurso_a_encontrar, t_pcb * pcb){
         enviar_pcb(pcb,conexion_memoria,FINALIZAR);
     }
 }
-
+*/
+//TODO DESCOMENTAR
 
 int buscar_posicion_lista_recurso_pcb(t_list*lista, t_recurso_pcb *recurso){
 	int cantidad= list_size(lista);

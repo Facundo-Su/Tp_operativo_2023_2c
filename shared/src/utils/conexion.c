@@ -70,7 +70,8 @@ int crear_conexion(char *ip, char* puerto)
 	// Ahora vamos a crear el socket.
 	int socket_cliente = socket(server_info->ai_family,server_info->ai_socktype,server_info->ai_protocol);
 	// Ahora que tenemos el socket, vamos a conectarlo
-	setsockopt(socket_cliente, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+	if (setsockopt(socket_cliente, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
+	    error("setsockopt(SO_REUSEADDR) failed");
 	connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen);
 	freeaddrinfo(server_info);
 
@@ -327,12 +328,11 @@ void enviar_pcb(t_pcb* pcb, int conexion,op_code operacion){
 
 //recibir_pcb
 t_pcb* recibir_pcb(int socket_cliente){
-
-	t_list*paquete = recibir_paquete(socket_cliente);
-	t_pcb* pcb = desempaquetar_pcb(paquete);
-	log_pcb_info(pcb);
+	t_list * paquete = recibir_paquete(socket_cliente);
+	t_pcb* pcb_recibido = desempaquetar_pcb(paquete);
+	log_pcb_info(pcb_recibido);
 	list_destroy(paquete);
-	return pcb;
+	return pcb_recibido;
 }
 
 
@@ -359,10 +359,7 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 
 	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
 	agregar_a_paquete(paquete, &(pcb->estado), sizeof(t_estado));
-
 	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
-
-	//empaquetar_instrucciones(paquete, pcb->lista_instruciones);
 
 }
 

@@ -55,6 +55,9 @@ t_queue* cola_new;
 t_queue* cola_ready;
 t_queue* cola_ejecucion;
 
+
+
+//SEMAFORO=================================================================================================
 sem_t mutex_cola_new;
 sem_t mutex_cola_ready;
 sem_t mutex_cola_ejecucion;
@@ -63,6 +66,10 @@ sem_t contador_ejecutando_cpu;
 //sem_t sem_ready;
 t_planificador tipo_planificador;
 sem_t grado_multiprogramacion;
+sem_t contador_agregando_new;
+
+
+
 
 char *puerto_memoria;
 char *puerto_filesystem;
@@ -125,7 +132,7 @@ void *manejar_respuesta(void* );
 t_pcb*agregar_recurso_pcb(t_pcb*, char*);
 void procesar_conexion(void *);
 t_recurso_pcb*crear_recurso(char*);
-void crear_pcb(t_planificador );
+void crear_pcb(int );
 t_registro_cpu* crear_registro();
 
 #endif /* KERNEL_H_ */
