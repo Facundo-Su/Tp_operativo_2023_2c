@@ -67,6 +67,7 @@ sem_t contador_ejecutando_cpu;
 t_planificador tipo_planificador;
 sem_t grado_multiprogramacion;
 sem_t contador_agregando_new;
+sem_t contador_cola_ready;
 
 
 

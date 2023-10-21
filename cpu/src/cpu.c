@@ -13,8 +13,9 @@ int main(int argc, char* argv[]) {
     //iniciar configuraciones
 	 obtener_configuracion();
 	 iniciar_recurso();
-	iniciar_consola();
-
+	//iniciar_consola();
+	log_info(logger_consola_cpu, "se inicio el servidor\n");
+	iniciar_servidor_cpu(puerto_escucha);
 
 	terminar_programa(conexion_memoria, logger, config);
     return 0;
@@ -24,6 +25,7 @@ void iniciar_recurso(){
 	recibi_archivo=false;
 	hayInterrupcion = false;
 	instruccion_a_realizar= malloc(sizeof(t_instruccion));
+	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
 }
 
 
@@ -190,7 +192,7 @@ char** parsear_instruccion(char* instruccion){
 
 //TODO
 void iniciar_consola(){
-	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
+
 	char* valor;
 
 	while(1){
@@ -361,21 +363,9 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 
-
-		log_info(logger_consola_cpu, "Valor de parametro %s", parametro);
-		log_info(logger_consola_cpu, "Valor de parametro2 %s", parametro2);
-
-
-		if(strcmp(parametro2,"BX")==0){
-			log_info(logger_consola_cpu,"=================================================");
-		}else{
-			log_info(logger_consola_cpu,"++++++++++++++++++++++++++++++++++++++++++++++++++");
-		}
-
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
 		sumar(registro_aux, registro_aux2);
-		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		break;
 	case JNZ:
 		parametro = list_get(instrucciones->parametros,0);

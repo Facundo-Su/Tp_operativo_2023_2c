@@ -16,8 +16,8 @@ int main(int argc, char* argv[]) {
 
     log_info(logger, "Soy el Memoria!");
 
-    iniciar_consola();
-
+    //iniciar_consola();
+	iniciar_servidor_memoria(puerto_escucha);
     // Limpieza y terminación
     terminar_programa(conexion_filesystem, logger, config);
 
@@ -27,10 +27,11 @@ int main(int argc, char* argv[]) {
 
 void iniciar_recursos(){
 	lista_instrucciones = list_create();
+	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
 }
 
 void iniciar_consola(){
-	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
+
 	char* valor;
 
 	while(1){
@@ -88,6 +89,7 @@ void obtener_configuraciones() {
     puerto_filesystem = config_get_string_value(config, "PUERTO_FILESYSTEM");
     ip_file_system = config_get_string_value(config, "IP_FILESYSTEM");
     path_instrucciones =config_get_string_value(config,"PATH_INSTRUCCIONES");
+    strcat(path_instrucciones,"/");
 }
 
 void iniciar_servidor_memoria(char *puerto) {
@@ -126,8 +128,10 @@ void procesar_conexion(int cliente_fd){
 
 	            	t_list* valorRecibido;
 					valorRecibido=recibir_paquete(cliente_fd);
-	   //         	recibir_estructura_Inicial(cliente_fd);
+
+					//TODO DESBLOQUEAR DESPUES
 					//char* ruta = strcat(path_instrucciones,list_get(valorRecibido,0));
+					//ruta = strcat(ruta,".txt");
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);

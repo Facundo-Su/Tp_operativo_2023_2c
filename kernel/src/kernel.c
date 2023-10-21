@@ -74,9 +74,10 @@ void procesar_conexion(void *conexion1){
 			pcb_aux = desempaquetar_pcb(paquete);
 			log_info(logger,"el pid del proceso finalizado es %i",pcb_aux->pid);
 			//TODO VER SI NECESITA UNA LISTA PARA LAMACENAR LOS PROCESOS TERMINADO
-			log_pcb_info(pcb_aux);
+
 			enviar_mensaje("hola se finalizo el proceso ", conexion);
 			pcb_aux->estado = TERMINATED;
+			log_pcb_info(pcb_aux);
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
 			sem_post(&contador_ejecutando_cpu);
 			break;
@@ -174,8 +175,7 @@ void iniciar_recurso(){
 	sem_init(&contador_ejecutando_cpu,0,1);
 	sem_init(&mutex_cola_ready,0,1);
 	sem_init(&contador_agregando_new,0,0);
-
-
+	sem_init(&contador_cola_ready,0,0);
 }
 
 void enviar_mensaje_kernel() {
@@ -271,8 +271,8 @@ void crear_pcb(int prioridad){
 	//pcb->tabla_archivo_abierto;
 	pcb->estado=NEW;
 	contador_pid++;
-
 	agregar_a_cola_new(pcb);
+
 }
 
 t_contexto_ejecucion* crear_contexto(){
@@ -343,74 +343,31 @@ void planificador_largo_plazo(){
 		t_pcb* pcb =quitar_de_cola_new();
 		log_info(logger, "el pid del proceso es %i",pcb->pid);
 		agregar_a_cola_ready(pcb);
+		sem_post(&contador_cola_ready);
 	}
 }
 
 //TODO MOTIVO DE QUE DESPUES DE INICIAR PLANIFICACION NO ME DEJA INGRESAR OTRA OPERACION
 void planificador_corto_plazo(){
-//  Desmarcar para probar los planificadores
-	/*planificador = PRIORIDADES;
-
-	t_pcb pcb1 = {
-		1,
-		1,
-		1,
-		NULL,
-		NULL,
-		NEW,
-		NULL,
-		NULL
-	};
-	t_pcb pcb2 = {
-		2,
-		4,
-		1,
-		NULL,
-		NULL,
-		NEW,
-		NULL,
-		NULL
-	};
-	t_pcb pcb3 = {
-		3,
-	    2,
-	    1,
-		NULL,
-		NULL,
-		NEW,
-		NULL,
-	    NULL
-	};
-    t_pcb *ppcb1;
-	ppcb1 = &pcb1;
-	t_pcb *ppcb2;
-	ppcb2 = &pcb2;
-	t_pcb *ppcb3;
-	ppcb3 = &pcb3;
-	agregar_a_cola_ready(ppcb1);
-	agregar_a_cola_ready(ppcb2);
-	agregar_a_cola_ready(ppcb3);
-*/
 	log_info(logger,"ando hasta aca");
 	while(1){
-			while(!queue_is_empty(cola_ready)){
-				sem_wait(&contador_ejecutando_cpu);
-				switch(planificador){
-				case FIFO:
-					log_info(logger,"Planificador FIFO");
-					de_ready_a_fifo();
-					break;
-				case ROUND_ROBIN:
-					log_info(logger,"Planificador Round Robin");
+		sem_wait(&contador_cola_ready);
+		sem_wait(&contador_ejecutando_cpu);
+		switch(planificador){
+		case FIFO:
+			log_info(logger,"Planificador FIFO");
+			de_ready_a_fifo();
+			break;
+		case ROUND_ROBIN:
+			log_info(logger,"Planificador Round Robin");
 
-					de_ready_a_round_robin();
-					break;
-				case PRIORIDADES:
-					log_info(logger,"Planificador Prioridades");
-					de_ready_a_prioridades();
-					break;
-				}
-			}
+			de_ready_a_round_robin();
+			break;
+		case PRIORIDADES:
+			log_info(logger,"Planificador Prioridades");
+			de_ready_a_prioridades();
+			break;
+		}
 		}
 }
 
@@ -509,6 +466,7 @@ int buscarPosicionQueEstaElPid(int valor){
 
 
 void iniciar_planificacion(){
+
 	pthread_t * hilo_corto_plazo;
 	pthread_t * hilo_largo_plazo;
 	log_info(logger_consola,"inicio el proceso de planificacion");
