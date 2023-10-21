@@ -327,13 +327,32 @@ void enviar_pcb(t_pcb* pcb, int conexion,op_code operacion){
 
 //recibir_pcb
 t_pcb* recibir_pcb(int socket_cliente){
-	log_info(logger, "estoy por recibir un pcb");
-	t_pcb* pcb;
+
 	t_list*paquete = recibir_paquete(socket_cliente);
-	pcb = desempaquetar_pcb(paquete);
-	log_info(logger, "Pude desempaquetar pcb");
+	t_pcb* pcb = desempaquetar_pcb(paquete);
+	log_pcb_info(pcb);
+	list_destroy(paquete);
 	return pcb;
 }
+
+
+void log_pcb_info(t_pcb* pcb_aux) {
+    log_info(logger, "PID: %d", pcb_aux->pid);
+    log_info(logger, "Prioridad: %d", pcb_aux->prioridad);
+        log_info(logger, "Tiempo de CPU: %d", pcb_aux->tiempo_cpu);
+        log_info(logger, "Estado: %d", pcb_aux->estado);
+
+        // Log de contexto de ejecución
+        log_info(logger, "Contexto de Ejecución:");
+        log_info(logger, "  PC: %d", pcb_aux->contexto->pc);
+        log_info(logger, "  Registros CPU:");
+        log_info(logger, "    AX: %u", pcb_aux->contexto->registros_cpu->ax);
+        log_info(logger, "    BX: %u", pcb_aux->contexto->registros_cpu->bx);
+        log_info(logger, "    CX: %u", pcb_aux->contexto->registros_cpu->cx);
+        log_info(logger, "    DX: %u", pcb_aux->contexto->registros_cpu->dx);
+
+}
+
 
 //----------------------------------------------------------------------------------------------//
 void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
@@ -385,12 +404,9 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	t_pcb* pcb = malloc(sizeof(t_pcb));
 	int * pid = list_get(paquete, 0);
 	pcb->pid = *pid;
-	free(pid);
-	log_info(logger, "estoy desempaquetando el pcb");
 
 	t_estado* estado = list_get(paquete, 1);
 	pcb->estado = *estado;
-	free(estado);
 
 	int posicion_comienzo_contexto =2;
 	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, posicion_comienzo_contexto);
@@ -403,7 +419,6 @@ t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int posicion){
 	t_contexto_ejecucion *contexto = malloc(sizeof(t_contexto_ejecucion));
 	int* pc = list_get(paquete,posicion);
 	contexto->pc = *pc;
-	free(*pc);
 
 	t_registro_cpu * registros = desempaquetar_registros(paquete,3);
 	contexto->registros_cpu = registros;
@@ -412,13 +427,10 @@ t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int posicion){
 t_registro_cpu* desempaquetar_registros(t_list* paquete, int posicion) {
     t_registro_cpu* registro = malloc(sizeof(t_registro_cpu));
 
-    uint32_t* ax = list_get(paquete, posicion);
-
-    uint32_t* bx = list_get(paquete, posicion + 1);
-
-    uint32_t* cx = list_get(paquete, posicion + 2);
-
-    uint32_t* dx = list_get(paquete, posicion + 3);
+    registro->ax = *((uint32_t*)list_get(paquete, posicion));
+    registro->bx = *((uint32_t*)list_get(paquete, posicion + 1));
+    registro->cx = *((uint32_t*)list_get(paquete, posicion + 2));
+    registro->dx = *((uint32_t*)list_get(paquete, posicion + 3));
 
     return registro;
 }

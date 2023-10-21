@@ -24,7 +24,6 @@ void iniciar_recurso(){
 	recibi_archivo=false;
 	hayInterrupcion = false;
 	instruccion_a_realizar= malloc(sizeof(t_instruccion));
-	pcb = malloc(sizeof(t_pcb));
 }
 
 
@@ -62,12 +61,10 @@ void procesar_conexion(void *conexion1){
 			//TODO
 		case RECIBIR_PCB:
 			log_info(logger, "Estoy por recibir un PCB");
-			pcb = recibir_pcb(cliente_fd);
-			pcb = malloc(sizeof(t_pcb));
-			int pidd = pcb->pid;
-			log_info(logger, "recibi el pid %i en recibir pcb de cpu",pidd);
+			t_pcb* pcbaux = recibir_pcb(cliente_fd);
+			log_pcb_info(pcbaux);
 			//TODO Falla de aca en adelante, probando con la instruccion WAIT
-			ejecutar_ciclo_de_instruccion(cliente_fd);
+			//ejecutar_ciclo_de_instruccion(cliente_fd);
 			hayInterrupcion = false;
 			break;
 		case CPU_ENVIA_A_MEMORIA:
@@ -297,7 +294,7 @@ void ejecutar_ciclo_de_instruccion(int cliente_fd){
 //pide a memoria
 	while(!hayInterrupcion){
 		fetch(cliente_fd);
-
+		log_info(logger, "recibi el pid %i en recibir pcb de cpu",pcb->pid);
 	}
 
 
@@ -305,10 +302,16 @@ void ejecutar_ciclo_de_instruccion(int cliente_fd){
 
 void fetch(int cliente_fd){
 
-	int pc = pcb->contexto->pc;
-	int pid =pcb->pid;
-	log_info(logger, "estoy en fetch con pid %i ",pid);
-	solicitar_instruccion_ejecutar_segun_pc(pc, pid);
+	if (pcb != NULL) {
+	    int pc = pcb->contexto->pc;
+	    int pid = pcb->pid;
+		log_info(logger, "estoy en fetch con pid %i ",pid);
+		solicitar_instruccion_ejecutar_segun_pc(pc, pid);
+	    // Resto del código
+	} else {
+	    log_error(logger, "pcb es nulo");
+	    // Posible manejo de error
+	}
 	pcb->contexto->pc+=1;
 	decode(instruccion_a_realizar,cliente_fd);
 
@@ -325,6 +328,7 @@ void solicitar_instruccion_ejecutar_segun_pc(int pc,int pid){
 	}
 
 }
+
 
 void decode(t_instruccion* instrucciones,int cliente_fd){
 	t_estrucutra_cpu registro_aux;
@@ -362,6 +366,8 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		hayInterrupcion= false;
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
+		log_info(logger_consola_cpu, "Valor de parametro: %s", parametro);
+		log_info(logger_consola_cpu, "Valor de parametro2: %s", parametro2);
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
 		sumar(pcb, registro_aux, registro_aux2);
@@ -383,10 +389,8 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		enviar_mensaje(tiempo,cliente_fd);
 		break;
    case WAIT:
-	    hayInterrupcion=true;
 		recurso= list_get(instrucciones->parametros,0);
 		enviar_pcb(pcb,cliente_fd,EJECUTAR_WAIT);
-		enviar_mensaje(recurso,cliente_fd);
 		break;
 	case SIGNAL:
 		recurso = list_get(instrucciones->parametros,0);
@@ -465,6 +469,7 @@ t_estrucutra_cpu devolver_registro(char* registro){
 }
 
 void sumar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
+
     uint32_t valor_destino = obtener_valor(destino);
     uint32_t valor_origen = obtener_valor(origen);
     uint32_t resultado = valor_destino + valor_origen;

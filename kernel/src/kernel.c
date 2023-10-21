@@ -251,7 +251,7 @@ void iniciar_proceso(char* archivo_test,int size,int prioridad,int pid){
 }
 
 void crear_pcb(t_planificador prioridad){
-	t_pcb* pcb = malloc(sizeof(pcb));
+	t_pcb* pcb = malloc(sizeof(t_pcb));
 	pcb->pid= contador_pid;
 	pcb->prioridad = prioridad;
 	t_contexto_ejecucion* contexto = crear_contexto();
