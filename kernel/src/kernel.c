@@ -192,9 +192,6 @@ void enviar_mensaje_kernel() {
 	        enviar_mensaje("kernel a filesystem", conexion_file_system);
 	        log_info(logger_consola,"mensaje enviado correctamente\n");
 			break;
-		case '4':
-			enviar_mensaje("kernel a interrupt ", conexion_cpu_interrupt);
-			 log_info(logger_consola,"mensaje enviado correctamente\n");
 		default:
 			log_info(logger_consola,"no corresponde a ninguno\n");
 			break;
@@ -229,9 +226,8 @@ void generar_conexion() {
 			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 	        log_info(logger_consola,"conexion generado correctamente\n");
 			pthread_create(&conexion_cpu_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_cpu);
-		case '4':
 			conexion_cpu_interrupt = crear_conexion(ip_cpu, puerto_cpu_interrupt);
-			//pthread_create(&conexion_cpu_interrupt_hilo, NULL, (void*) procesar_conexion, (void *)&conexion_cpu_interrupt_hilo);
+			pthread_create(&conexion_cpu_interrupt_hilo, NULL, (void*) procesar_conexion, (void *)&conexion_cpu_interrupt_hilo);
 	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		default:
@@ -352,7 +348,7 @@ void planificador_corto_plazo(){
 		case ROUND_ROBIN:
 			sem_wait(&contador_ejecutando_cpu);
 			log_info(logger,"Planificador Round Robin");
-			//de_ready_a_round_robin();
+			de_ready_a_round_robin();
 			break;
 		case PRIORIDADES:
 			log_info(logger,"Planificador Prioridades");
@@ -377,7 +373,7 @@ void de_ready_a_prioridades(){
 	pcb->estado=RUNNING;
 	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
 }
-/*
+
 void de_ready_a_prioridades(){
     list_sort(cola_ready->elements,comparador_prioridades);
     t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
@@ -388,16 +384,20 @@ void de_ready_a_prioridades(){
         de_ready_a_fifo();
     }
 }
-*/
-/*
+
 void de_ready_a_round_robin(){
-    if(hay_proceso_en_ejecucion && tiempo_transcurrido > quantum){
-        //DESALOJAR
-        de_ready_a_fifo();
-    } else {
-        de_ready_a_fifo();
-    }
-}*/
+	while(1){
+	    if(hay_proceso_en_ejecucion){
+			sleep(quamtum);
+	        de_ready_a_fifo();
+	    } else {
+	        de_ready_a_fifo();
+	    }
+
+
+	}
+
+}
 
 bool comparador_prioridades(void* caso1,void* caso2){
 	t_pcb* pcb1 = ((t_pcb*) caso1);

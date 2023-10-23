@@ -16,9 +16,12 @@ int main(int argc, char* argv[]) {
 	//iniciar_consola();
 	log_info(logger_consola_cpu, "se inicio el servidor\n");
 	pthread_t servidor_interrupt;
-	pthread_create(&servidor_interrupt,NULL,(void*)iniciar_servidor_interrupt,(void *) &puerto_escucha_interrupt);
+	pthread_t servidor_dispatch;
+	pthread_create(&servidor_interrupt,NULL,(void*)iniciar_servidor_interrupt,(void *) puerto_escucha_interrupt);
+	pthread_create(&servidor_dispatch,NULL,(void*)iniciar_servidor_cpu,(void*) puerto_escucha);
 	//iniciar_servidor_cpu(puerto_escucha);
 
+	pthread_join(servidor_dispatch,NULL);
 	pthread_join(servidor_interrupt, NULL);
 	terminar_programa(conexion_memoria, logger, config);
     return 0;
@@ -32,9 +35,9 @@ void iniciar_recurso(){
 }
 
 void iniciar_servidor_interrupt(char * puerto){
-	int server_fd = iniciar_servidor(puerto);
+	int cpu_interrupt_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
-	int cliente_fd = esperar_cliente(server_fd);
+	int cliente_fd = esperar_cliente(cpu_interrupt_fd);
 		t_list* lista;
 		while (1) {
 			int cod_op = recibir_operacion(cliente_fd);
@@ -47,6 +50,10 @@ void iniciar_servidor_interrupt(char * puerto){
 				log_info(logger, "Me llegaron los siguientes valores:\n");
 				list_iterate(lista, (void*) iterator);
 				break;
+			//case PRIORIDAD_DESALOJO:
+				//hacercosa();
+				//pcb->motivo = "por desalojo";
+				//hayInterrupcion= true;
 			case -1:
 				log_error(logger, "el cliente se desconecto. Terminando servidor");
 				return;
