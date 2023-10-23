@@ -15,8 +15,11 @@ int main(int argc, char* argv[]) {
 	 iniciar_recurso();
 	//iniciar_consola();
 	log_info(logger_consola_cpu, "se inicio el servidor\n");
-	iniciar_servidor_cpu(puerto_escucha);
+	pthread_t servidor_interrupt;
+	pthread_create(&servidor_interrupt,NULL,(void*)iniciar_servidor_interrupt,(void *) &puerto_escucha_interrupt);
+	//iniciar_servidor_cpu(puerto_escucha);
 
+	pthread_join(servidor_interrupt, NULL);
 	terminar_programa(conexion_memoria, logger, config);
     return 0;
 }
@@ -28,6 +31,32 @@ void iniciar_recurso(){
 	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
 }
 
+void iniciar_servidor_interrupt(char * puerto){
+	int server_fd = iniciar_servidor(puerto);
+	log_info(logger, "Servidor listo para recibir al cliente");
+	int cliente_fd = esperar_cliente(server_fd);
+		t_list* lista;
+		while (1) {
+			int cod_op = recibir_operacion(cliente_fd);
+			switch (cod_op) {
+			case MENSAJE:
+				recibir_mensaje(cliente_fd);
+				break;
+			case PAQUETE:
+				lista = recibir_paquete(cliente_fd);
+				log_info(logger, "Me llegaron los siguientes valores:\n");
+				list_iterate(lista, (void*) iterator);
+				break;
+			case -1:
+				log_error(logger, "el cliente se desconecto. Terminando servidor");
+				return;
+			default:
+				log_warning(logger,"Operacion desconocida. No quieras meter la pata");
+				break;
+			}
+		}
+		return;
+	}
 
 void procesar_conexion(void *conexion1){
 	int *conexion = (int*)conexion1;
@@ -191,6 +220,7 @@ char** parsear_instruccion(char* instruccion){
 
 
 //TODO
+/*
 void iniciar_consola(){
 
 	char* valor;
@@ -223,17 +253,17 @@ void iniciar_consola(){
 	}
 
 }
-
+*/
 void obtener_configuracion(){
 	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
 	puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
 	puerto_escucha = config_get_string_value(config,"PUERTO_ESCUCHA_DISPATCH");
+	puerto_escucha_interrupt = config_get_string_value(config,"PUERTO_ESCUCHA_INTERRUPT");
 }
 void iniciar_servidor_cpu(char *puerto){
 
 	int cpu_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
-
 	generar_conexion_memoria();
 
 	log_info(logger, "genere conexion con memoria");

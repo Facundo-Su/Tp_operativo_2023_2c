@@ -18,11 +18,6 @@ int main(int argc, char **argv){
 
     //error
     //paquete(conexion_memoria);
-    pthread_t servidor;
-
-
-
-
 
     return EXIT_SUCCESS;
 }
@@ -197,6 +192,9 @@ void enviar_mensaje_kernel() {
 	        enviar_mensaje("kernel a filesystem", conexion_file_system);
 	        log_info(logger_consola,"mensaje enviado correctamente\n");
 			break;
+		case '4':
+			enviar_mensaje("kernel a interrupt ", conexion_cpu_interrupt);
+			 log_info(logger_consola,"mensaje enviado correctamente\n");
 		default:
 			log_info(logger_consola,"no corresponde a ninguno\n");
 			break;
@@ -207,11 +205,13 @@ void generar_conexion() {
 	pthread_t conexion_memoria_hilo;
 	pthread_t conexion_file_system_hilo;
 	pthread_t conexion_cpu_hilo;
+	pthread_t conexion_cpu_interrupt_hilo;
 
 	log_info(logger_consola,"ingrese q que modulos deseas conectar"
 			"\n 1. modulo memoria"
 			"\n 2. modulo filesystem"
-			"\n 3. modulo cpu");
+			"\n 3. modulo cpu"
+			"\n 4. modulo cpu interrupt");
 
     char *valor = readline(">");
 	switch (*valor) {
@@ -229,6 +229,10 @@ void generar_conexion() {
 			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 	        log_info(logger_consola,"conexion generado correctamente\n");
 			pthread_create(&conexion_cpu_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_cpu);
+		case '4':
+			conexion_cpu_interrupt = crear_conexion(ip_cpu, puerto_cpu_interrupt);
+			//pthread_create(&conexion_cpu_interrupt_hilo, NULL, (void*) procesar_conexion, (void *)&conexion_cpu_interrupt_hilo);
+	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		default:
 			log_info(logger_consola,"no corresponde a ninguno\n");

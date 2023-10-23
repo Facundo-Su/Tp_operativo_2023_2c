@@ -17,7 +17,7 @@ t_config* config;
 int conexion_memoria;
 int conexion_file_system;
 int conexion_cpu;
-
+int conexion_cpu_interrupt;
 //estructura de algoritmo
 
 typedef enum{

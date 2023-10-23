@@ -26,6 +26,8 @@ int conexion_memoria;
 char *ip_memoria;
 char *puerto_memoria;
 char *puerto_escucha;
+char *puerto_escucha_interrupt;
+
 t_log *logger_consola_cpu;
 bool hayInterrupcion;
 
@@ -52,7 +54,7 @@ void generar_conexion_memoria();
 char** parsear_instruccion(char* );
 void transformar_en_instrucciones(char*);
 void imprimir_valores_registros(t_registro_cpu* );
-
+void iniciar_servidor_interrupt(char * );
 
 void atendiendo_pedido(int);
 //archivos
