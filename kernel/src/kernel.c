@@ -544,10 +544,10 @@ void ejecutar_wait(char* recurso_a_encontrar, t_pcb * pcb){
     t_recurso *recurso_encontrado = list_find(lista_recursos, encontrar_recurso);
         if(recurso_encontrado != NULL){
             if(recurso_encontrado->instancias >0 ){
-            	//pcb = agregar_recurso_pcb(pcb, recurso_a_encontrar);
             	int posicion = buscar_posicion_lista_recurso(lista_recursos, recurso_encontrado);
                 recurso_encontrado->instancias -=1;
                 list_replace(lista_recursos,posicion,recurso_encontrado);
+                pcb = agregar_recurso_pcb(pcb, recurso_a_encontrar);
             }else{
                 queue_push(recurso_encontrado->cola_bloqueados,pcb);
             }
@@ -555,7 +555,7 @@ void ejecutar_wait(char* recurso_a_encontrar, t_pcb * pcb){
             enviar_pcb(pcb,conexion_memoria,FINALIZAR);
         }
 }
-/*
+
 t_pcb*agregar_recurso_pcb(t_pcb*pcb, char*nombre){
 	bool encontrar_recurso(void * recurso){
 	          t_recurso_pcb* un_recurso = (t_recurso_pcb*)recurso;
@@ -617,19 +617,21 @@ void ejecutar_signal(char* recurso_a_encontrar, t_pcb * pcb){
         enviar_pcb(pcb,conexion_memoria,FINALIZAR);
     }
 }
-*/
+
 //TODO DESCOMENTAR
 
-int buscar_posicion_lista_recurso_pcb(t_list*lista, t_recurso_pcb *recurso){
-	int cantidad= list_size(lista);
-	t_recurso_pcb* elemento ;
-	for(int i=0;i<cantidad;i++){
-		elemento = list_get(lista,cantidad);
-		if(elemento->nombre == recurso->nombre){
-			return cantidad;
-		}
-	}
-	return -1;
+
+int buscar_posicion_lista_recurso_pcb(t_list *lista, t_recurso_pcb *recurso) {
+    int cantidad = list_size(lista);
+    t_recurso_pcb *elemento;
+
+    for (int i = 0; i < cantidad; i++) {
+        elemento = list_get(lista, i);
+        if (strcmp(elemento->nombre, recurso->nombre) == 0) {
+            return i;
+        }
+    }
+    return -1;
 }
 int buscar_posicion_lista_recurso(t_list *lista, t_recurso *recurso) {
     int cantidad = list_size(lista);
