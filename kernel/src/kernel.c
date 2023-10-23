@@ -177,7 +177,8 @@ void enviar_mensaje_kernel() {
 	log_info(logger_consola,"ingrese q que modulos deseas mandar mensaje"
 			"\n 1. modulo memoria"
 			"\n 2. modulo cpu"
-			"\n 3. modulo filesystem");
+			"\n 3. modulo filesystem"
+			"\n 4. modulo cpu_interrupt");
     char *valor = readline(">");
 	switch (*valor) {
 		case '1':
@@ -192,6 +193,9 @@ void enviar_mensaje_kernel() {
 	        enviar_mensaje("kernel a filesystem", conexion_file_system);
 	        log_info(logger_consola,"mensaje enviado correctamente\n");
 			break;
+		case '4':
+	        enviar_mensaje("kernel a interrupt", conexion_cpu_interrupt);
+	        log_info(logger_consola,"mensaje enviado correctamente\n");
 		default:
 			log_info(logger_consola,"no corresponde a ninguno\n");
 			break;
@@ -348,7 +352,7 @@ void planificador_corto_plazo(){
 		case ROUND_ROBIN:
 			sem_wait(&contador_ejecutando_cpu);
 			log_info(logger,"Planificador Round Robin");
-			de_ready_a_round_robin();
+			//de_ready_a_round_robin();
 			break;
 		case PRIORIDADES:
 			log_info(logger,"Planificador Prioridades");
@@ -373,7 +377,7 @@ void de_ready_a_prioridades(){
 	pcb->estado=RUNNING;
 	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
 }
-
+/*
 void de_ready_a_prioridades(){
     list_sort(cola_ready->elements,comparador_prioridades);
     t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
@@ -397,7 +401,7 @@ void de_ready_a_round_robin(){
 
 	}
 
-}
+}*/
 
 bool comparador_prioridades(void* caso1,void* caso2){
 	t_pcb* pcb1 = ((t_pcb*) caso1);

@@ -372,7 +372,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 	char* parametro2="";
 	uint32_t valor_uint1;
 	uint32_t valor_uint2;
-	tiempo_inicial = time(NULL);
 	switch(instrucciones->nombre){
 	case SET:
 		hayInterrupcion= false;
@@ -465,10 +464,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger_consola_cpu,"entendi el mensaje EXIT");
 		break;
 	}
-//	tiempo_final = time(NULL);
-//	tiempo_transcurrido = difftime(tiempo_final, tiempo_inicial);
-//	pcb->tiempo_cpu = tiempo_transcurrido;
-//
 	recibi_archivo = false;
 }
 
