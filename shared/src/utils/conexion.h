@@ -85,7 +85,6 @@ typedef struct{
 	t_contexto_ejecucion* contexto;
 	//t_list* tabla_archivo_abierto;
 	t_estado estado;
-	t_list* lista_instruciones;
 	t_list* recursos;
 }t_pcb;
 
@@ -155,8 +154,8 @@ void empaquetar_instrucciones(t_paquete* , t_instruccion*);
 char* obtener_nombre_instruccion(op_instrucciones );
 void enviar_mensaje_instrucciones(char* , int ,op_code );
 void log_pcb_info(t_pcb* );
-
-
+t_list* desempaquetar_recursos(t_list* ,int );
+void empaquetar_recursos(t_paquete* ,t_list *);
 //enviar pcb
 void enviar_pcb(t_pcb* , int conexion, op_code);
 

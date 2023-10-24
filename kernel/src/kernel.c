@@ -273,7 +273,10 @@ void crear_pcb(int prioridad){
 	t_contexto_ejecucion* contexto = crear_contexto();
 	pcb->contexto =contexto;
 	//pcb->tabla_archivo_abierto;
+	t_list *recursos;
+	recursos = list_create();
 	pcb->estado=NEW;
+	pcb->recursos = recursos;
 	contador_pid++;
 	agregar_a_cola_new(pcb);
 
