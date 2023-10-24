@@ -417,34 +417,35 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	t_pcb* pcb = malloc(sizeof(t_pcb));
 	int * pid = list_get(paquete, 0);
 	pcb->pid = *pid;
+	int posicion = 1;
+	int *puntero_posicion = &posicion;
 
-	t_estado* estado = list_get(paquete, 1);
+	t_estado* estado = list_get(paquete, (*puntero_posicion)++);
 	pcb->estado = *estado;
 
-	int posicion_comienzo_contexto =2;
-	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, posicion_comienzo_contexto);
+	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, &puntero_posicion);
 	pcb->contexto = contexto;
-	t_list *recursos =desempaquetar_recursos(paquete,7);
+	t_list *recursos =desempaquetar_recursos(paquete,&puntero_posicion);
 
 	return pcb;
 }
 
-t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int posicion){
+t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int* posicion){
 	t_contexto_ejecucion *contexto = malloc(sizeof(t_contexto_ejecucion));
-	int* pc = list_get(paquete,posicion);
+	int* pc = list_get(paquete,(*posicion)++);
 	contexto->pc = *pc;
 
-	t_registro_cpu * registros = desempaquetar_registros(paquete,3);
+	t_registro_cpu * registros = desempaquetar_registros(paquete,&posicion);
 	contexto->registros_cpu = registros;
 	return contexto;
 }
-t_registro_cpu* desempaquetar_registros(t_list* paquete, int posicion) {
+t_registro_cpu* desempaquetar_registros(t_list* paquete, int* posicion) {
     t_registro_cpu* registro = malloc(sizeof(t_registro_cpu));
 
-    registro->ax = *((uint32_t*)list_get(paquete, posicion));
-    registro->bx = *((uint32_t*)list_get(paquete, posicion + 1));
-    registro->cx = *((uint32_t*)list_get(paquete, posicion + 2));
-    registro->dx = *((uint32_t*)list_get(paquete, posicion + 3));
+    registro->ax = *((uint32_t*)list_get(paquete, (*posicion)++));
+    registro->bx = *((uint32_t*)list_get(paquete, (*posicion)++));
+    registro->cx = *((uint32_t*)list_get(paquete, (*posicion)++));
+    registro->dx = *((uint32_t*)list_get(paquete, (*posicion)++));
 
     return registro;
 }
@@ -478,17 +479,14 @@ t_list* desempaquetar_parametros(t_list* paquete,int posicion){
 	return parametros;
 
 }
-t_list* desempaquetar_recursos(t_list* paquete,int posicion){
+t_list* desempaquetar_recursos(t_list* paquete,int* posicion){
 	t_list*recursos = list_create();
-	int cantidad_recursos = list_get(paquete,posicion);
-	posicion++;
+	int cantidad_recursos = list_get(paquete,(*posicion)++);
 	for(int i=0;i<cantidad_recursos;i++){
-		t_recurso_pcb *recurso = list_get(paquete,posicion);
-		posicion++;
+		t_recurso_pcb *recurso = list_get(paquete,(*posicion)++);
 		list_add(recursos,recurso);
 	}
 	return recursos;
-
 }
 
 
