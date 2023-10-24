@@ -32,6 +32,7 @@ void iniciar_recurso(){
 	hayInterrupcion = false;
 	instruccion_a_realizar= malloc(sizeof(t_instruccion));
 	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
+	//sem_init(&instruccion_ejecutando, 0,1);
 }
 
 void iniciar_servidor_interrupt(char * puerto){
@@ -50,10 +51,13 @@ void iniciar_servidor_interrupt(char * puerto){
 				log_info(logger, "Me llegaron los siguientes valores:\n");
 				list_iterate(lista, (void*) iterator);
 				break;
-			//case PRIORIDAD_DESALOJO:
-				//hacercosa();
-				//pcb->motivo = "por desalojo";
-				//hayInterrupcion= true;
+			case ENVIAR_DESALOJAR:
+				hayInterrupcion = true;
+				//TODO
+				while(instruccion_ejecutando){
+					int i=0;
+				}
+				enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
 			case -1:
 				log_error(logger, "el cliente se desconecto. Terminando servidor");
 				return;
@@ -331,6 +335,7 @@ void atendiendo_pedido(int cliente_fd){
 }*/
 
 void ejecutar_ciclo_de_instruccion(int cliente_fd){
+	instruccion_ejecutando= true;
 //pide a memoria
 	while(!hayInterrupcion){
 		fetch(cliente_fd);
@@ -465,6 +470,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		break;
 	}
 	recibi_archivo = false;
+	instruccion_ejecutando= false;
 }
 
 void setear(t_estrucutra_cpu pos, uint32_t valor) {

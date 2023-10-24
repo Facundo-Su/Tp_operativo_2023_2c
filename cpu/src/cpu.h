@@ -28,6 +28,9 @@ char *puerto_memoria;
 char *puerto_escucha;
 char *puerto_escucha_interrupt;
 
+bool instruccion_ejecutando;
+
+
 t_log *logger_consola_cpu;
 bool hayInterrupcion;
 

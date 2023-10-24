@@ -56,13 +56,13 @@ t_queue* cola_ready;
 t_queue* cola_ejecucion;
 
 
-t_pcb* pcb_en_ejecucion;
+t_list * pcb_en_ejecucion;
 
 
 //SEMAFORO=================================================================================================
 sem_t mutex_cola_new;
 sem_t mutex_cola_ready;
-sem_t mutex_cola_ejecucion;
+sem_t mutex_lista_ejecucion;
 sem_t contador_ejecutando_cpu;
 //sem_t sem_new;
 //sem_t sem_ready;
@@ -70,6 +70,7 @@ t_planificador tipo_planificador;
 sem_t grado_multiprogramacion;
 sem_t contador_agregando_new;
 sem_t contador_cola_ready;
+sem_t proceso_desalojo;
 
 
 

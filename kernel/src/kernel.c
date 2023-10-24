@@ -64,8 +64,17 @@ void procesar_conexion(void *conexion1){
 		case EJECUTAR_F_TRUNCATE:
 			log_info(logger,"me llegaron la instruccion ejecutar f truncate del cpu");
 			break;
+
+		case ENVIAR_DESALOJAR:
+			paquete = recibir_paquete(cliente_fd);
+			pcb_aux = desempaquetar_pcb(paquete);
+			log_pcb_info(pcb_aux);
+			agregar_a_cola_ready(pcb_aux);
+			sem_post(&proceso_desalojo);
+
+			break;
 		case FINALIZAR:
-			t_list * paquete = recibir_paquete(cliente_fd);
+			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
 			log_info(logger,"el pid del proceso finalizado es %i",pcb_aux->pid);
 			//TODO VER SI NECESITA UNA LISTA PARA LAMACENAR LOS PROCESOS TERMINADO
@@ -159,6 +168,7 @@ void iniciar_recurso(){
 	cola_new = queue_create();
 	cola_ready = queue_create();
 	lista_recursos = list_create();
+	pcb_en_ejecucion = list_create();
 	t_recurso* nuevo_recurso = (t_recurso*) malloc(sizeof(t_recurso));
 	nuevo_recurso->instancias =3;
 	nuevo_recurso->nombre = "RA";
@@ -171,6 +181,8 @@ void iniciar_recurso(){
 	sem_init(&mutex_cola_ready,0,1);
 	sem_init(&contador_agregando_new,0,0);
 	sem_init(&contador_cola_ready,0,0);
+	sem_init(&proceso_desalojo,0,0);
+    pthread_mutex_init(&mutex_lista_ejecucion, 0);
 }
 
 void enviar_mensaje_kernel() {
@@ -353,7 +365,6 @@ void planificador_corto_plazo(){
 			de_ready_a_fifo();
 			break;
 		case ROUND_ROBIN:
-			sem_wait(&contador_ejecutando_cpu);
 			log_info(logger,"Planificador Round Robin");
 			//de_ready_a_round_robin();
 			break;
@@ -365,37 +376,34 @@ void planificador_corto_plazo(){
 		}
 }
 
-//TODO AGREGAR DISPATCH agregar semaforo
-
 void de_ready_a_fifo(){
 	t_pcb* pcb =quitar_de_cola_ready();
     enviar_por_dispatch(pcb);
 }
 
-//TODO Revisar el if que crashea
-
-void de_ready_a_prioridades(){
-	list_sort(cola_ready->elements,comparador_prioridades);
-	t_pcb* pcb = quitar_de_cola_ready();
-	pcb->estado=RUNNING;
-	enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
-}
-/*
 void de_ready_a_prioridades(){
     list_sort(cola_ready->elements,comparador_prioridades);
     t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
-    if( pcb_en_ejecucion->prioridad < pcb_a_comparar_prioridad){
-        //DESALOJAR
-        de_ready_a_fifo();
-    } else {
-        de_ready_a_fifo();
+    if(list_is_empty(pcb_en_ejecucion)){
+    	de_ready_a_fifo();
+    }else{
+    	t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
+    	if(!queue_is_empty(cola_ready)){
+    		t_pcb* pcb_axu_comparador = queue_peek(cola_ready);
+    		if(pcb_aux->prioridad<pcb_axu_comparador->prioridad){
+    			//TODO
+    			enviar_mensaje_instrucciones("desalojate",conexion_cpu_interrupt,ENVIAR_DESALOJAR);
+    			sem_wait(&proceso_desalojo);
+    			de_ready_a_fifo();
+    		}
+    	}
     }
 }
-
+/*
 void de_ready_a_round_robin(){
 	while(1){
 	    if(hay_proceso_en_ejecucion){
-			sleep(quamtum);
+			//sleep(quamtum);
 	        de_ready_a_fifo();
 	    } else {
 	        de_ready_a_fifo();
@@ -420,8 +428,13 @@ bool controlador_multi_programacion(){
 
 void enviar_por_dispatch(t_pcb* pcb) {
     pcb->estado=RUNNING;
+
+    pthread_mutex_lock(&mutex_lista_ejecucion);
+    list_add(pcb_en_ejecucion, pcb);
+    pthread_mutex_unlock(&mutex_lista_ejecucion);
+
     enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
-    pcb_en_ejecucion = pcb;
+
     log_info(logger,"El proceso [%d] fue pasado al estado de running y enviado al CPU",pcb->pid);
 }
 
@@ -433,7 +446,7 @@ t_contexto_ejecucion* obtener_contexto(char* archivo){
 	return estructura_retornar;
 }
 
-// ver como pasar int TODO
+
 void finalizar_proceso(int pid){
 
 	t_paquete * paquete = crear_paquete(FINALIZAR);
@@ -624,8 +637,6 @@ void ejecutar_signal(char* recurso_a_encontrar, t_pcb * pcb){
         enviar_pcb(pcb,conexion_memoria,FINALIZAR);
     }
 }
-
-//TODO DESCOMENTAR
 
 
 int buscar_posicion_lista_recurso_pcb(t_list *lista, t_recurso_pcb *recurso) {
