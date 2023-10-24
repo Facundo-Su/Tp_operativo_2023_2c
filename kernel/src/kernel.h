@@ -83,7 +83,6 @@ int quantum;
 int grado_multiprogramacion_ini;
 t_planificador planificador;
 
-char **recursos;
 int *instancias_recursos;
 
 void obtener_configuracion();

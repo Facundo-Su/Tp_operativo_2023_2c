@@ -349,13 +349,13 @@ void log_pcb_info(t_pcb* pcb_aux) {
         log_info(logger, "    BX: %u", pcb_aux->contexto->registros_cpu->bx);
         log_info(logger, "    CX: %u", pcb_aux->contexto->registros_cpu->cx);
         log_info(logger, "    DX: %u", pcb_aux->contexto->registros_cpu->dx);
-        int c= list_size(pcb_aux->recursos);
+        /*int c= list_size(pcb_aux->recursos);
         log_info(logger, "Recursos:");
         for(int i=0; i<c;i++){
         	t_recurso_pcb *recurso = list_get(pcb_aux->recursos,i);
         	log_info(logger, "nombre: %s", recurso->nombre);
         	log_info(logger, "instancias: %d", recurso->instancias);
-        }
+        }*/
 }
 
 
@@ -372,12 +372,14 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 
 void empaquetar_recursos(t_paquete* paquete,t_list *recursos){
 	int* cantidad_recursos = list_size(recursos);
-	agregar_a_paquete(paquete, &cantidad_recursos, sizeof(cantidad_recursos));
+	agregar_a_paquete(paquete, &cantidad_recursos, sizeof(int));
 	for(int i=0; i<cantidad_recursos; i++){
 		t_recurso_pcb* recurso = list_get(recursos, i);
+		if(recurso!= NULL){
 		agregar_a_paquete(paquete, &(recurso->nombre), strlen(recurso->nombre)+1);
 		agregar_a_paquete(paquete, &(recurso->instancias),sizeof(int));
 		}
+	}
 }
 void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
 

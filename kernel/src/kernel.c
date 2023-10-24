@@ -284,16 +284,9 @@ void crear_pcb(int prioridad){
 	pcb->prioridad = prioridad;
 	t_contexto_ejecucion* contexto = crear_contexto();
 	pcb->contexto =contexto;
-	pcb->recursos= list_create();
 	//pcb->tabla_archivo_abierto;
-	t_list *recursos;
-	recursos = list_create();
-	t_recurso_pcb *recurso = malloc(sizeof(t_recurso));
-	recurso->instancias=1;
-	recurso->nombre = "RA";
-	pcb->estado=NEW;
-	list_add(recursos,recurso);
-	list_add_all(pcb->recursos,recursos);
+	t_list * lista_recursos_pcb = list_create();
+	pcb->recursos = lista_recursos_pcb;
 	contador_pid++;
 	log_pcb_info(pcb);
 	agregar_a_cola_new(pcb);
@@ -532,7 +525,7 @@ void obtener_configuracion(){
     puerto_cpu_interrupt = config_get_string_value(config, "PUERTO_CPU_INTERRUPT");
     quantum = config_get_int_value(config, "QUANTUM");
     grado_multiprogramacion_ini = config_get_int_value(config, "GRADO_MULTIPROGRAMACION_INI");
-    recursos = config_get_array_value(config, "RECURSOS");
+    //recursos = config_get_array_value(config, "RECURSOS");
     char **instancias = config_get_array_value(config, "INSTANCIAS_RECURSOS");
     instancias_recursos = string_to_int_array(instancias);
     string_array_destroy(instancias);
