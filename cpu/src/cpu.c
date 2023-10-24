@@ -107,7 +107,7 @@ void procesar_conexion(void *conexion1){
 			t_list * paquete = recibir_paquete(cliente_fd);
 			pcb = desempaquetar_pcb(paquete);
 			//recibir_pcb(cliente_fd);
-			//log_pcb_info(pcb);
+			log_pcb_info(pcb);
 			ejecutar_ciclo_de_instruccion(cliente_fd);
 			hayInterrupcion = false;
 			break;

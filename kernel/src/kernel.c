@@ -284,12 +284,18 @@ void crear_pcb(int prioridad){
 	pcb->prioridad = prioridad;
 	t_contexto_ejecucion* contexto = crear_contexto();
 	pcb->contexto =contexto;
+	pcb->recursos= list_create();
 	//pcb->tabla_archivo_abierto;
 	t_list *recursos;
 	recursos = list_create();
+	t_recurso_pcb *recurso = malloc(sizeof(t_recurso));
+	recurso->instancias=1;
+	recurso->nombre = "RA";
 	pcb->estado=NEW;
-	pcb->recursos = recursos;
+	list_add(recursos,recurso);
+	list_add_all(pcb->recursos,recursos);
 	contador_pid++;
+	log_pcb_info(pcb);
 	agregar_a_cola_new(pcb);
 
 }

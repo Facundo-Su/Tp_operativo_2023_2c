@@ -339,7 +339,6 @@ t_pcb* recibir_pcb(int socket_cliente){
 void log_pcb_info(t_pcb* pcb_aux) {
     log_info(logger, "PID: %d", pcb_aux->pid);
     log_info(logger, "Prioridad: %d", pcb_aux->prioridad);
-        log_info(logger, "Tiempo de CPU: %d", pcb_aux->tiempo_cpu);
         log_info(logger, "Estado: %d", pcb_aux->estado);
 
         // Log de contexto de ejecución
@@ -365,6 +364,7 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 
 	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
 	agregar_a_paquete(paquete, &(pcb->estado), sizeof(t_estado));
+	agregar_a_paquete(paquete, &(pcb->prioridad), sizeof(int));
 	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
 	empaquetar_recursos(paquete,pcb->recursos);
 
@@ -423,9 +423,12 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	t_estado* estado = list_get(paquete, (*puntero_posicion)++);
 	pcb->estado = *estado;
 
-	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, &puntero_posicion);
+	int * prioridad = list_get(paquete, (*puntero_posicion)++);
+	pcb->prioridad = *prioridad;
+
+	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, puntero_posicion);
 	pcb->contexto = contexto;
-	t_list *recursos =desempaquetar_recursos(paquete,&puntero_posicion);
+	t_list *recursos =desempaquetar_recursos(paquete,puntero_posicion);
 
 	return pcb;
 }
@@ -435,7 +438,7 @@ t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int* posicion){
 	int* pc = list_get(paquete,(*posicion)++);
 	contexto->pc = *pc;
 
-	t_registro_cpu * registros = desempaquetar_registros(paquete,&posicion);
+	t_registro_cpu * registros = desempaquetar_registros(paquete,posicion);
 	contexto->registros_cpu = registros;
 	return contexto;
 }
@@ -481,10 +484,14 @@ t_list* desempaquetar_parametros(t_list* paquete,int posicion){
 }
 t_list* desempaquetar_recursos(t_list* paquete,int* posicion){
 	t_list*recursos = list_create();
-	int cantidad_recursos = list_get(paquete,(*posicion)++);
-	for(int i=0;i<cantidad_recursos;i++){
-		t_recurso_pcb *recurso = list_get(paquete,(*posicion)++);
-		list_add(recursos,recurso);
+	t_recurso_pcb* recurso_pcb = malloc(sizeof(t_recurso_pcb));
+	int *cantidad_recursos = list_get(paquete,(*posicion)++);
+	for(int i=0;i<*cantidad_recursos;i++){
+		char* nombre = list_get(paquete,(*posicion)++);
+		recurso_pcb->nombre =nombre;
+		int* instancia = list_get(paquete,(*posicion)++);
+		recurso_pcb->instancias = *instancia;
+		list_add(recursos,recurso_pcb);
 	}
 	return recursos;
 }
