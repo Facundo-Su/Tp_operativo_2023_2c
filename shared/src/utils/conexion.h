@@ -85,13 +85,8 @@ typedef struct{
 	t_contexto_ejecucion* contexto;
 	//t_list* tabla_archivo_abierto;
 	t_estado estado;
-	t_list* recursos;
+	//t_list* recursos;
 }t_pcb;
-
-typedef struct{
-	char*nombre;
-	int instancias;
-}t_recurso_pcb;
 
 time_t tiempo_inicial, tiempo_final;
 double tiempo_transcurrido;

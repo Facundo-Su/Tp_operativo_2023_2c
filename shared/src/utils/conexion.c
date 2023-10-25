@@ -366,11 +366,11 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 	agregar_a_paquete(paquete, &(pcb->estado), sizeof(t_estado));
 	agregar_a_paquete(paquete, &(pcb->prioridad), sizeof(int));
 	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
-	empaquetar_recursos(paquete,pcb->recursos);
+	//empaquetar_recursos(paquete,pcb->recursos);
 
 }
 
-void empaquetar_recursos(t_paquete* paquete,t_list *recursos){
+/*void empaquetar_recursos(t_paquete* paquete,t_list *recursos){
 	int* cantidad_recursos = list_size(recursos);
 	agregar_a_paquete(paquete, &cantidad_recursos, sizeof(int));
 	for(int i=0; i<cantidad_recursos; i++){
@@ -380,7 +380,7 @@ void empaquetar_recursos(t_paquete* paquete,t_list *recursos){
 		agregar_a_paquete(paquete, &(recurso->instancias),sizeof(int));
 		}
 	}
-}
+}*/
 void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
 
 	agregar_a_paquete(paquete, &(contexto->pc), sizeof(int));
@@ -430,7 +430,7 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 
 	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, puntero_posicion);
 	pcb->contexto = contexto;
-	t_list *recursos =desempaquetar_recursos(paquete,puntero_posicion);
+	//t_list *recursos =desempaquetar_recursos(paquete,puntero_posicion);
 
 	return pcb;
 }
@@ -484,7 +484,7 @@ t_list* desempaquetar_parametros(t_list* paquete,int posicion){
 	return parametros;
 
 }
-t_list* desempaquetar_recursos(t_list* paquete,int* posicion){
+/*t_list* desempaquetar_recursos(t_list* paquete,int* posicion){
 	t_list*recursos = list_create();
 	t_recurso_pcb* recurso_pcb = malloc(sizeof(t_recurso_pcb));
 	int *cantidad_recursos = list_get(paquete,(*posicion)++);
@@ -496,7 +496,7 @@ t_list* desempaquetar_recursos(t_list* paquete,int* posicion){
 		list_add(recursos,recurso_pcb);
 	}
 	return recursos;
-}
+}*/
 
 
 //convertir en op_instrucciones

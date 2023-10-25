@@ -38,10 +38,17 @@ int contador_pc =0;
 typedef struct{
     char* nombre;
     int instancias;
-    t_queue* cola_bloqueados;
-    sem_t sem_recurso;
+    //t_queue* cola_bloqueados;
+    //sem_t sem_recurso;
 }t_recurso;
 
+typedef struct{
+    char* nombre;
+    int instancias;
+    int pid;
+}t_recurso_pcb;
+
+t_list *lista_recursos_pcb;
 //configuraciones del archibo kernel.config
 
 char *ip_memoria;
@@ -54,7 +61,7 @@ t_list* lista_pcb;
 t_queue* cola_new;
 t_queue* cola_ready;
 t_queue* cola_ejecucion;
-
+t_list *lista_recursos;
 
 t_list * pcb_en_ejecucion;
 
@@ -115,7 +122,6 @@ t_contexto_ejecucion* obtener_contexto(char*);
 void mandar_a_memoria(char* , int , int );
 void liberar_memoria_pcb(t_pcb*);
 int buscar_posicion_pid(int );
-t_list *lista_recursos;
 void agregar_a_cola_new(t_pcb* pcb);
 t_pcb* quitar_de_cola_new();
 void agregar_a_cola_ready(t_pcb* pcb);
@@ -132,7 +138,9 @@ void enviar_contexto_ejecucion(t_contexto_ejecucion * );
 t_contexto_ejecucion* crear_contexto();
 t_list* obtener_lista_instruccion(char* ruta);
 void *manejar_respuesta(void* );
-t_pcb*agregar_recurso_pcb(t_pcb*, char*);
+void agregar_recurso_pcb(t_pcb*, char*);
+void quitar_recurso_pcb(t_pcb*, char*);
+t_recurso_pcb*crear_recurso_pcb(char*,int);
 void procesar_conexion(void *);
 t_recurso_pcb*crear_recurso(char*);
 void crear_pcb(int );
