@@ -17,7 +17,7 @@ int main(int argc, char **argv){
 	nuevo_recurso->instancias = 3;
 	nuevo_recurso->nombre = strdup("RA");
 	nuevo_recurso->cola_bloqueados = queue_create();
-	sem_init(&nuevo_recurso->sem_recurso,0,0);
+	//sem_init(&nuevo_recurso->sem_recurso,0,0);
 
 	log_info(logger,"El nombre del nuevo recurso es %s",nuevo_recurso->nombre);
 	//nuevo_recurso->cola_bloqueados = queue_create();
@@ -623,7 +623,8 @@ void ejecutar_signal(char*nombre,t_pcb*pcb){
 				list_replace(lista_recursos,j,recurso);
 				quitar_recurso_pcb(pcb->pid,nombre);
 				if(!queue_is_empty(recurso->cola_bloqueados)){
-					sem_post(&recurso->sem_recurso);
+					t_pcb* pcb_bloqueado = queue_pop(recurso->cola_bloqueados);
+					agregar_a_cola_ready(pcb_bloqueado);
 				}
 			}else{
 				enviar_pcb(pcb,conexion_memoria,FINALIZAR);

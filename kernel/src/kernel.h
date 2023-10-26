@@ -39,7 +39,7 @@ typedef struct{
     char* nombre;
     int instancias;
     t_queue* cola_bloqueados;
-    sem_t sem_recurso;
+    //sem_t sem_recurso;
 }t_recurso;
 
 typedef struct{
