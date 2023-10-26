@@ -43,7 +43,7 @@ int tam_pagina;
 char *path_instrucciones;
 int retraso_respuesta;
 t_algoritmo algoritmo;
-
+useconds_t retardo_respuesta;
 
 void iterator(char* value);
 void obtener_configuraciones();

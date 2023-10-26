@@ -28,8 +28,10 @@ int main(int argc, char* argv[]) {
 }
 
 void iniciar_recurso(){
+	hay_desalojo=false;
 	recibi_archivo=false;
 	hayInterrupcion = false;
+	sem_init(&contador_instruccion, 0,0);
 	instruccion_a_realizar= malloc(sizeof(t_instruccion));
 	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	//sem_init(&instruccion_ejecutando, 0,1);
@@ -52,12 +54,8 @@ void iniciar_servidor_interrupt(char * puerto){
 				list_iterate(lista, (void*) iterator);
 				break;
 			case ENVIAR_DESALOJAR:
-				hayInterrupcion = true;
-				//TODO
-				while(instruccion_ejecutando){
-					int i=0;
-				}
-				enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
+				hay_desalojo = true;
+
 			case -1:
 				log_error(logger, "el cliente se desconecto. Terminando servidor");
 				return;
@@ -89,6 +87,7 @@ void procesar_conexion(void *conexion1){
 			transformar_en_instrucciones(auxiliar);
 			hayInterrupcion = true;
 			recibi_archivo=true;
+			sem_post(&contador_instruccion);
 			break;
 		case PAQUETE:
 			lista = recibir_paquete(cliente_fd);
@@ -110,6 +109,7 @@ void procesar_conexion(void *conexion1){
 			log_pcb_info(pcb);
 			ejecutar_ciclo_de_instruccion(cliente_fd);
 			hayInterrupcion = false;
+			hay_desalojo= false;
 			break;
 		case CPU_ENVIA_A_MEMORIA:
 			enviar_mensaje("hola capo", conexion_memoria);
@@ -205,18 +205,6 @@ void transformar_en_instrucciones(char* auxiliar){
 	        }
 
 	        list_add_all(instruccion_a_realizar->parametros,parametros);
-
-
-	        char* parametro2 = obtener_nombre_instruccion(instruccion_a_realizar->nombre);
-	    	log_info(logger_consola_cpu,"el valor de instruccion es %s",parametro2);
-
-	    	int i=0;
-	    	while(i<cantidad_parametros){
-	    		char* parametro1 = list_get(instruccion_a_realizar->parametros,i);
-	    		log_info(logger_consola_cpu,"el parametro %i es %s",i,parametro1);
-	    		i++;
-	    	}
-
 }
 
 
@@ -337,9 +325,15 @@ void atendiendo_pedido(int cliente_fd){
 void ejecutar_ciclo_de_instruccion(int cliente_fd){
 	instruccion_ejecutando= true;
 //pide a memoria
+
 	while(!hayInterrupcion){
+		if(hay_desalojo){
+			enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
+			log_info(logger, "LLEGO A DESALOJAR");
+			return;
+		}
+
 		fetch(cliente_fd);
-		log_info(logger, "recibi el pid %i en recibir pcb de cpu",pcb->pid);
 	}
 
 
@@ -350,7 +344,9 @@ void fetch(int cliente_fd){
 	int pc = pcb->contexto->pc;
 	int pid = pcb->pid;
 	log_info(logger, "estoy en fetch con pid %i ",pid);
+
 	solicitar_instruccion_ejecutar_segun_pc(pc, pid);
+	sem_wait(&contador_instruccion);
 	pcb->contexto->pc+=1;
 	decode(instruccion_a_realizar,cliente_fd);
 
@@ -361,10 +357,6 @@ void solicitar_instruccion_ejecutar_segun_pc(int pc,int pid){
 	agregar_a_paquete(paquete, &pc, sizeof(int));
 	agregar_a_paquete(paquete, &pid, sizeof(int));
 	enviar_paquete(paquete, conexion_memoria);
-	log_info(logger, "estoy soliciantdo instrucciones pid %i ",pid);
-	while (!recibi_archivo) {
-		int i=0;
-	}
 
 }
 
@@ -387,7 +379,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		valor_uint1 = strtoul(parametro2, NULL, 10);
 		registro_aux = devolver_registro(parametro);
 		setear(registro_aux,valor_uint1);
-		imprimir_valores_registros(pcb->contexto->registros_cpu);
 		//ADormir(x segundo);
 		break;
 	case SUB:
@@ -397,7 +388,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
 		restar(pcb, registro_aux, registro_aux2);
-		log_info(logger_consola_cpu,"se termino de ejecutar la operacion del pid %i :",pcb->pid);
 		break;
 	case SUM:
 		hayInterrupcion= false;

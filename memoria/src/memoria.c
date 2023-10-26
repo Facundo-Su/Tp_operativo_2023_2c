@@ -89,7 +89,10 @@ void obtener_configuraciones() {
     puerto_filesystem = config_get_string_value(config, "PUERTO_FILESYSTEM");
     ip_file_system = config_get_string_value(config, "IP_FILESYSTEM");
     path_instrucciones =config_get_string_value(config,"PATH_INSTRUCCIONES");
+    int auxiliar = config_get_int_value(config,"RETARDO_RESPUESTA");
     strcat(path_instrucciones,"/");
+    auxiliar = auxiliar* 1000;
+    retardo_respuesta = (useconds_t) auxiliar;
 }
 
 void iniciar_servidor_memoria(char *puerto) {
@@ -154,7 +157,7 @@ void procesar_conexion(int cliente_fd){
 	            	//realizar_proceso_finalizar(valor_pid->pid);
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
-
+	    			usleep(retardo_respuesta);
 	    			t_list* lista;
 	    			lista = recibir_paquete(cliente_fd);
 	    			int* pc_recibido = list_get(lista,0);

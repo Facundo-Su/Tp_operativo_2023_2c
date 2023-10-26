@@ -12,20 +12,6 @@ int main(int argc, char **argv){
 
     obtener_configuracion();
     iniciar_recurso();
-    lista_recursos = list_create();
-	t_recurso * nuevo_recurso = malloc(sizeof(t_recurso));
-	nuevo_recurso->instancias = 3;
-	nuevo_recurso->nombre = strdup("RA");
-	nuevo_recurso->cola_bloqueados = queue_create();
-	//sem_init(&nuevo_recurso->sem_recurso,0,0);
-
-	log_info(logger,"El nombre del nuevo recurso es %s",nuevo_recurso->nombre);
-	//nuevo_recurso->cola_bloqueados = queue_create();
-
-	list_add(lista_recursos,nuevo_recurso);
-
-	t_recurso *recurso = list_get(lista_recursos,0);
-	log_info(logger,"El nombre del recurso es %s",recurso->nombre);
     iniciar_consola();
 
     //envio de mensajes
@@ -92,8 +78,7 @@ void procesar_conexion(void *conexion1){
 			pcb_aux = desempaquetar_pcb(paquete);
 			log_pcb_info(pcb_aux);
 			agregar_a_cola_ready(pcb_aux);
-			sem_post(&proceso_desalojo);
-
+			sem_post(&contador_cola_ready);
 			break;
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
@@ -105,6 +90,7 @@ void procesar_conexion(void *conexion1){
 			pcb_aux->estado = TERMINATED;
 			log_pcb_info(pcb_aux);
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
+			sem_post(&grado_multiprogramacion);
 			sem_post(&contador_ejecutando_cpu);
 			break;
 		case -1:
@@ -190,15 +176,16 @@ void iniciar_recurso(){
 	cola_new = queue_create();
 	cola_ready = queue_create();
 	pcb_en_ejecucion = list_create();
+    lista_recursos = list_create();
 	lista_recursos_pcb = list_create();
 	log_info(logger,"llegue");
-	sem_init(&grado_multiprogramacion, 0, grado_multiprogramacion_ini);
+	//TODO cambiar por grado init
+	sem_init(&grado_multiprogramacion, 0, 10);
 	sem_init(&mutex_cola_new, 0, 1);
 	sem_init(&contador_ejecutando_cpu,0,1);
 	sem_init(&mutex_cola_ready,0,1);
 	sem_init(&contador_agregando_new,0,0);
 	sem_init(&contador_cola_ready,0,0);
-	sem_init(&proceso_desalojo,0,0);
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
 }
 
@@ -396,9 +383,12 @@ void de_ready_a_fifo(){
 }
 
 void de_ready_a_prioridades(){
+
     list_sort(cola_ready->elements,comparador_prioridades);
     t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
+
     if(list_is_empty(pcb_en_ejecucion)){
+		sem_wait(&contador_ejecutando_cpu);
     	de_ready_a_fifo();
     }else{
     	t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
@@ -407,9 +397,11 @@ void de_ready_a_prioridades(){
     		if(pcb_aux->prioridad<pcb_axu_comparador->prioridad){
     			//TODO
     			enviar_mensaje_instrucciones("desalojate",conexion_cpu_interrupt,ENVIAR_DESALOJAR);
-    			sem_wait(&proceso_desalojo);
+    			sem_wait(&contador_ejecutando_cpu);
     			de_ready_a_fifo();
     		}
+			sem_wait(&contador_ejecutando_cpu);
+			de_ready_a_fifo();
     	}
     }
 }
