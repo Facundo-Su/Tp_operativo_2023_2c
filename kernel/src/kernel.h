@@ -38,8 +38,8 @@ int contador_pc =0;
 typedef struct{
     char* nombre;
     int instancias;
-    //t_queue* cola_bloqueados;
-    //sem_t sem_recurso;
+    t_queue* cola_bloqueados;
+    sem_t sem_recurso;
 }t_recurso;
 
 typedef struct{
@@ -138,13 +138,17 @@ void enviar_contexto_ejecucion(t_contexto_ejecucion * );
 t_contexto_ejecucion* crear_contexto();
 t_list* obtener_lista_instruccion(char* ruta);
 void *manejar_respuesta(void* );
-void agregar_recurso_pcb(t_pcb*, char*);
-void quitar_recurso_pcb(t_pcb*, char*);
+void agregar_recurso_pcb(int , char*);
+void quitar_recurso_pcb(int, char*);
 t_recurso_pcb*crear_recurso_pcb(char*,int);
 void procesar_conexion(void *);
 t_recurso_pcb*crear_recurso(char*);
 void crear_pcb(int );
 t_registro_cpu* crear_registro();
-
+void iniciar_recurso();
+void ejecutar_wait(char*,t_pcb*);
+t_recurso_pcb* buscar_recurso_pcb(char*,int );
 #endif /* KERNEL_H_ */
+
+
 

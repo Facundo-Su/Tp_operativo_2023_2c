@@ -3,18 +3,6 @@
 
 int main(int argc, char **argv){
 
-	lista_recursos = list_create();
-	t_recurso* nuevo_recurso;
-	int i= 3;
-	nuevo_recurso->instancias = i;
-	nuevo_recurso->nombre = "RA";
-	log_info(logger,"El nombre del nuevo recurso es %s",nuevo_recurso->nombre);
-	//nuevo_recurso->cola_bloqueados = queue_create();
-
-	list_add(lista_recursos,nuevo_recurso);
-
-	t_recurso *recurso = list_get(lista_recursos,0);
-	log_info(logger,"El nombre del recurso es %s",recurso->nombre);
 
 	char *rutaConfig = "kernel.config";
 	config = cargar_config(rutaConfig);
@@ -24,6 +12,20 @@ int main(int argc, char **argv){
 
     obtener_configuracion();
     iniciar_recurso();
+    lista_recursos = list_create();
+	t_recurso * nuevo_recurso = malloc(sizeof(t_recurso));
+	nuevo_recurso->instancias = 3;
+	nuevo_recurso->nombre = strdup("RA");
+	nuevo_recurso->cola_bloqueados = queue_create();
+	sem_init(&nuevo_recurso->sem_recurso,0,0);
+
+	log_info(logger,"El nombre del nuevo recurso es %s",nuevo_recurso->nombre);
+	//nuevo_recurso->cola_bloqueados = queue_create();
+
+	list_add(lista_recursos,nuevo_recurso);
+
+	t_recurso *recurso = list_get(lista_recursos,0);
+	log_info(logger,"El nombre del recurso es %s",recurso->nombre);
     iniciar_consola();
 
     //envio de mensajes
@@ -57,24 +59,29 @@ void procesar_conexion(void *conexion1){
 		case EJECUTAR_WAIT:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
-			//char * nombre_recurso = "RA";//obtener_mensaje(cliente_fd);
-//			t_recurso *recurso = list_get(lista_recursos,0);
+			char * nombre_recurso = "RA";//obtener_mensaje(cliente_fd);
+			t_recurso *recurso = list_get(lista_recursos,0);
 //			if(recurso != NULL){
 //				log_info(logger,"esta vaciooooooooooooooooooo");
 //			}
-//			int instacias = recurso->instancias;
-//			log_info(logger,"ejecutando wait %i",instacias);
-			//ejecutar_wait(nombre_recurso,pcb_aux);
-//			t_recurso *recurso2 = list_get(lista_recursos,0);
-//			instacias= recurso2->instancias;
-//			log_info(logger,"ejecutando wait %i",instacias);
+			int instacias = recurso->instancias;
+			log_info(logger,"ejecutando wait %d",instacias);
+			ejecutar_wait(nombre_recurso,pcb_aux);
+			t_recurso *recurso2 = list_get(lista_recursos,0);
+			instacias= recurso2->instancias;
+			log_info(logger,"ejecutando wait %d",instacias);
 			break;
 		case EJECUTAR_SIGNAL:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
-			char * nombre_recurso2 = obtener_mensaje(cliente_fd);
-			//ejecutar_signal(nombre_recurso2,pcb_aux);
-			log_info(logger,"ejecutando wait %i",nombre_recurso2);
+			char * nombre_recurso2 = "RA";// obtener_mensaje(cliente_fd);
+			t_recurso *recurso3 = list_get(lista_recursos,0);
+			instacias= recurso3->instancias;
+			log_info(logger,"ejecutando signal %i",instacias);
+			ejecutar_signal(nombre_recurso2,pcb_aux);
+			t_recurso *recurso4 = list_get(lista_recursos,0);
+			instacias= recurso4->instancias;
+			log_info(logger,"ejecutando signal %i",instacias);
 			break;
 		case EJECUTAR_F_TRUNCATE:
 			log_info(logger,"me llegaron la instruccion ejecutar f truncate del cpu");
@@ -570,14 +577,20 @@ void ejecutar_wait(char*nombre,t_pcb*pcb){
 	int encontro =0;
 	while(list_iterator_has_next(iterador)){
 		t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
+		log_info(logger,"el nombre del recurso es %s" ,nombre);
+		log_info(logger,"el nombre del recurso es %s" ,recurso->nombre);
 		if(strcmp(nombre,recurso->nombre) == 0){
 			encontro = 1;
+			log_info(logger,"ENCONTRO EL RECURSO");
 			if(recurso->instancias >0){
 				recurso->instancias--;
 				log_info(logger,"EJECUTANDO WAIT %d" ,recurso->instancias);
 				list_replace(lista_recursos,j,recurso);
+				agregar_recurso_pcb(pcb->pid,nombre);
 			}else{
-				//queue_push(recurso->cola_bloqueados  ,pcb);
+				pcb->estado = WAITING;
+				queue_push(recurso->cola_bloqueados  ,pcb);
+				log_info(logger,"Se agrego a la cola de bloqueados ");
 			}
 		}
 		j++;
@@ -588,95 +601,107 @@ void ejecutar_wait(char*nombre,t_pcb*pcb){
 	list_iterator_destroy(iterador);
 }
 
-/*void ejecutar_wait(char* recurso_a_encontrar, t_pcb * pcb){
-
-    bool encontrar_recurso(void * recurso){
-          t_recurso* un_recurso = (t_recurso*)recurso;
-          return strcmp(un_recurso->nombre, recurso_a_encontrar) == 0;
-    }
-
-    t_recurso *recurso_encontrado = list_find(lista_recursos, encontrar_recurso);
-        if(recurso_encontrado != NULL){
-            if(recurso_encontrado->instancias >0 ){
-            	int posicion = buscar_posicion_lista_recurso(lista_recursos, recurso_encontrado);
-                recurso_encontrado->instancias -=1;
-                list_replace(lista_recursos,posicion,recurso_encontrado);
-                //agregar_recurso_pcb(pcb, recurso_a_encontrar);
-            }else{
-                queue_push(recurso_encontrado->cola_bloqueados,pcb);
-            }
-        }else{
-            enviar_pcb(pcb,conexion_memoria,FINALIZAR);
-        }
-}*/
-
-void agregar_recurso_pcb(t_pcb*pcb, char*nombre){
-	bool encontrar_recurso(void * recurso){
-	          t_recurso_pcb* un_recurso = (t_recurso_pcb*)recurso;
-	          return (strcmp(un_recurso->nombre, nombre) == 0) && (un_recurso->pid == pcb->pid) ;
-	    }
-	    t_recurso_pcb *recurso_encontrado = list_find(lista_recursos_pcb, encontrar_recurso);
-	    if(recurso_encontrado != NULL){
-	    	int posicion = buscar_posicion_lista_recurso_pcb(lista_recursos_pcb,recurso_encontrado);
-	    	recurso_encontrado->instancias++;
-	    	list_replace(lista_recursos_pcb,posicion,recurso_encontrado);
-	    }else{
-	    	t_recurso_pcb*recurso_nuevo;
-	    	recurso_nuevo=crear_recurso_pcb(nombre,pcb->pid);
-	    	list_add(lista_recursos_pcb, recurso_nuevo);
-	    }
-}
-void quitar_recurso_pcb(t_pcb*pcb, char*nombre){
-	bool encontrar_recurso(void * recurso){
-	          t_recurso_pcb* un_recurso = (t_recurso_pcb*)recurso;
-	          return (strcmp(un_recurso->nombre, nombre) == 0) && (un_recurso->pid == pcb->pid);
-	    }
-	    t_recurso_pcb *recurso_encontrado = list_find(lista_recursos_pcb, encontrar_recurso);
-	    	if(recurso_encontrado != NULL){
-				int posicion = buscar_posicion_lista_recurso_pcb(lista_recursos_pcb,recurso_encontrado);
-				recurso_encontrado->instancias--;
-				if(recurso_encontrado->instancias == 0){
-					list_remove(lista_recursos_pcb,posicion);
-				}else{
-					list_replace(lista_recursos_pcb,posicion,recurso_encontrado);
+void ejecutar_signal(char*nombre,t_pcb*pcb){
+	if (list_is_empty(lista_recursos)) {
+		log_info(logger,"LISTA VACIAA");
+	    return;
+	}
+	t_list_iterator* iterador = list_iterator_create(lista_recursos);
+	int j=0;
+	int encontro =0;
+	while(list_iterator_has_next(iterador)){
+		t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
+		log_info(logger,"el nombre del recurso es %s" ,nombre);
+		log_info(logger,"el nombre del recurso es %s" ,recurso->nombre);
+		if(strcmp(nombre,recurso->nombre) == 0){
+			encontro = 1;
+			t_recurso_pcb * recurso_pcb = buscar_recurso_pcb(nombre, pcb->pid);
+			log_info(logger,"ENCONTRO EL RECURSO");
+			if(recurso_pcb != NULL){
+				recurso->instancias++;
+				log_info(logger,"EJECUTANDO SIGNAL %s" ,recurso->nombre);
+				list_replace(lista_recursos,j,recurso);
+				quitar_recurso_pcb(pcb->pid,nombre);
+				if(!queue_is_empty(recurso->cola_bloqueados)){
+					sem_post(&recurso->sem_recurso);
 				}
-	    	}
+			}else{
+				enviar_pcb(pcb,conexion_memoria,FINALIZAR);
+			}
+		}
+		j++;
+	}
+	if(encontro ==0){
+		enviar_pcb(pcb,conexion_memoria,FINALIZAR);
+	}
+	list_iterator_destroy(iterador);
+}
+
+t_recurso_pcb*buscar_recurso_pcb(char*nombre,int pid){
+	t_list_iterator* iterador = list_iterator_create(lista_recursos_pcb);
+	int encontro =0;
+	while(list_iterator_has_next(iterador)){
+		t_recurso_pcb* recurso = (t_recurso_pcb*)list_iterator_next(iterador);
+		if((strcmp(nombre,recurso->nombre) == 0)&&(pid == recurso->pid)){
+			encontro=1;
+			list_iterator_destroy(iterador);
+			return recurso;
+		}
+	}
+	if(encontro == 0){
+		list_iterator_destroy(iterador);
+		return NULL;
+	}
+}
+void agregar_recurso_pcb(int pid, char*nombre){
+	t_list_iterator* iterador = list_iterator_create(lista_recursos_pcb);
+	int j=0;
+	int encontro =0;
+	while(list_iterator_has_next(iterador)){
+		t_recurso_pcb* recurso = (t_recurso_pcb*)list_iterator_next(iterador);
+		if((strcmp(nombre,recurso->nombre) == 0) && (pid == recurso->pid)){
+			encontro = 1;
+			log_info(logger,"ENCONTRO EL RECURSO AG");
+			recurso->instancias++;
+			list_replace(lista_recursos_pcb, j, recurso);
+		}
+		j++;
+	}
+	if(encontro ==0){
+		t_recurso_pcb* recurso = crear_recurso_pcb(nombre, pid);
+		list_add(lista_recursos_pcb, recurso);
+		log_info(logger,"SE AGREGO RECURSO_PCB A LA LISTA");
+	}
+	list_iterator_destroy(iterador);
 }
 
 t_recurso_pcb*crear_recurso_pcb(char*nombre,int pid){
-	//t_recurso_pcb*recurso_nuevo=malloc(sizeof(t_recurso_pcb));
-	t_recurso_pcb*recurso_nuevo;
-	recurso_nuevo->nombre=nombre;
+	t_recurso_pcb*recurso_nuevo=malloc(sizeof(t_recurso_pcb));
+	recurso_nuevo->nombre = nombre;
 	recurso_nuevo->instancias=1;
 	recurso_nuevo->pid = pid;
+	log_info(logger,"Se creo el recurso %s", recurso_nuevo->nombre);
 	return recurso_nuevo;
 }
-void ejecutar_signal(char* recurso_a_encontrar, t_pcb * pcb){
-    bool encontrar_recurso(void * recurso){
-              t_recurso* un_recurso = (t_recurso*)recurso;
-              return strcmp(un_recurso->nombre, recurso_a_encontrar) == 0;
-    }
-    bool encontrar_recurso_pcb(void * recurso){
-                  t_recurso_pcb* un_recurso = (t_recurso_pcb*)recurso;
-                  return (strcmp(un_recurso->nombre, recurso_a_encontrar) == 0) && (un_recurso->pid == pcb->pid);
-        }
-    t_recurso *recurso_encontrado = list_find(lista_recursos, encontrar_recurso);
-    t_recurso_pcb *recurso_pcb = list_find(lista_recursos_pcb, encontrar_recurso_pcb);
-    if(recurso_encontrado != NULL){
-    	if(recurso_pcb->instancias > 0){
-    	 int posicion = buscar_posicion_lista_recurso(lista_recursos, recurso_encontrado);
-    	 recurso_encontrado->instancias ++;
-    	 list_replace(lista_recursos,posicion,recurso_encontrado);
-    	 quitar_recurso_pcb(pcb,recurso_a_encontrar);
-    	}else{
-    	enviar_pcb(pcb,conexion_memoria,FINALIZAR);
-    	}
-    }else{
-        enviar_pcb(pcb,conexion_memoria,FINALIZAR);
-    }
+void quitar_recurso_pcb(int pid, char*nombre){
+	t_list_iterator* iterador = list_iterator_create(lista_recursos_pcb);
+	int j=0;
+	while(list_iterator_has_next(iterador)){
+		t_recurso_pcb* recurso = (t_recurso_pcb*)list_iterator_next(iterador);
+		if((strcmp(nombre,recurso->nombre) == 0) && pid == recurso->pid){
+			if(recurso->instancias > 1){
+			log_info(logger,"ENCONTRO EL RECURSO PARA QUITAR");
+				recurso->instancias++;
+				list_replace(lista_recursos_pcb, j, recurso);
+			}else{
+				list_remove(lista_recursos_pcb,j);
+				free(recurso);
+			}
+		}
+		j++;
+	}
+	list_iterator_destroy(iterador);
 }
-
-
 int buscar_posicion_lista_recurso_pcb(t_list *lista, t_recurso_pcb *recurso) {
     int cantidad = list_size(lista);
     t_recurso_pcb *elemento;

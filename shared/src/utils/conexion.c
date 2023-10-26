@@ -339,7 +339,7 @@ t_pcb* recibir_pcb(int socket_cliente){
 void log_pcb_info(t_pcb* pcb_aux) {
     log_info(logger, "PID: %d", pcb_aux->pid);
     log_info(logger, "Prioridad: %d", pcb_aux->prioridad);
-        log_info(logger, "Estado: %d", pcb_aux->estado);
+    log_info(logger, "Estado: %d", pcb_aux->estado);
 
         // Log de contexto de ejecución
         log_info(logger, "Contexto de Ejecución:");
@@ -422,7 +422,8 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	int posicion = 1;
 	int *puntero_posicion = &posicion;
 
-	t_estado* estado = list_get(paquete, (*puntero_posicion)++);
+	t_estado* estado = malloc(sizeof(t_estado));
+	estado= list_get(paquete, (*puntero_posicion)++);
 	pcb->estado = *estado;
 
 	int * prioridad = list_get(paquete, (*puntero_posicion)++);
