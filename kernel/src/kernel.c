@@ -212,8 +212,10 @@ void enviar_mensaje_kernel() {
 	        log_info(logger_consola,"mensaje enviado correctamente\n");
 			break;
 		case '4':
-	        enviar_mensaje("kernel a interrupt", conexion_cpu_interrupt);
+	        enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_DESALOJAR);
+	       // enviar_interrupciones(conexion_cpu_interrupt,ENVIAR_DESALOJAR);
 	        log_info(logger_consola,"mensaje enviado correctamente\n");
+	        break;
 		default:
 			log_info(logger_consola,"no corresponde a ninguno\n");
 			break;
@@ -402,7 +404,7 @@ void de_ready_a_prioridades(){
     		//log_info(logger,"el valor que esta comparando es %i",pcb_axu_comparador->prioridad);
     		if(pcb_aux->prioridad<pcb_a_comparar_prioridad->prioridad){
     			log_info(logger,"hubo desalojo");
-    			enviar_interrupciones(conexion_cpu_interrupt,ENVIAR_DESALOJAR);
+    	        enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_DESALOJAR);
     			sem_wait(&contador_ejecutando_cpu);
     			enviar_por_dispatch(pcb_a_comparar_prioridad);
     		}
@@ -411,6 +413,7 @@ void de_ready_a_prioridades(){
 			//sem_wait(&contador_ejecutando_cpu);
     }
 }
+
 /*
 void de_ready_a_round_robin(){
 	while(1){
@@ -425,6 +428,37 @@ void de_ready_a_round_robin(){
 	}
 
 }*/
+
+/*
+void de_ready_a_prioridades(){
+
+    list_sort(cola_ready->elements,comparador_prioridades);
+    t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
+
+
+
+
+    if(list_is_empty(pcb_en_ejecucion)){
+        list_sort(cola_ready->elements,comparador_prioridades);
+		sem_wait(&contador_ejecutando_cpu);
+		de_ready_a_fifo();
+    }else{
+    		t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
+    		//t_pcb* pcb_axu_comparador = queue_pop(cola_ready);
+    		log_info(logger,"el valor que esta ejecutando es %i",pcb_aux->prioridad);
+    		//log_info(logger,"el valor que esta comparando es %i",pcb_axu_comparador->prioridad);
+    		if(pcb_aux->prioridad<pcb_a_comparar_prioridad->prioridad){
+    			log_info(logger,"hubo desalojo");
+    	        enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_DESALOJAR);
+    			sem_wait(&contador_ejecutando_cpu);
+    			enviar_por_dispatch(pcb_a_comparar_prioridad);
+    		}
+			sem_wait(&contador_ejecutando_cpu);
+    		enviar_por_dispatch(pcb_a_comparar_prioridad);
+			//sem_wait(&contador_ejecutando_cpu);
+    }
+}
+*/
 
 bool comparador_prioridades(void* caso1,void* caso2){
 	t_pcb* pcb1 = ((t_pcb*) caso1);

@@ -40,6 +40,7 @@ void iniciar_recurso(){
 void iniciar_servidor_interrupt(char * puerto){
 	int cpu_interrupt_fd = iniciar_servidor(puerto);
 	log_info(logger, "Servidor listo para recibir al cliente");
+
 	int cliente_fd = esperar_cliente(cpu_interrupt_fd);
 		t_list* lista;
 		while (1) {
@@ -54,12 +55,14 @@ void iniciar_servidor_interrupt(char * puerto){
 				list_iterate(lista, (void*) iterator);
 				break;
 			case ENVIAR_DESALOJAR:
+				recibir_mensaje(cliente_fd);
 				hay_desalojo = true;
 				hayInterrupcion= true;
 				log_info(logger, "Instruccion DESALOJAR");
 				break;
 			case -1:
 				log_error(logger, "el cliente se desconecto. Terminando servidor");
+				close(cliente_fd);
 				return;
 			default:
 				log_warning(logger,"Operacion desconocida. No quieras meter la pata");
@@ -331,11 +334,12 @@ void ejecutar_ciclo_de_instruccion(int cliente_fd){
 
 	while(!hayInterrupcion){
 		fetch(cliente_fd);
-	}
-	if(hay_desalojo){
-		enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
-		log_info(logger, "LLEGO A DESALOJAR");
-		return;
+		if(hay_desalojo){
+			enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
+			log_info(logger, "LLEGO A DESALOJAR");
+			return;
+		}
+
 	}
 
 
@@ -456,6 +460,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		imprimir_valores_registros(pcb->contexto->registros_cpu);
 		enviar_pcb(pcb,cliente_fd,FINALIZAR);
 		log_info(logger_consola_cpu,"entendi el mensaje EXIT");
+		hay_desalojo = false;
 		break;
 	}
 	recibi_archivo = false;
