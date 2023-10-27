@@ -55,7 +55,8 @@ void iniciar_servidor_interrupt(char * puerto){
 				break;
 			case ENVIAR_DESALOJAR:
 				hay_desalojo = true;
-
+				hayInterrupcion= true;
+				break;
 			case -1:
 				log_error(logger, "el cliente se desconecto. Terminando servidor");
 				return;
@@ -106,10 +107,11 @@ void procesar_conexion(void *conexion1){
 			t_list * paquete = recibir_paquete(cliente_fd);
 			pcb = desempaquetar_pcb(paquete);
 			//recibir_pcb(cliente_fd);
-			log_pcb_info(pcb);
-			ejecutar_ciclo_de_instruccion(cliente_fd);
 			hayInterrupcion = false;
 			hay_desalojo= false;
+			log_pcb_info(pcb);
+			ejecutar_ciclo_de_instruccion(cliente_fd);
+
 			break;
 		case CPU_ENVIA_A_MEMORIA:
 			enviar_mensaje("hola capo", conexion_memoria);
@@ -325,14 +327,12 @@ void atendiendo_pedido(int cliente_fd){
 void ejecutar_ciclo_de_instruccion(int cliente_fd){
 	instruccion_ejecutando= true;
 //pide a memoria
-
+	if(hay_desalojo){
+		enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
+		log_info(logger, "LLEGO A DESALOJAR");
+		return;
+	}
 	while(!hayInterrupcion){
-		if(hay_desalojo){
-			enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
-			log_info(logger, "LLEGO A DESALOJAR");
-			return;
-		}
-
 		fetch(cliente_fd);
 	}
 

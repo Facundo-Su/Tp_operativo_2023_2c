@@ -147,6 +147,7 @@ void empaquetar_registro(t_paquete* , t_registro_cpu* );
 void empaquetar_instrucciones(t_paquete* , t_instruccion*);
 char* obtener_nombre_instruccion(op_instrucciones );
 void enviar_mensaje_instrucciones(char* , int ,op_code );
+void enviar_interrupciones(int ,op_code );
 void log_pcb_info(t_pcb* );
 t_list* desempaquetar_recursos(t_list* ,int* );
 void empaquetar_recursos(t_paquete* ,t_list *);

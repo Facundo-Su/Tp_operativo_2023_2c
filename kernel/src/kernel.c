@@ -388,21 +388,21 @@ void de_ready_a_prioridades(){
     t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
 
     if(list_is_empty(pcb_en_ejecucion)){
+        list_sort(cola_ready->elements,comparador_prioridades);
 		sem_wait(&contador_ejecutando_cpu);
     	de_ready_a_fifo();
     }else{
-    	t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
-    	if(!queue_is_empty(cola_ready)){
+    		t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
     		t_pcb* pcb_axu_comparador = queue_peek(cola_ready);
+    		log_info(logger,"el valor que esta ejecutando es %i",pcb_aux->prioridad);
+    		log_info(logger,"el valor que esta comparando es %i",pcb_axu_comparador->prioridad);
     		if(pcb_aux->prioridad<pcb_axu_comparador->prioridad){
-    			//TODO
-    			enviar_mensaje_instrucciones("desalojate",conexion_cpu_interrupt,ENVIAR_DESALOJAR);
-    			sem_wait(&contador_ejecutando_cpu);
-    			de_ready_a_fifo();
+    			log_info(logger,"hubo desalojo");
+    			enviar_interrupciones(conexion_cpu_interrupt,ENVIAR_DESALOJAR);
     		}
 			sem_wait(&contador_ejecutando_cpu);
+			list_sort(cola_ready->elements,comparador_prioridades);
 			de_ready_a_fifo();
-    	}
     }
 }
 /*

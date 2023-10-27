@@ -119,6 +119,13 @@ void enviar_mensaje_instrucciones(char* mensaje, int socket_cliente,op_code oper
 	eliminar_paquete(paquete);
 }
 
+void enviar_interrupciones(int socket_cliente,op_code operacion)
+{
+	t_paquete* paquete = crear_paquete(operacion);
+	enviar_paquete(paquete, socket_cliente);
+	eliminar_paquete(paquete);
+}
+
 void enviar_char_dinamico(char* mensaje, int socket_cliente, op_code operacion)
 {
 	t_paquete* paquete = malloc(sizeof(t_paquete));
