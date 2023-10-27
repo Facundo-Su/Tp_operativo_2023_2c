@@ -16,22 +16,42 @@
 #include<readline/readline.h>
 #include <utils/conexion.h>
 #include<readline/readline.h>
+#include<commons/txt.h>
 
-t_log* logger;
+t_log* logger_file_system;
 t_config* config;
-t_log* logger_consola_filesystem;
+//estructuras de FS
+typedef struct{
+	char* nombre_archivo;
+	uint32_t tamanio_archivo;
+	uint32_t bloq_inicial_archivo;
+}t_fcb;
+typedef struct{
+	uint32_t cant_bloq_total;
+	uint32_t cant_bloq_swap;
+	uint32_t tam_fat_bytes;//(CANT_BLOQUES_TOTAL - CANT_BLOQUES_SWAP)*sizeof(uint32_t).
+	uint32_t entrada;
+}t_fat;
+typedef struct archivo_bloques{
+	char* ruta_archivo;
+	t_list* lista_bloques;
 
+};
+char* ruta_fcbs;
 int conexion_memoria;
 char *ip_memoria;
 char *puerto_memoria;
 char *puerto_escucha;
 
+int abrir_archivo_fcb(char*);
+void crear_archivo_fcb(char*);
+void truncar_archivo_fcb(t_fcb*);
+
 void obtener_configuracion();
 void terminar_programa();
 t_config* iniciar_config();
-void iterator(char*);
 int iniciar_servidor_file_system(char*);
 void iniciar_consola();
-
+void iterator(char* value);
 
 #endif /* SRC_FILESYSTEM_H_ */

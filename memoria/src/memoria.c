@@ -43,6 +43,7 @@ void iniciar_consola(){
 		valor = readline("<");
 		switch (*valor) {
 			case '1':
+				//TODO diego: la conexion se realiza de forma automatica cuando se requiera, el usuario no decide con quien conectar
 				log_info(logger_consola_memoria, "generar conexion con filesystem\n");
 				conexion_filesystem = crear_conexion(ip_file_system, puerto_filesystem);
 				break;
@@ -144,6 +145,10 @@ void procesar_conexion(int cliente_fd){
 
 
 	                cargar_lista_instruccion(ruta,size,prioridad,*pid);
+
+	                // notifica a file sytem que nos asigne un bloque de swap para cada pagina del proceso
+					log_info(logger_consola_memoria, "aviso a filesystem de la creacion de proceso");
+					conexion_filesystem = crear_conexion(ip_file_system, puerto_filesystem);
 	                break;
 	            case FINALIZAR:
 
