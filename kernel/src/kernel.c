@@ -87,9 +87,11 @@ void procesar_conexion(void *conexion1){
 			pcb_aux = desempaquetar_pcb(paquete);
 			log_pcb_info(pcb_aux);
 			log_info(logger,"proceso desalojados ============================");
+			list_remove(pcb_en_ejecucion,0);
 			agregar_a_cola_ready(pcb_aux);
 			sem_post(&contador_cola_ready);
 			sem_post(&contador_ejecutando_cpu);
+			sem_post(&proceso_desalojo);
 			break;
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
@@ -197,6 +199,7 @@ void iniciar_recurso(){
 	sem_init(&mutex_cola_ready,0,1);
 	sem_init(&contador_agregando_new,0,0);
 	sem_init(&contador_cola_ready,0,0);
+	sem_init(&proceso_desalojo,0,0);
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
 }
 
@@ -371,7 +374,6 @@ void planificador_corto_plazo(){
 	log_info(logger,"ando hasta aca");
 	while(1){
 		sem_wait(&contador_cola_ready);
-
 		switch(planificador){
 		case FIFO:
 			sem_wait(&contador_ejecutando_cpu);
@@ -396,7 +398,7 @@ void de_ready_a_fifo(){
 }
 
 //TODO c
-
+/*
 void de_ready_a_prioridades(){
 
     list_sort(cola_ready->elements,comparador_prioridades);
@@ -422,7 +424,7 @@ void de_ready_a_prioridades(){
 			//sem_wait(&contador_ejecutando_cpu);
     }
 }
-
+*/
 /*
 void de_ready_a_round_robin(){
 	while(1){
@@ -438,17 +440,15 @@ void de_ready_a_round_robin(){
 
 }*/
 
-/*
+
 void de_ready_a_prioridades(){
 
     list_sort(cola_ready->elements,comparador_prioridades);
     t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
 
-
-
-
     if(list_is_empty(pcb_en_ejecucion)){
         list_sort(cola_ready->elements,comparador_prioridades);
+
 		sem_wait(&contador_ejecutando_cpu);
 		de_ready_a_fifo();
     }else{
@@ -459,15 +459,11 @@ void de_ready_a_prioridades(){
     		if(pcb_aux->prioridad<pcb_a_comparar_prioridad->prioridad){
     			log_info(logger,"hubo desalojo");
     	        enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_DESALOJAR);
-    			sem_wait(&contador_ejecutando_cpu);
-    			enviar_por_dispatch(pcb_a_comparar_prioridad);
+    	        sem_wait(&proceso_desalojo);
+    	        sem_post(&contador_cola_ready);
     		}
-			sem_wait(&contador_ejecutando_cpu);
-    		enviar_por_dispatch(pcb_a_comparar_prioridad);
-			//sem_wait(&contador_ejecutando_cpu);
     }
 }
-*/
 
 bool comparador_prioridades(void* caso1,void* caso2){
 	t_pcb* pcb1 = ((t_pcb*) caso1);
@@ -666,6 +662,7 @@ void ejecutar_signal(char*nombre,t_pcb*pcb){
 				if(!queue_is_empty(recurso->cola_bloqueados)){
 					t_pcb* pcb_bloqueado = queue_pop(recurso->cola_bloqueados);
 					agregar_a_cola_ready(pcb_bloqueado);
+					sem_post(&contador_cola_ready);
 				}
 			}else{
 				enviar_pcb(pcb,conexion_memoria,FINALIZAR);
@@ -752,12 +749,14 @@ void liberar_recursos(int pid){
 		while(list_iterator_has_next(iterador)){
 			t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
 			t_recurso_pcb * recurso_pcb = buscar_recurso_pcb(recurso->nombre,pid);
-			int instancias = recurso_pcb->instancias;
+
 			if(recurso_pcb != NULL){
+				int instancias = recurso_pcb->instancias;
 				while(instancias!=0){
 					if(!queue_is_empty(recurso->cola_bloqueados)){
 						t_pcb* pcb = queue_pop(recurso->cola_bloqueados);
-						agregar_a_colar_ready(pcb);
+						agregar_a_cola_ready(pcb);
+						sem_post(&contador_cola_ready);
 					}
 					recurso->instancias++;
 					list_replace(lista_recursos,j,recurso);
