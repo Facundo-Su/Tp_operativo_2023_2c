@@ -148,6 +148,7 @@ t_registro_cpu* crear_registro();
 void iniciar_recurso();
 void ejecutar_wait(char*,t_pcb*);
 t_recurso_pcb* buscar_recurso_pcb(char*,int );
+void liberar_recursos(int);
 #endif /* KERNEL_H_ */
 
 

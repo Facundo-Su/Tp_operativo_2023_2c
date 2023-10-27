@@ -12,6 +12,20 @@ int main(int argc, char **argv){
 
     obtener_configuracion();
     iniciar_recurso();
+    lista_recursos = list_create();
+    	t_recurso * nuevo_recurso = malloc(sizeof(t_recurso));
+    	nuevo_recurso->instancias = 3;
+    	nuevo_recurso->nombre = strdup("RA");
+    	nuevo_recurso->cola_bloqueados = queue_create();
+    	//sem_init(&nuevo_recurso->sem_recurso,0,0);
+
+    	log_info(logger,"El nombre del nuevo recurso es %s",nuevo_recurso->nombre);
+    	//nuevo_recurso->cola_bloqueados = queue_create();
+
+    	list_add(lista_recursos,nuevo_recurso);
+
+    	t_recurso *recurso = list_get(lista_recursos,0);
+    	log_info(logger,"El nombre del recurso es %s",recurso->nombre);
     iniciar_consola();
 
     //envio de mensajes
@@ -46,16 +60,11 @@ void procesar_conexion(void *conexion1){
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
 			char * nombre_recurso = "RA";//obtener_mensaje(cliente_fd);
-			t_recurso *recurso = list_get(lista_recursos,0);
 //			if(recurso != NULL){
 //				log_info(logger,"esta vaciooooooooooooooooooo");
 //			}
-			int instacias = recurso->instancias;
-			log_info(logger,"ejecutando wait %d",instacias);
+			int instacias;
 			ejecutar_wait(nombre_recurso,pcb_aux);
-			t_recurso *recurso2 = list_get(lista_recursos,0);
-			instacias= recurso2->instancias;
-			log_info(logger,"ejecutando wait %d",instacias);
 			break;
 		case EJECUTAR_SIGNAL:
 			paquete = recibir_paquete(cliente_fd);
@@ -90,6 +99,7 @@ void procesar_conexion(void *conexion1){
 			enviar_mensaje("hola se finalizo el proceso ", conexion);
 			pcb_aux->estado = TERMINATED;
 			log_pcb_info(pcb_aux);
+			liberar_recursos(pcb_aux->pid);
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
 			sem_post(&grado_multiprogramacion);
 			sem_post(&contador_ejecutando_cpu);
@@ -177,8 +187,7 @@ void iniciar_recurso(){
 	cola_new = queue_create();
 	cola_ready = queue_create();
 	pcb_en_ejecucion = list_create();
-    lista_recursos = list_create();
-	lista_recursos_pcb = list_create();
+    lista_recursos_pcb = list_create();
 	log_info(logger,"llegue");
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, 10);
@@ -687,39 +696,41 @@ void quitar_recurso_pcb(int pid, char*nombre){
 		if((strcmp(nombre,recurso->nombre) == 0) && pid == recurso->pid){
 			if(recurso->instancias > 1){
 			log_info(logger,"ENCONTRO EL RECURSO PARA QUITAR");
-				recurso->instancias++;
+				recurso->instancias--;
 				list_replace(lista_recursos_pcb, j, recurso);
 			}else{
 				list_remove(lista_recursos_pcb,j);
 				free(recurso);
+				log_info(logger,"ELIMINE EL RECURSO");
 			}
 		}
 		j++;
 	}
 	list_iterator_destroy(iterador);
 }
-int buscar_posicion_lista_recurso_pcb(t_list *lista, t_recurso_pcb *recurso) {
-    int cantidad = list_size(lista);
-    t_recurso_pcb *elemento;
 
-    for (int i = 0; i < cantidad; i++) {
-        elemento = list_get(lista, i);
-        if ((strcmp(elemento->nombre, recurso->nombre) == 0) && (elemento->pid == recurso->pid)) {
-            return i;
-        }
-    }
-    return -1;
-}
-int buscar_posicion_lista_recurso(t_list *lista, t_recurso *recurso) {
-    int cantidad = list_size(lista);
-    t_recurso *elemento;
-
-    for (int i = 0; i < cantidad; i++) {
-        elemento = list_get(lista, i);
-        if (strcmp(elemento->nombre, recurso->nombre) == 0) {
-            return i;
-        }
-    }
-    return -1;
+void liberar_recursos(int pid){
+	t_list_iterator* iterador = list_iterator_create(lista_recursos);
+		int j=0;
+		while(list_iterator_has_next(iterador)){
+			t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
+			t_recurso_pcb * recurso_pcb = buscar_recurso_pcb(recurso->nombre,pid);
+			int instancias = recurso_pcb->instancias;
+			if(recurso_pcb != NULL){
+				while(instancias!=0){
+					if(!queue_is_empty(recurso->cola_bloqueados)){
+						t_pcb* pcb = queue_pop(recurso->cola_bloqueados);
+						agregar_a_colar_ready(pcb);
+					}
+					recurso->instancias++;
+					list_replace(lista_recursos,j,recurso);
+					quitar_recurso_pcb(pid,recurso->nombre);
+					log_info(logger,"Libere el recurso %s",recurso->nombre);
+					instancias --;
+				}
+			}
+			j++;
+		}
+		list_iterator_destroy(iterador);
 }
 
