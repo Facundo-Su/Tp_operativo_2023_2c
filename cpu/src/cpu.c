@@ -56,6 +56,7 @@ void iniciar_servidor_interrupt(char * puerto){
 			case ENVIAR_DESALOJAR:
 				hay_desalojo = true;
 				hayInterrupcion= true;
+				log_info(logger, "Instruccion DESALOJAR");
 				break;
 			case -1:
 				log_error(logger, "el cliente se desconecto. Terminando servidor");
@@ -371,7 +372,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 	uint32_t valor_uint2;
 	switch(instrucciones->nombre){
 	case SET:
-		hayInterrupcion= false;
 
 		parametro2= list_get(instrucciones->parametros,1);
 		parametro= list_get(instrucciones->parametros,0);
@@ -382,7 +382,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		//ADormir(x segundo);
 		break;
 	case SUB:
-		hayInterrupcion= false;
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 		registro_aux = devolver_registro(parametro);
@@ -390,7 +389,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		restar(pcb, registro_aux, registro_aux2);
 		break;
 	case SUM:
-		hayInterrupcion= false;
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 

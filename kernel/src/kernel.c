@@ -79,6 +79,7 @@ void procesar_conexion(void *conexion1){
 			log_pcb_info(pcb_aux);
 			agregar_a_cola_ready(pcb_aux);
 			sem_post(&contador_cola_ready);
+			sem_post(&contador_ejecutando_cpu);
 			break;
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
@@ -374,7 +375,7 @@ void planificador_corto_plazo(){
 			de_ready_a_prioridades();
 			break;
 		}
-		}
+	}
 }
 
 void de_ready_a_fifo(){
@@ -385,24 +386,26 @@ void de_ready_a_fifo(){
 void de_ready_a_prioridades(){
 
     list_sort(cola_ready->elements,comparador_prioridades);
-    t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
+    t_pcb* pcb_a_comparar_prioridad = queue_pop(cola_ready);
 
     if(list_is_empty(pcb_en_ejecucion)){
         list_sort(cola_ready->elements,comparador_prioridades);
 		sem_wait(&contador_ejecutando_cpu);
-    	de_ready_a_fifo();
+		enviar_por_dispatch(pcb_a_comparar_prioridad);
     }else{
     		t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
-    		t_pcb* pcb_axu_comparador = queue_peek(cola_ready);
+    		//t_pcb* pcb_axu_comparador = queue_pop(cola_ready);
     		log_info(logger,"el valor que esta ejecutando es %i",pcb_aux->prioridad);
-    		log_info(logger,"el valor que esta comparando es %i",pcb_axu_comparador->prioridad);
-    		if(pcb_aux->prioridad<pcb_axu_comparador->prioridad){
+    		//log_info(logger,"el valor que esta comparando es %i",pcb_axu_comparador->prioridad);
+    		if(pcb_aux->prioridad<pcb_a_comparar_prioridad->prioridad){
     			log_info(logger,"hubo desalojo");
     			enviar_interrupciones(conexion_cpu_interrupt,ENVIAR_DESALOJAR);
+    			list_remove(pcb_en_ejecucion,0);
+    			agregar_a_cola_ready(pcb_aux);
+    			sem_wait(&contador_ejecutando_cpu);
+
     		}
-			sem_wait(&contador_ejecutando_cpu);
-			list_sort(cola_ready->elements,comparador_prioridades);
-			de_ready_a_fifo();
+			//sem_wait(&contador_ejecutando_cpu);
     }
 }
 /*
