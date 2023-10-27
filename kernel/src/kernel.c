@@ -77,6 +77,7 @@ void procesar_conexion(void *conexion1){
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
 			log_pcb_info(pcb_aux);
+			log_info(logger,"proceso desalojados ============================");
 			agregar_a_cola_ready(pcb_aux);
 			sem_post(&contador_cola_ready);
 			sem_post(&contador_ejecutando_cpu);
@@ -86,11 +87,11 @@ void procesar_conexion(void *conexion1){
 			pcb_aux = desempaquetar_pcb(paquete);
 			log_info(logger,"el pid del proceso finalizado es %i",pcb_aux->pid);
 			//TODO VER SI NECESITA UNA LISTA PARA LAMACENAR LOS PROCESOS TERMINADO
-
 			enviar_mensaje("hola se finalizo el proceso ", conexion);
 			pcb_aux->estado = TERMINATED;
 			log_pcb_info(pcb_aux);
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
+			list_remove(pcb_en_ejecucion,0);
 			sem_post(&grado_multiprogramacion);
 			sem_post(&contador_ejecutando_cpu);
 			break;
@@ -383,6 +384,8 @@ void de_ready_a_fifo(){
     enviar_por_dispatch(pcb);
 }
 
+//TODO c
+
 void de_ready_a_prioridades(){
 
     list_sort(cola_ready->elements,comparador_prioridades);
@@ -400,11 +403,11 @@ void de_ready_a_prioridades(){
     		if(pcb_aux->prioridad<pcb_a_comparar_prioridad->prioridad){
     			log_info(logger,"hubo desalojo");
     			enviar_interrupciones(conexion_cpu_interrupt,ENVIAR_DESALOJAR);
-    			list_remove(pcb_en_ejecucion,0);
-    			agregar_a_cola_ready(pcb_aux);
     			sem_wait(&contador_ejecutando_cpu);
-
+    			enviar_por_dispatch(pcb_a_comparar_prioridad);
     		}
+			sem_wait(&contador_ejecutando_cpu);
+    		enviar_por_dispatch(pcb_a_comparar_prioridad);
 			//sem_wait(&contador_ejecutando_cpu);
     }
 }

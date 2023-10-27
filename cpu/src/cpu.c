@@ -87,7 +87,7 @@ void procesar_conexion(void *conexion1){
 			char* auxiliar =recibir_instruccion(cliente_fd);
 			log_info(logger_consola_cpu,"me llego la siguiente instruccion %s",auxiliar);
 			transformar_en_instrucciones(auxiliar);
-			hayInterrupcion = true;
+//			hayInterrupcion = false;
 			recibi_archivo=true;
 			sem_post(&contador_instruccion);
 			break;
@@ -328,13 +328,14 @@ void atendiendo_pedido(int cliente_fd){
 void ejecutar_ciclo_de_instruccion(int cliente_fd){
 	instruccion_ejecutando= true;
 //pide a memoria
+
+	while(!hayInterrupcion){
+		fetch(cliente_fd);
+	}
 	if(hay_desalojo){
 		enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
 		log_info(logger, "LLEGO A DESALOJAR");
 		return;
-	}
-	while(!hayInterrupcion){
-		fetch(cliente_fd);
 	}
 
 
