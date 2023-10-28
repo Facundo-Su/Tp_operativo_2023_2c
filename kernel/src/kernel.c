@@ -106,6 +106,7 @@ void procesar_conexion(void *conexion1){
 			list_remove(pcb_en_ejecucion,0);
 			sem_post(&grado_multiprogramacion);
 			sem_post(&contador_ejecutando_cpu);
+			sem_post(&contador_cola_ready);
 			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
@@ -438,13 +439,14 @@ void de_ready_a_round_robin(){
 
 void de_ready_a_prioridades(){
 
+	if(!queue_is_empty(cola_ready)){
+
     list_sort(cola_ready->elements,comparador_prioridades);
     t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
 
     if(list_is_empty(pcb_en_ejecucion)){
+    	sem_wait(&contador_ejecutando_cpu);
         list_sort(cola_ready->elements,comparador_prioridades);
-
-		sem_wait(&contador_ejecutando_cpu);
 		de_ready_a_fifo();
     }else{
     		t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
@@ -456,11 +458,8 @@ void de_ready_a_prioridades(){
     	        enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_DESALOJAR);
     	        sem_wait(&proceso_desalojo);
     	        sem_post(&contador_cola_ready);
-    		}else{
-    			sem_wait(&contador_ejecutando_cpu);
-    			sem_post(&contador_cola_ready);
-    			sem_post(&contador_ejecutando_cpu);
     		}
+		}
     }
 }
 
