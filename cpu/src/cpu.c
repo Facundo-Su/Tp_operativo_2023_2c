@@ -57,7 +57,6 @@ void iniciar_servidor_interrupt(char * puerto){
 			case ENVIAR_DESALOJAR:
 				recibir_mensaje(cliente_fd);
 				hay_desalojo = true;
-				hayInterrupcion= true;
 				log_info(logger, "Instruccion DESALOJAR");
 				break;
 			case -1:
@@ -333,12 +332,12 @@ void ejecutar_ciclo_de_instruccion(int cliente_fd){
 //pide a memoria
 
 	while(!hayInterrupcion){
-		fetch(cliente_fd);
 		if(hay_desalojo){
 			enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
 			log_info(logger, "LLEGO A DESALOJAR");
 			return;
 		}
+		fetch(cliente_fd);
 
 	}
 
@@ -346,11 +345,9 @@ void ejecutar_ciclo_de_instruccion(int cliente_fd){
 }
 
 void fetch(int cliente_fd){
-
 	int pc = pcb->contexto->pc;
 	int pid = pcb->pid;
 	log_info(logger, "estoy en fetch con pid %i ",pid);
-
 	solicitar_instruccion_ejecutar_segun_pc(pc, pid);
 	sem_wait(&contador_instruccion);
 	pcb->contexto->pc+=1;
@@ -417,7 +414,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		enviar_mensaje(tiempo,cliente_fd);
 		break;
    case WAIT:
-	    hayInterrupcion= false;
 		recurso= list_get(instrucciones->parametros,0);
 		enviar_pcb(pcb,cliente_fd,EJECUTAR_WAIT);
 		break;
@@ -433,7 +429,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger_consola_cpu,"entendi el mensaje MOV_OUT");
 		break;
 	case F_OPEN:
-		hayInterrupcion=false;
 		log_info(logger_consola_cpu,"entendi el mensaje F_OPEN");
 		break;
 	case F_CLOSE:
@@ -443,7 +438,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger_consola_cpu,"entendi el mensaje F_SEEK");
 		break;
 	case F_READ:
-		hayInterrupcion=false;
 		log_info(logger_consola_cpu,"entendi el mensaje F_READ");
 		break;
 	case F_WRITE:
@@ -460,7 +454,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		imprimir_valores_registros(pcb->contexto->registros_cpu);
 		enviar_pcb(pcb,cliente_fd,FINALIZAR);
 		log_info(logger_consola_cpu,"entendi el mensaje EXIT");
-		hay_desalojo = false;
+		//hay_desalojo = false;
 		break;
 	}
 	recibi_archivo = false;

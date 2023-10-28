@@ -167,9 +167,7 @@ void procesar_conexion(int cliente_fd){
 
 	    		    bool encontrar_instrucciones(void * instruccion){
 	    		          t_instrucciones* un_instruccion = (t_instrucciones*)instruccion;
-	    		          log_info(logger_consola_memoria,"comparando pid %i",*pid_recibido);
 	    		          int valor_comparar =un_instruccion->pid;
-	    		          log_info(logger_consola_memoria,"comparando el pid %i",valor_comparar);
 	    		          return valor_comparar == *pid_recibido;
 	    		    }
 	    		    t_instrucciones* instrucciones = list_find(lista_instrucciones, encontrar_instrucciones);
@@ -178,16 +176,16 @@ void procesar_conexion(int cliente_fd){
 	    		        // Se encontró un elemento que cumple con la condición
 	    		        log_info(logger, "Se encontraron instrucciones para el PID %i", *pid_recibido);
 	    		        log_info(logger, "Cantidad de instrucciones: %i", list_size(instrucciones->instrucciones));
-
+	    		        char*valor_obtenido = list_get(instrucciones->instrucciones,*pc_recibido);
+	    		        log_info(logger, "el instruccion que se envio es  %s", valor_obtenido);
+		    			enviar_mensaje_instrucciones(valor_obtenido,cliente_fd,INSTRUCCIONES_A_MEMORIA);
 	    		        // Luego puedes realizar las operaciones que necesites con 'instrucciones'
 	    		    } else {
 	    		        // No se encontraron instrucciones que cumplan con la condición
 	    		        log_info(logger, "No se encontraron instrucciones para el PID %i", *pid_recibido);
 	    		    }
 
-	    			char*valor_obtenido = list_get(instrucciones->instrucciones,*pc_recibido);
-    		        log_info(logger, "el instruccion que se envio es  %s", valor_obtenido);
-	    			enviar_mensaje_instrucciones(valor_obtenido,cliente_fd,INSTRUCCIONES_A_MEMORIA);
+	    			//char*valor_obtenido = list_get(instrucciones->instrucciones,*pc_recibido);
 	    			//log_info(logger_consola_memoria,"pid encontrado bien ahi es %i",instrucciones->pid);
 	    			//t_paquete* paquete = crear_paquete(INSTRUCCIONES_A_MEMORIA);
 	    			//empaquetar_instrucciones(paquete,instrucciones->instrucciones);

@@ -18,17 +18,24 @@ typedef enum{
 	LRU
 }t_algoritmo;
 
-typedef struct{
-	char* ruta;
-	int size;
-}estructura_inicial;
+typedef struct {
+    uint32_t pos_en_swap;
+    bool P;
+    bool M;
+} t_marco;
+
+typedef struct {
+    t_marco* marcos;
+    uint32_t num_marcos;
+}t_tabla_paginas;
+
 
 typedef struct{
 	int pid;
 	t_list* instrucciones;
 }t_instrucciones;
 
-estructura_inicial* estrctura_inicial;
+
 
 int conexion_filesystem;
 
