@@ -305,12 +305,12 @@ t_list* recibir_paquete(int socket_cliente)
 }
 
 t_config* cargar_config(char *ruta){
-	t_config* config = config_create(ruta);
-    if (config == NULL) {
+	t_config* config_aux=config_create(ruta);
+    if (config_aux == NULL) {
         printf("No se encontró el archivo de configuración");
          exit(1);
     }
-    return config;
+    return config_aux;
 }
 
 

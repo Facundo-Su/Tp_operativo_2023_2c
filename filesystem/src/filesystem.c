@@ -1,41 +1,56 @@
 
 #include "filesystem.h"
 #include<readline/readline.h>
-int main(int argc, char* argv[]) {
+int main() {
 
-	char *ruta_config = "./filesystem.config";
+	char *ruta_config = "filesystem.config";
 
-	config = cargar_config(ruta_config);
+	config_file_system = cargar_config(ruta_config);
 
     logger_file_system = log_create("./filesystem.log", "FILESYSTEM", true, LOG_LEVEL_INFO);
 
     log_info(logger_file_system, "Soy el filesystem!");
-    //obtener datos de .config
 	obtener_configuracion();
-
 	//-----------------------------------peticiones de kernel
+	char *nombre_fcb="prueba";//TODO quitar cuando termine  de hacer pruebas
+	int tamanio_fcb=abrir_archivo_fcb(nombre_fcb);
+	log_info(logger_file_system,"archivo abierto, tamanio= %d",tamanio_fcb);
 
-	//añado "/" a la ruta principal para acceder a los bloques
-	strcat(ruta_fcbs, "/");
-//	char *nombre_fcb="prueba.fcb";
-//	int tamanio_fcb=tamanio_fcb=abrir_archivo_fcb(nombre_fcb);
-//	log_info(logger_file_system,"se leyo el tamanio %d",tamanio_fcb);
-	log_info(logger_file_system,"abriendo  archivo fcb");
-	crear_archivo_fcb("archivoPrueba.fcb");
+	crear_archivo_fcb("creado");
+	log_info(logger_file_system,"archivo creado ");
 
-	t_fcb* fcb_para_modif;
-	//truncar_archivo(fcb_para_modif);
+	//liberar_recursos_fs();
 
-	terminar_programa(conexion_memoria, logger, config);
     return EXIT_SUCCESS;
 }
-
+void liberar_recursos_fs(){
+	free(ruta_fcbs);
+	config_destroy(config_file_system);
+	log_destroy(logger_file_system);
+}
 
 void obtener_configuracion(){
-	ip_memoria = config_get_string_value(config, "IP_MEMORIA");
-	puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
-	puerto_escucha= config_get_string_value(config,"PUERTO_ESCUCHA");
-	ruta_fcbs=config_get_string_value(config,"PATH_FCB");
+	//IPS,PUERTOS
+	ip_memoria = config_get_string_value(config_file_system, "IP_MEMORIA");
+	puerto_memoria = config_get_string_value(config_file_system, "PUERTO_MEMORIA");
+	puerto_escucha= config_get_string_value(config_file_system,"PUERTO_ESCUCHA");
+	//RUTAS
+	ruta_fcbs=string_new();
+	ruta_fcbs=config_get_string_value(config_file_system,"PATH_FCB");
+	string_append(&ruta_fcbs,"/");
+
+	ruta_bloques=config_get_string_value(config_file_system,"PATH_BLOQUES");
+	ruta_fat=config_get_string_value(config_file_system,"PATH_FAT");
+
+	//TAMNIOS, CANTIDADES
+	cant_bloques_swap=config_get_int_value(config_file_system,"CANT_BLOQUES_SWAP");
+	cant_bloques_total=config_get_int_value(config_file_system,"CANT_BLOQUES_TOTAL");
+	tam_bloque=config_get_int_value(config_file_system,"TAM_BLOQUE"	);
+	//RETARDOS
+	retardo_acceso_bloq=config_get_int_value(config_file_system,"RETARDO_ACCESO_BLOQUE");
+	retardo_acceso_fat=config_get_int_value(config_file_system,"RETARDO_ACCESO_FAT");
+
+
 }
 
 //
@@ -107,59 +122,57 @@ void iterator(char* value) {
 
 //--------------------funciones de file system
 
+//arma la ruta para acceder al fcb
+char* armar_ruta_fcb(char* nombre_fcb){
+	char *nueva_ruta=malloc(string_length(ruta_fcbs)+1);
+	strcpy(nueva_ruta,ruta_fcbs);
+	string_append(&nueva_ruta,nombre_fcb);
+	string_append(&nueva_ruta, ".fcb");
+	return nueva_ruta;
+}
 // abrir archivo; si el archivo existe se devuelve el tam, sino se informa que no existe
 int abrir_archivo_fcb(char * nombre_fcb){
-
-	char* nueva_copia_ruta;
-	strcpy(nueva_copia_ruta,ruta_fcbs);//nueva=./utnso/
-	strcat(nueva_copia_ruta, nombre_fcb);//ruta= ./utnso/nombre.fcb
+	//preparo la ruta del archivo fcb
+	char* nueva_ruta=armar_ruta_fcb(nombre_fcb);
 	int tamanio_archivo;
-
 	//creo el config del archivo fcb
-	t_config* config_fcb=config_create(nueva_copia_ruta);
-
+	t_config* config_fcb=config_create(nueva_ruta);
 	if(config_fcb==NULL){
-		log_info(logger_file_system,"no se encontro el archivo .fcb para leer el tamanio");
-		tamanio_archivo=-1;
+		log_info(logger_file_system,"no se pudo leer el tamanio de %s",nueva_ruta);
+		exit(1);
 	}else{
 		tamanio_archivo=config_get_int_value(config_fcb,"TAMANIO_ARCHIVO");
-		log_info(logger_file_system,"se leyo el archivo de tamanio %i",tamanio_archivo);
 		config_destroy(config_fcb);
+		//TODO crear la entrada a la FAT y en la tabla de proceso
+
+	}
+	if(nueva_ruta!=NULL){
+		free(nueva_ruta);
 	}
 	return tamanio_archivo;
 }
 //crear fcb; tamnaio=0 y sin bloque inicial. Devuelve ok al finalizar. Siemprese puede crear
 void crear_archivo_fcb(char* nom_fcb){
-
-	char* ruta_copia=strcpy(ruta_copia,ruta_fcbs);
-	strcat(ruta_copia,nom_fcb);
+	char* ruta_copia=armar_ruta_fcb(nom_fcb);
+	log_info(logger_file_system, "mensaje %s",ruta_copia);
 	//creo el archivo en el directorio de fcbs
-	//inicializo las keys del archivo
-	FILE* file_fcb=fopen(ruta_copia,"w");
-	if(file_fcb){
-		t_config* config_nuevo_fcb=cargar_config(ruta_copia);
-		dictionary_put(config_nuevo_fcb->properties, "NOMBRE_ARCHIVO", nom_fcb);
-		dictionary_put(config_nuevo_fcb->properties, "TAMANIO_ARCHIVO", "0");
-		dictionary_put(config_nuevo_fcb->properties, "BLOQUE_INICIAL", "");
+	FILE* file_fcb=txt_open_for_append(ruta_copia);
+	if(file_fcb!=NULL){
+		//inicializo las keys del archivo
+		txt_write_in_file(file_fcb, "NOMBRE_ARCHIVO=");
+		txt_write_in_file(file_fcb, nom_fcb);
+		txt_write_in_file(file_fcb, "\nTAMANIO_ARCHIVO=0");
+		txt_write_in_file(file_fcb, "\nBLOQUE_INICIAL=");
 
-
-log_info(logger_file_system, "nombreqw %i",dictionary_size(config_nuevo_fcb->properties) );
-		//guardo la config en un archivo ubicado en la ruta indicada
-		config_save_in_file(config_nuevo_fcb,ruta_copia);
-
-		log_info(logger_file_system,"se creo el archivo fcb ");
-
-		fclose(file_fcb);
-		config_destroy(config_nuevo_fcb);
-
+		txt_close_file(file_fcb);
 	}else{
 		log_info(logger_file_system, "hubo problemas creando el archivo fcb");
 	}
+	if(ruta_copia!=NULL){
+		free(ruta_copia);
+	}
+}
 
-}
-void destruir_elem_diccionario(void* elem){
-	free(elem);
-}
 
 void truncar_archivo(t_fcb* fcb_para_modif){
 	ampliar_tam_archivo(fcb_para_modif);
@@ -180,8 +193,8 @@ void modificar_tam_fcb(t_fcb* fcb){
 
 	t_config* config_fcb=config_create(ruta_ini);
 	if(config_fcb!=NULL){
-	config_set_value(config_fcb,"TAMANIO_ARCHIVO",(char*)fcb->tamanio_archivo);
-	config_destroy(config);
+	config_set_value(config_fcb,"TAMANIO_ARCHIVO",fcb->tamanio_archivo);
+	config_destroy(config_fcb);
 	}else{
 		log_info(logger_file_system, "no se pudo modificar el tamanio del archivo");
 	}

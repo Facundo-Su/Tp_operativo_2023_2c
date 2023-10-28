@@ -19,7 +19,7 @@
 #include<commons/txt.h>
 
 t_log* logger_file_system;
-t_config* config;
+t_config* config_file_system;
 //estructuras de FS
 typedef struct{
 	char* nombre_archivo;
@@ -32,16 +32,23 @@ typedef struct{
 	uint32_t tam_fat_bytes;//(CANT_BLOQUES_TOTAL - CANT_BLOQUES_SWAP)*sizeof(uint32_t).
 	uint32_t entrada;
 }t_fat;
-typedef struct archivo_bloques{
+typedef struct {
 	char* ruta_archivo;
 	t_list* lista_bloques;
 
-};
+}t_archivo_bloques;
 char* ruta_fcbs;
 int conexion_memoria;
 char *ip_memoria;
 char *puerto_memoria;
 char *puerto_escucha;
+char* ruta_fat;
+char* ruta_bloques;
+int cant_bloques_total;
+int cant_bloques_swap;
+int tam_bloque;
+int retardo_acceso_bloq;
+int retardo_acceso_fat;
 
 int abrir_archivo_fcb(char*);
 void crear_archivo_fcb(char*);
