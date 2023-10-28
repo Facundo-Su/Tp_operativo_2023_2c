@@ -380,12 +380,14 @@ void planificador_corto_plazo(){
 		//sem_wait(&contador_ejecutando_cpu);
 		switch(planificador){
 		case FIFO:
+			sem_wait(&contador_ejecutando_cpu);
 			log_info(logger,"Planificador FIFO");
 			de_ready_a_fifo();
 			break;
 		case ROUND_ROBIN:
+			sem_wait(&contador_ejecutando_cpu);
 			log_info(logger,"Planificador Round Robin");
-			//de_ready_a_round_robin();
+			de_ready_a_round_robin();
 			break;
 		case PRIORIDADES:
 			log_info(logger,"Planificador Prioridades");
@@ -425,20 +427,13 @@ void de_ready_a_prioridades(){
     }
 }
 */
-/*
+
 void de_ready_a_round_robin(){
-	while(1){
-	    if(hay_proceso_en_ejecucion){
-			//sleep(quamtum);
-	        de_ready_a_fifo();
-	    } else {
-	        de_ready_a_fifo();
-	    }
 
-
-	}
-
-}*/
+	de_ready_a_fifo();
+	usleep(quantum *1000);
+	enviar_mensaje_instrucciones("interrumpido por quantum",conexion_cpu_interrupt,ENVIAR_DESALOJAR);
+}
 
 
 void de_ready_a_prioridades(){
@@ -461,6 +456,10 @@ void de_ready_a_prioridades(){
     	        enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_DESALOJAR);
     	        sem_wait(&proceso_desalojo);
     	        sem_post(&contador_cola_ready);
+    		}else{
+    			sem_wait(&contador_ejecutando_cpu);
+    			sem_post(&contador_cola_ready);
+    			sem_post(&contador_ejecutando_cpu);
     		}
     }
 }
@@ -586,7 +585,7 @@ void obtener_configuracion(){
 void asignar_algoritmo(char *algoritmo){
 	if (strcmp(algoritmo, "FIFO") == 0) {
 		planificador = FIFO;
-	} else if (strcmp(algoritmo, "HRRN") == 0) {
+	} else if (strcmp(algoritmo, "ROUND_ROBIN") == 0) {
 		planificador = ROUND_ROBIN;
 	}else if(strcmp(algoritmo, "PRIORIDADES")==0){
 		planificador = PRIORIDADES;

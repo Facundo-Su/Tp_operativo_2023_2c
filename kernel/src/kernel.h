@@ -148,6 +148,10 @@ void iniciar_recurso();
 void ejecutar_wait(char*,t_pcb*);
 t_recurso_pcb* buscar_recurso_pcb(char*,int );
 void liberar_recursos(int );
+void detect_deadlock();
+bool can_allocate(int pid, int work[]);
+
+
 #endif /* KERNEL_H_ */
 
 
