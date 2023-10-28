@@ -39,7 +39,6 @@ typedef struct{
     char* nombre;
     int instancias;
     t_queue* cola_bloqueados;
-    //sem_t sem_recurso;
 }t_recurso;
 
 typedef struct{
@@ -55,7 +54,7 @@ char *ip_memoria;
 char *ip_filesystem;
 char *ip_cpu;
 char *puerto_fileSystem;
-
+t_list * lista_bloqueados;
 t_log *logger_consola;
 t_list* lista_pcb;
 t_queue* cola_new;
@@ -148,7 +147,7 @@ t_registro_cpu* crear_registro();
 void iniciar_recurso();
 void ejecutar_wait(char*,t_pcb*);
 t_recurso_pcb* buscar_recurso_pcb(char*,int );
-void liberar_recursos(int);
+void liberar_recursos(int );
 #endif /* KERNEL_H_ */
 
 
