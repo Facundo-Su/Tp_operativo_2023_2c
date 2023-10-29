@@ -70,9 +70,10 @@ char** parsear_instruccion(char* );
 
 void enviar_f_open(char* archivo, char* modo, int conexion, op_code operacion);
 void enviar_f_close(char* archivo, int conexion, op_code operacion);
-void enviar_f_seek(char* archivo, uint32_t offset, int conexion, op_code operacion);
-void enviar_f_read(char* archivo, uint32_t size, int conexion, op_code operacion);
-void enviar_f_write(char* archivo, uint32_t size, int conexion, op_code operacion);
+void enviar_f_seek(char* archivo, int offset, int conexion, op_code operacion);
+void enviar_f_read(char* archivo, int size, int conexion, op_code operacion);
+void enviar_f_write(char* archivo, int size, int conexion, op_code operacion);
+void enviar_f_truncate(char* archivo, int tamanio, int conexion, op_code operacion);
 
 
 #endif /* SRC_CPU_H_ */

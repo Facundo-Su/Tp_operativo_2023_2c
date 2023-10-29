@@ -47,7 +47,6 @@ void procesar_conexion(void *conexion1){
 		t_list* paquete;
 		switch (cod_op) {
 		case MENSAJE:
-			log_info(logger,"hola");
 			recibir_mensaje(cliente_fd);
 			break;
 		case RECIBIR_PCB:
@@ -69,8 +68,8 @@ void procesar_conexion(void *conexion1){
 				sem_post(&contador_cola_ready);
 				break;
 			case EJECUTAR_WAIT:
-				paquete = recibir_paquete(cliente_fd);
-				pcb_aux = desempaquetar_pcb(paquete);
+//				paquete = recibir_paquete(cliente_fd);
+//				pcb_aux = desempaquetar_pcb(paquete);
 				char * nombre_recurso = "RB";//obtener_mensaje(cliente_fd);
 	//			if(recurso != NULL){
 	//				log_info(logger,"esta vaciooooooooooooooooooo");
@@ -79,8 +78,8 @@ void procesar_conexion(void *conexion1){
 				ejecutar_wait(nombre_recurso,pcb_aux);
 				break;
 			case EJECUTAR_SIGNAL:
-				paquete = recibir_paquete(cliente_fd);
-				pcb_aux = desempaquetar_pcb(paquete);
+//				paquete = recibir_paquete(cliente_fd);
+//				pcb_aux = desempaquetar_pcb(paquete);
 				char * nombre_recurso2 = "RA";// obtener_mensaje(cliente_fd);
 				t_recurso *recurso3 = list_get(lista_recursos,0);
 				instacias= recurso3->instancias;
@@ -93,31 +92,61 @@ void procesar_conexion(void *conexion1){
 			case EJECUTAR_F_TRUNCATE:
 			    log_info(logger, "me llegó la instrucción ejecutar ftruncate del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_TRUCATE
+			    paquete = recibir_paquete(cliente_fd);
+				list_remove(pcb_en_ejecucion,0);
+			    sem_post(&contador_ejecutando_cpu);
+			    agregar_a_cola_ready(pcb_aux);
+			    sem_post(&contador_cola_ready);
 			    break;
 
 			case EJECUTAR_F_OPEN:
 			    log_info(logger, "me llegó la instrucción ejecutar fopen del CPU");
+			    paquete = recibir_paquete(cliente_fd);
+				list_remove(pcb_en_ejecucion,0);
+			    sem_post(&contador_ejecutando_cpu);
+			    agregar_a_cola_ready(pcb_aux);
+			    sem_post(&contador_cola_ready);
 			    // Agrega aquí la lógica para ejecutar la operación F_OPEN
 			    break;
 
 			case EJECUTAR_F_CLOSE:
 			    log_info(logger, "me llegó la instrucción ejecutar fclose del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_CLOSE
+			    paquete = recibir_paquete(cliente_fd);
+				list_remove(pcb_en_ejecucion,0);
+			    sem_post(&contador_ejecutando_cpu);
+			    agregar_a_cola_ready(pcb_aux);
+			    sem_post(&contador_cola_ready);
 			    break;
 
 			case EJECUTAR_F_SEEK:
 			    log_info(logger, "me llegó la instrucción ejecutar fseek del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_SEEK
+			    paquete = recibir_paquete(cliente_fd);
+				list_remove(pcb_en_ejecucion,0);
+			    sem_post(&contador_ejecutando_cpu);
+			    agregar_a_cola_ready(pcb_aux);
+			    sem_post(&contador_cola_ready);
 			    break;
 
 			case EJECUTAR_F_READ:
 			    log_info(logger, "me llegó la instrucción ejecutar fread del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_READ
+			    paquete = recibir_paquete(cliente_fd);
+				list_remove(pcb_en_ejecucion,0);
+			    sem_post(&contador_ejecutando_cpu);
+			    agregar_a_cola_ready(pcb_aux);
+			    sem_post(&contador_cola_ready);
 			    break;
 
 			case EJECUTAR_F_WRITE:
 			    log_info(logger, "me llegó la instrucción ejecutar fwrite del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_WRITE
+			    paquete = recibir_paquete(cliente_fd);
+				list_remove(pcb_en_ejecucion,0);
+			    sem_post(&contador_ejecutando_cpu);
+			    agregar_a_cola_ready(pcb_aux);
+			    sem_post(&contador_cola_ready);
 			    break;
 
 			default:
@@ -146,7 +175,9 @@ void procesar_conexion(void *conexion1){
 			log_pcb_info(pcb_aux);
 			liberar_recursos(pcb_aux->pid);
 			enviar_pcb(pcb_aux,conexion_memoria,FINALIZAR);
-			list_remove(pcb_en_ejecucion,0);
+			if(!list_is_empty(pcb_en_ejecucion)){
+				list_remove(pcb_en_ejecucion,0);
+			}
 			sem_post(&grado_multiprogramacion);
 			sem_post(&contador_ejecutando_cpu);
 			sem_post(&contador_cola_ready);
