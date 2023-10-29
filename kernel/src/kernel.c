@@ -59,7 +59,7 @@ void procesar_conexion(void *conexion1){
 		case EJECUTAR_WAIT:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
-			char * nombre_recurso = "RA";//obtener_mensaje(cliente_fd);
+			char * nombre_recurso = "RB";//obtener_mensaje(cliente_fd);
 //			if(recurso != NULL){
 //				log_info(logger,"esta vaciooooooooooooooooooo");
 //			}

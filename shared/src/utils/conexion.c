@@ -334,6 +334,7 @@ void enviar_pcb(t_pcb* pcb, int conexion,op_code operacion){
 
 
 
+
 //recibir_pcb
 t_pcb* recibir_pcb(int socket_cliente){
 	t_list * paquete = recibir_paquete(socket_cliente);
