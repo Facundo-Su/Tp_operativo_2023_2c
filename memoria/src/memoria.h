@@ -18,6 +18,7 @@ typedef enum{
 	LRU
 }t_algoritmo;
 
+<<<<<<< HEAD
 typedef struct {
     uint32_t pos_en_swap;
     bool P;
@@ -29,13 +30,23 @@ typedef struct {
     uint32_t num_marcos;
 }t_tabla_paginas;
 
+=======
+typedef struct{
+	char* ruta;
+	int size;
+}estructura_inicial;
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 
 typedef struct{
 	int pid;
 	t_list* instrucciones;
 }t_instrucciones;
 
+<<<<<<< HEAD
 
+=======
+estructura_inicial* estrctura_inicial;
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 
 int conexion_filesystem;
 
@@ -50,7 +61,11 @@ int tam_pagina;
 char *path_instrucciones;
 int retraso_respuesta;
 t_algoritmo algoritmo;
+<<<<<<< HEAD
 useconds_t retardo_respuesta;
+=======
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 
 void iterator(char* value);
 void obtener_configuraciones();

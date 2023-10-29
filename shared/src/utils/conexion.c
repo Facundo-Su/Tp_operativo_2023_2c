@@ -70,8 +70,12 @@ int crear_conexion(char *ip, char* puerto)
 	// Ahora vamos a crear el socket.
 	int socket_cliente = socket(server_info->ai_family,server_info->ai_socktype,server_info->ai_protocol);
 	// Ahora que tenemos el socket, vamos a conectarlo
+<<<<<<< HEAD
 	if (setsockopt(socket_cliente, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
 	    error("setsockopt(SO_REUSEADDR) failed");
+=======
+	setsockopt(socket_cliente, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 	connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen);
 	freeaddrinfo(server_info);
 
@@ -119,6 +123,7 @@ void enviar_mensaje_instrucciones(char* mensaje, int socket_cliente,op_code oper
 	eliminar_paquete(paquete);
 }
 
+<<<<<<< HEAD
 void enviar_interrupciones(int socket_cliente,op_code operacion)
 {
 	t_paquete* paquete = crear_paquete(operacion);
@@ -127,6 +132,8 @@ void enviar_interrupciones(int socket_cliente,op_code operacion)
 	eliminar_paquete(paquete);
 }
 
+=======
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 void enviar_char_dinamico(char* mensaje, int socket_cliente, op_code operacion)
 {
 	t_paquete* paquete = malloc(sizeof(t_paquete));
@@ -334,6 +341,7 @@ void enviar_pcb(t_pcb* pcb, int conexion,op_code operacion){
 
 
 
+<<<<<<< HEAD
 
 //recibir_pcb
 t_pcb* recibir_pcb(int socket_cliente){
@@ -368,11 +376,22 @@ void log_pcb_info(t_pcb* pcb_aux) {
 }
 
 
+=======
+//recibir_pcb
+t_pcb* recibir_pcb(int socket_cliente){
+	t_pcb* pcb = malloc(sizeof(t_pcb));
+	t_list*paquete = recibir_paquete(socket_cliente);
+	pcb = desempaquetar_pcb(paquete);
+	return pcb;
+}
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 //----------------------------------------------------------------------------------------------//
 void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 
 	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
 	agregar_a_paquete(paquete, &(pcb->estado), sizeof(t_estado));
+<<<<<<< HEAD
 	agregar_a_paquete(paquete, &(pcb->prioridad), sizeof(int));
 	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
 	//empaquetar_recursos(paquete,pcb->recursos);
@@ -390,6 +409,15 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 		}
 	}
 }*/
+=======
+
+	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
+
+	//empaquetar_instrucciones(paquete, pcb->lista_instruciones);
+
+}
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* contexto){
 
 	agregar_a_paquete(paquete, &(contexto->pc), sizeof(int));
@@ -398,10 +426,17 @@ void empaquetar_contexto_ejecucion(t_paquete* paquete, t_contexto_ejecucion* con
 }
 
 void empaquetar_registro(t_paquete* paquete, t_registro_cpu* registroCpu){
+<<<<<<< HEAD
 	agregar_a_paquete(paquete,&(registroCpu->ax), sizeof(uint32_t));
 	agregar_a_paquete(paquete,&(registroCpu->bx), sizeof(uint32_t));
 	agregar_a_paquete(paquete,&(registroCpu->cx), sizeof(uint32_t));
 	agregar_a_paquete(paquete,&(registroCpu->dx), sizeof(uint32_t));
+=======
+	agregar_a_paquete(paquete,&(registroCpu->AX), strlen(registroCpu->AX)+1);
+	agregar_a_paquete(paquete,&(registroCpu->BX), strlen(registroCpu->BX)+1);
+	agregar_a_paquete(paquete,&(registroCpu->CX), strlen(registroCpu->CX)+1);
+	agregar_a_paquete(paquete,&(registroCpu->DX), strlen(registroCpu->DX)+1);
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 }
 
 
@@ -428,6 +463,7 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	t_pcb* pcb = malloc(sizeof(t_pcb));
 	int * pid = list_get(paquete, 0);
 	pcb->pid = *pid;
+<<<<<<< HEAD
 	int posicion = 1;
 	int *puntero_posicion = &posicion;
 
@@ -441,10 +477,22 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, puntero_posicion);
 	pcb->contexto = contexto;
 	//t_list *recursos =desempaquetar_recursos(paquete,puntero_posicion);
+=======
+	free(pid);
+
+	t_estado* estado = list_get(paquete, 1);
+	pcb->estado = *estado;
+	free(estado);
+
+	int posicion_comienzo_contexto =2;
+	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, posicion_comienzo_contexto);
+	pcb->contexto = contexto;
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 
 	return pcb;
 }
 
+<<<<<<< HEAD
 t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int* posicion){
 	t_contexto_ejecucion *contexto = malloc(sizeof(t_contexto_ejecucion));
 	int* pc = list_get(paquete,(*posicion)++);
@@ -467,6 +515,42 @@ t_registro_cpu* desempaquetar_registros(t_list* paquete, int* posicion) {
 
 
 
+=======
+t_contexto_ejecucion *desempaquetar_contexto(t_list *paquete,int posicion){
+	t_contexto_ejecucion *contexto = malloc(sizeof(t_contexto_ejecucion));
+	int* pc = list_get(paquete,posicion);
+	contexto->pc = *pc;
+	free(*pc);
+
+	t_registro_cpu * registros = desempaquetar_registros(paquete,3);
+	contexto->registros_cpu = registros;
+	return contexto;
+}
+
+t_registro_cpu * desempaquetar_registros(t_list * paquete,int posicion){
+	t_registro_cpu *registro = malloc(sizeof(t_registro_cpu));
+
+	char* ax = list_get(paquete,posicion);
+	strcpy(registro->AX, ax);
+	free(ax);
+
+	char* bx = list_get(paquete,posicion+1);
+	strcpy(registro->BX, bx);
+	free(bx);
+
+	char* cx = list_get(paquete,posicion+2);
+	strcpy(registro->CX, cx);
+	free(cx);
+
+	char* dx = list_get(paquete,posicion+3);
+	strcpy(registro->DX, dx);
+	free(dx);
+
+	return registro;
+}
+
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 t_instruccion * desempaquetar_instrucciones(t_list* paquete){
 	t_instruccion* instruccion = malloc(sizeof(t_instruccion));
 	int posicion_usado =0;
@@ -494,6 +578,7 @@ t_list* desempaquetar_parametros(t_list* paquete,int posicion){
 	return parametros;
 
 }
+<<<<<<< HEAD
 /*t_list* desempaquetar_recursos(t_list* paquete,int* posicion){
 	t_list*recursos = list_create();
 	t_recurso_pcb* recurso_pcb = malloc(sizeof(t_recurso_pcb));
@@ -507,6 +592,8 @@ t_list* desempaquetar_parametros(t_list* paquete,int posicion){
 	}
 	return recursos;
 }*/
+=======
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 
 
 //convertir en op_instrucciones

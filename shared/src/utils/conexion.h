@@ -32,6 +32,7 @@ typedef enum
 	EJECUTAR_SIGNAL,
 	EJECUTAR_SLEEP,
 	EJECUTAR_F_TRUNCATE,
+<<<<<<< HEAD
 	EJECUTAR_F_OPEN,
 	EJECUTAR_F_CLOSE,
 	EJECUTAR_F_SEEK,
@@ -41,6 +42,11 @@ typedef enum
 	INSTRUCCIONES_A_MEMORIA,
 	CPU_ENVIA_A_MEMORIA,// BORRAR
 	ENVIAR_DESALOJAR
+=======
+	OBTENER_INSTRUCCION,
+	INSTRUCCIONES_A_MEMORIA,
+	CPU_ENVIA_A_MEMORIA// BORRAR
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 }op_code;
 
 typedef struct
@@ -65,10 +71,17 @@ typedef enum{
 
 // VER SI FUNCA SI FUNCA, CAMBIAR A UINT_32
 typedef struct{
+<<<<<<< HEAD
 	uint32_t ax;
 	uint32_t bx;
 	uint32_t cx;
 	uint32_t dx;
+=======
+	char AX[4];
+	char BX[4];
+	char CX[4];
+	char DX[4];
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 }t_registro_cpu;
 
 typedef enum{
@@ -87,11 +100,27 @@ typedef struct{
 typedef struct{
 	int pid;
 	int prioridad;
+<<<<<<< HEAD
 	t_contexto_ejecucion* contexto;
 	//t_list* tabla_archivo_abierto;
 	t_estado estado;
 }t_pcb;
 
+=======
+	int tiempo_cpu;
+	t_contexto_ejecucion* contexto;
+	t_list* tabla_archivo_abierto;
+	t_estado estado;
+	t_list* lista_instruciones;
+	t_list* recursos;
+}t_pcb;
+
+typedef struct{
+	char*nombre;
+	int instancias;
+}t_recurso_pcb;
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 time_t tiempo_inicial, tiempo_final;
 double tiempo_transcurrido;
 
@@ -152,18 +181,27 @@ void empaquetar_registro(t_paquete* , t_registro_cpu* );
 void empaquetar_instrucciones(t_paquete* , t_instruccion*);
 char* obtener_nombre_instruccion(op_instrucciones );
 void enviar_mensaje_instrucciones(char* , int ,op_code );
+<<<<<<< HEAD
 void enviar_interrupciones(int ,op_code );
 void log_pcb_info(t_pcb* );
 t_list* desempaquetar_recursos(t_list* ,int* );
 void empaquetar_recursos(t_paquete* ,t_list *);
+=======
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 //enviar pcb
 void enviar_pcb(t_pcb* , int conexion, op_code);
 
 
 //desempaquetar
 t_pcb* desempaquetar_pcb(t_list* );
+<<<<<<< HEAD
 t_contexto_ejecucion *desempaquetar_contexto(t_list *,int* );
 t_registro_cpu * desempaquetar_registros(t_list * ,int* );
+=======
+t_contexto_ejecucion *desempaquetar_contexto(t_list *,int );
+t_registro_cpu * desempaquetar_registros(t_list * ,int );
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 t_instruccion * desempaquetar_instrucciones(t_list*);
 t_list* desempaquetar_parametros(t_list* ,int );
 op_instrucciones convertir_a_op_instrucciones(char* );

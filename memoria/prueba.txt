@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 F_OPEN A W
 F_CLOSE C
 F_SEEK D 1
@@ -5,3 +6,8 @@ F_READ E 5
 F_WRITE F 5
 F_TRUNCATE G 6
 EXIT
+=======
+F_OPEN BX 1
+F_READ CX 1
+F_SEEK AX 1
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)

@@ -16,8 +16,13 @@ int main(int argc, char* argv[]) {
 
     log_info(logger, "Soy el Memoria!");
 
+<<<<<<< HEAD
     //iniciar_consola();
 	iniciar_servidor_memoria(puerto_escucha);
+=======
+    iniciar_consola();
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
     // Limpieza y terminación
     terminar_programa(conexion_filesystem, logger, config);
 
@@ -27,11 +32,18 @@ int main(int argc, char* argv[]) {
 
 void iniciar_recursos(){
 	lista_instrucciones = list_create();
+<<<<<<< HEAD
 	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
 }
 
 void iniciar_consola(){
 
+=======
+}
+
+void iniciar_consola(){
+	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 	char* valor;
 
 	while(1){
@@ -89,10 +101,13 @@ void obtener_configuraciones() {
     puerto_filesystem = config_get_string_value(config, "PUERTO_FILESYSTEM");
     ip_file_system = config_get_string_value(config, "IP_FILESYSTEM");
     path_instrucciones =config_get_string_value(config,"PATH_INSTRUCCIONES");
+<<<<<<< HEAD
     int auxiliar = config_get_int_value(config,"RETARDO_RESPUESTA");
     strcat(path_instrucciones,"/");
     auxiliar = auxiliar* 1000;
     retardo_respuesta = (useconds_t) auxiliar;
+=======
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 }
 
 void iniciar_servidor_memoria(char *puerto) {
@@ -104,8 +119,11 @@ void iniciar_servidor_memoria(char *puerto) {
         int cliente_fd = esperar_cliente(memoria_fd);
 		pthread_t atendiendo;
 		pthread_create(&atendiendo,NULL,(void*)procesar_conexion,(void *) cliente_fd);
+<<<<<<< HEAD
 		if (setsockopt(cliente_fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
 			    error("setsockopt(SO_REUSEADDR) failed");
+=======
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 		pthread_detach(atendiendo);
 
     }
@@ -131,10 +149,15 @@ void procesar_conexion(int cliente_fd){
 
 	            	t_list* valorRecibido;
 					valorRecibido=recibir_paquete(cliente_fd);
+<<<<<<< HEAD
 
 					//TODO DESBLOQUEAR DESPUES
 					//char* ruta = strcat(path_instrucciones,list_get(valorRecibido,0));
 					//ruta = strcat(ruta,".txt");
+=======
+	   //         	recibir_estructura_Inicial(cliente_fd);
+					//char* ruta = strcat(path_instrucciones,list_get(valorRecibido,0));
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
@@ -146,6 +169,7 @@ void procesar_conexion(int cliente_fd){
 	                log_info(logger, "Me llegaron los siguientes valores de pid: %i",*pid);
 
 
+<<<<<<< HEAD
 	                cargar_lista_instruccion(ruta,size,prioridad,*pid);
 	                break;
 	            case FINALIZAR:
@@ -158,6 +182,20 @@ void procesar_conexion(int cliente_fd){
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
 	    			usleep(retardo_respuesta);
+=======
+	                cargar_lista_instruccion(ruta,size,prioridad,pid);
+	                break;
+	            case FINALIZAR:
+
+	            	t_list* valor_pid;
+	            	valor_pid= recibir_paquete(cliente_fd);
+	            	int* valor = list_get(valor_pid,0);
+	            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",*valor);
+	            	//realizar_proceso_finalizar(valor);
+	            	break;
+	    		case INSTRUCCIONES_A_MEMORIA:
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 	    			t_list* lista;
 	    			lista = recibir_paquete(cliente_fd);
 	    			int* pc_recibido = list_get(lista,0);
@@ -165,10 +203,21 @@ void procesar_conexion(int cliente_fd){
 	    			log_info(logger_consola_memoria,"me llegaron el siguiente pc %i",*pc_recibido);
 	    			log_info(logger_consola_memoria,"me llegaron el siguiente pid %i",*pid_recibido);
 
+<<<<<<< HEAD
 	    		    bool encontrar_instrucciones(void * instruccion){
 	    		          t_instrucciones* un_instruccion = (t_instrucciones*)instruccion;
 	    		          int valor_comparar =un_instruccion->pid;
 	    		          return valor_comparar == *pid_recibido;
+=======
+
+
+	    		    bool encontrar_instrucciones(void * instruccion){
+	    		          t_instrucciones* un_instruccion = (t_instrucciones*)instruccion;
+	    		          log_info(logger_consola_memoria,"comparando pid %i",*pid_recibido);
+	    		          int *valor_comparar =un_instruccion->pid;
+	    		          log_info(logger_consola_memoria,"comparando el pid %i",*valor_comparar);
+	    		          return *valor_comparar == *pid_recibido;
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 	    		    }
 	    		    t_instrucciones* instrucciones = list_find(lista_instrucciones, encontrar_instrucciones);
 
@@ -176,16 +225,26 @@ void procesar_conexion(int cliente_fd){
 	    		        // Se encontró un elemento que cumple con la condición
 	    		        log_info(logger, "Se encontraron instrucciones para el PID %i", *pid_recibido);
 	    		        log_info(logger, "Cantidad de instrucciones: %i", list_size(instrucciones->instrucciones));
+<<<<<<< HEAD
 	    		        char*valor_obtenido = list_get(instrucciones->instrucciones,*pc_recibido);
 	    		        log_info(logger, "el instruccion que se envio es  %s", valor_obtenido);
 		    			enviar_mensaje_instrucciones(valor_obtenido,cliente_fd,INSTRUCCIONES_A_MEMORIA);
+=======
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 	    		        // Luego puedes realizar las operaciones que necesites con 'instrucciones'
 	    		    } else {
 	    		        // No se encontraron instrucciones que cumplan con la condición
 	    		        log_info(logger, "No se encontraron instrucciones para el PID %i", *pid_recibido);
 	    		    }
+<<<<<<< HEAD
 
 	    			//char*valor_obtenido = list_get(instrucciones->instrucciones,*pc_recibido);
+=======
+	    			char*valor_obtenido = list_get(instrucciones->instrucciones,*pc_recibido);
+    		        log_info(logger, "el instruccion que se envio es  %s", valor_obtenido);
+	    			enviar_mensaje_instrucciones(valor_obtenido,cliente_fd,INSTRUCCIONES_A_MEMORIA);
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 	    			//log_info(logger_consola_memoria,"pid encontrado bien ahi es %i",instrucciones->pid);
 	    			//t_paquete* paquete = crear_paquete(INSTRUCCIONES_A_MEMORIA);
 	    			//empaquetar_instrucciones(paquete,instrucciones->instrucciones);
@@ -205,7 +264,10 @@ void procesar_conexion(int cliente_fd){
 
 void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
 	t_instrucciones * instruccion = malloc(sizeof(t_instruccion));
+<<<<<<< HEAD
 	log_info(logger_consola_memoria,"%i",pid);
+=======
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 	instruccion->pid = pid;
 	instruccion->instrucciones = list_create();
 	FILE * archivo = fopen(ruta,"r");
@@ -217,9 +279,15 @@ void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
 
 	t_instrucciones* instruuu = list_get(lista_instrucciones,0);
 	int cantidad2 = list_size(lista_instrucciones);
+<<<<<<< HEAD
 	log_info(logger_consola_memoria,"la lista total total de general es %i",cantidad2);
 
 	log_info(logger_consola_memoria,"el valor de la pid primero es  %i",instruuu->pid);
+=======
+	int *auxiliar2 = instruuu->pid;
+	log_info(logger_consola_memoria,"la lista total total de general es %i",cantidad2);
+	log_info(logger_consola_memoria,"el valor de la pid primero es  %i",*auxiliar2);
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 	fclose(archivo);
 
 }
@@ -248,13 +316,19 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
     log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose);
     char *instruc_aux_nose2 = list_get(instrucciones_del_pcb,1);
     log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose2);
+<<<<<<< HEAD
     //char *instruc_aux_nose3 = list_get(instrucciones_del_pcb,2);
     //log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose3);
+=======
+    char *instruc_aux_nose3 = list_get(instrucciones_del_pcb,2);
+    log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose3);
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
     return instrucciones_del_pcb;
 
 }
 
 
+<<<<<<< HEAD
 //TODO liberar memoria uszando la funcion void list_remove_and_destroy_by_condition(t_list *, bool(*condition)(void*), void(*element_destroyer)(void*));
 void realizar_proceso_finalizar(int pid){
 
@@ -277,6 +351,10 @@ void realizar_proceso_finalizar(int pid){
         // No se encontraron instrucciones que cumplan con la condición
         log_info(logger, "No se encontraron instrucciones para el PID %i", pid);
     }
+=======
+void realizar_proceso_finalizar(int valor){
+
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
 }
 
 op_instrucciones asignar_cod_instruccion(char* instruccion){

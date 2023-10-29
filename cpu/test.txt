@@ -1,4 +1,10 @@
+<<<<<<< HEAD
 WAIT RA
 WAIT RA
 SIGNAL RA
 EXIT
+=======
+SET AX 1
+SET BX 1
+SET CX 2
+>>>>>>> parent of ca1d82c (borre todo para mergear rama)
