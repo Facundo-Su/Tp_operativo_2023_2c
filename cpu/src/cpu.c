@@ -409,9 +409,12 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		}
 		break;
 	case SLEEP:
-		char * tiempo = list_get(instrucciones->parametros,0);
-		enviar_pcb(pcb,cliente_fd,EJECUTAR_SLEEP);
-		enviar_mensaje(tiempo,cliente_fd);
+		hayInterrupcion= true;
+		log_info(logger_consola_cpu, "entendi sleep");
+		parametro=  list_get(instrucciones->parametros,0);
+		int tiempo = atoi(parametro);
+		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
+		enviar_sleep(tiempo,cliente_fd,EJECUTAR_SLEEP);
 		break;
    case WAIT:
 		recurso= list_get(instrucciones->parametros,0);
@@ -454,7 +457,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		imprimir_valores_registros(pcb->contexto->registros_cpu);
 		enviar_pcb(pcb,cliente_fd,FINALIZAR);
 		log_info(logger_consola_cpu,"entendi el mensaje EXIT");
-		//hay_desalojo = false;
+		hay_desalojo = false;
 		break;
 	}
 	recibi_archivo = false;
@@ -469,6 +472,14 @@ void setear(t_estrucutra_cpu pos, uint32_t valor) {
         case DX: pcb->contexto->registros_cpu->dx = valor; break;
         default: log_info(logger, "Registro de destino no válido");
     }
+}
+
+
+void enviar_sleep(int tiempo,int conexion,op_code operacion){
+	t_paquete * paquete = crear_paquete(operacion);
+	agregar_a_paquete(paquete, &tiempo, sizeof(int));
+	enviar_paquete(paquete, conexion);
+	eliminar_paquete(paquete);
 }
 
 

@@ -61,6 +61,8 @@ void transformar_en_instrucciones(char*);
 void imprimir_valores_registros(t_registro_cpu* );
 void iniciar_servidor_interrupt(char * );
 
+void enviar_sleep(int ,int ,op_code );
+
 void atendiendo_pedido(int);
 //archivos
 void leer_pseudocodigo(FILE* );

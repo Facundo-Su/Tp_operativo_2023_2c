@@ -37,10 +37,10 @@ int main(int argc, char **argv){
 }
 
 
+
 void procesar_conexion(void *conexion1){
 	int *conexion = (int*)conexion1;
 	int cliente_fd = *conexion;
-
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
 		t_pcb* pcb_aux;
@@ -50,38 +50,54 @@ void procesar_conexion(void *conexion1){
 			log_info(logger,"hola");
 			recibir_mensaje(cliente_fd);
 			break;
-		case EJECUTAR_SLEEP:
+		case RECIBIR_PCB:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
-			int tiempo = atoi(obtener_mensaje(cliente_fd));
-			sleep(tiempo);
-			break;
-		case EJECUTAR_WAIT:
-			paquete = recibir_paquete(cliente_fd);
-			pcb_aux = desempaquetar_pcb(paquete);
-			char * nombre_recurso = "RB";//obtener_mensaje(cliente_fd);
-//			if(recurso != NULL){
-//				log_info(logger,"esta vaciooooooooooooooooooo");
-//			}
-			int instacias;
-			ejecutar_wait(nombre_recurso,pcb_aux);
-			break;
-		case EJECUTAR_SIGNAL:
-			paquete = recibir_paquete(cliente_fd);
-			pcb_aux = desempaquetar_pcb(paquete);
-			char * nombre_recurso2 = "RA";// obtener_mensaje(cliente_fd);
-			t_recurso *recurso3 = list_get(lista_recursos,0);
-			instacias= recurso3->instancias;
-			log_info(logger,"ejecutando signal %i",instacias);
-			ejecutar_signal(nombre_recurso2,pcb_aux);
-			t_recurso *recurso4 = list_get(lista_recursos,0);
-			instacias= recurso4->instancias;
-			log_info(logger,"ejecutando signal %i",instacias);
-			break;
-		case EJECUTAR_F_TRUNCATE:
-			log_info(logger,"me llegaron la instruccion ejecutar f truncate del cpu");
-			break;
+			log_info(logger,"recibi el pcb");
+			log_pcb_info(pcb_aux);
+			recv(cliente_fd,&cod_op,sizeof(op_code),0);
+			switch(cod_op){
+			case EJECUTAR_SLEEP:
 
+				paquete = recibir_paquete(cliente_fd);
+				int *tiempo = list_get(paquete,0);
+				log_info(logger,"recibi el sleep %d",*tiempo);
+				list_remove(pcb_en_ejecucion,0);
+				sem_post(&contador_ejecutando_cpu);
+				usleep(*tiempo*1000);
+				agregar_a_cola_ready(pcb_aux);
+				sem_post(&contador_cola_ready);
+				break;
+			case EJECUTAR_WAIT:
+				paquete = recibir_paquete(cliente_fd);
+				pcb_aux = desempaquetar_pcb(paquete);
+				char * nombre_recurso = "RB";//obtener_mensaje(cliente_fd);
+	//			if(recurso != NULL){
+	//				log_info(logger,"esta vaciooooooooooooooooooo");
+	//			}
+				int instacias;
+				ejecutar_wait(nombre_recurso,pcb_aux);
+				break;
+			case EJECUTAR_SIGNAL:
+				paquete = recibir_paquete(cliente_fd);
+				pcb_aux = desempaquetar_pcb(paquete);
+				char * nombre_recurso2 = "RA";// obtener_mensaje(cliente_fd);
+				t_recurso *recurso3 = list_get(lista_recursos,0);
+				instacias= recurso3->instancias;
+				log_info(logger,"ejecutando signal %i",instacias);
+				ejecutar_signal(nombre_recurso2,pcb_aux);
+				t_recurso *recurso4 = list_get(lista_recursos,0);
+				instacias= recurso4->instancias;
+				log_info(logger,"ejecutando signal %i",instacias);
+				break;
+			case EJECUTAR_F_TRUNCATE:
+				log_info(logger,"me llegaron la instruccion ejecutar f truncate del cpu");
+				break;
+			default:
+				log_error(logger, "che %s no se que me mandaste", cliente_fd);
+				break;
+			}
+			break;
 		case ENVIAR_DESALOJAR:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
@@ -381,14 +397,18 @@ void planificador_corto_plazo(){
 		//sem_wait(&contador_ejecutando_cpu);
 		switch(planificador){
 		case FIFO:
-			sem_wait(&contador_ejecutando_cpu);
-			log_info(logger,"Planificador FIFO");
-			de_ready_a_fifo();
+			if(!queue_is_empty(cola_ready)){
+				sem_wait(&contador_ejecutando_cpu);
+				log_info(logger,"Planificador FIFO");
+				de_ready_a_fifo();
+			}
 			break;
 		case ROUND_ROBIN:
+			if(!queue_is_empty(cola_ready)){
 			sem_wait(&contador_ejecutando_cpu);
 			log_info(logger,"Planificador Round Robin");
 			de_ready_a_round_robin();
+			}
 			break;
 		case PRIORIDADES:
 			log_info(logger,"Planificador Prioridades");
