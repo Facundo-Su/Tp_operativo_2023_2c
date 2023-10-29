@@ -91,8 +91,35 @@ void procesar_conexion(void *conexion1){
 				log_info(logger,"ejecutando signal %i",instacias);
 				break;
 			case EJECUTAR_F_TRUNCATE:
-				log_info(logger,"me llegaron la instruccion ejecutar f truncate del cpu");
-				break;
+			    log_info(logger, "me llegó la instrucción ejecutar ftruncate del CPU");
+			    // Agrega aquí la lógica para ejecutar la operación F_TRUCATE
+			    break;
+
+			case EJECUTAR_F_OPEN:
+			    log_info(logger, "me llegó la instrucción ejecutar fopen del CPU");
+			    // Agrega aquí la lógica para ejecutar la operación F_OPEN
+			    break;
+
+			case EJECUTAR_F_CLOSE:
+			    log_info(logger, "me llegó la instrucción ejecutar fclose del CPU");
+			    // Agrega aquí la lógica para ejecutar la operación F_CLOSE
+			    break;
+
+			case EJECUTAR_F_SEEK:
+			    log_info(logger, "me llegó la instrucción ejecutar fseek del CPU");
+			    // Agrega aquí la lógica para ejecutar la operación F_SEEK
+			    break;
+
+			case EJECUTAR_F_READ:
+			    log_info(logger, "me llegó la instrucción ejecutar fread del CPU");
+			    // Agrega aquí la lógica para ejecutar la operación F_READ
+			    break;
+
+			case EJECUTAR_F_WRITE:
+			    log_info(logger, "me llegó la instrucción ejecutar fwrite del CPU");
+			    // Agrega aquí la lógica para ejecutar la operación F_WRITE
+			    break;
+
 			default:
 				log_error(logger, "che %s no se que me mandaste", cliente_fd);
 				break;

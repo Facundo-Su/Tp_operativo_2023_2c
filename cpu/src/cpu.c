@@ -432,23 +432,51 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger_consola_cpu,"entendi el mensaje MOV_OUT");
 		break;
 	case F_OPEN:
+		hayInterrupcion = true;
 		log_info(logger_consola_cpu,"entendi el mensaje F_OPEN");
+		parametro= list_get(instrucciones->parametros,0);
+		parametro2= list_get(instrucciones->parametros,1);
+		enviar_f_open(parametro,parametro2,cliente_fd,EJECUTAR_F_OPEN);
 		break;
 	case F_CLOSE:
+
+		hayInterrupcion = true;
 		log_info(logger_consola_cpu,"entendi el mensaje F_CLOSE");
+		parametro= list_get(instrucciones->parametros,0);
+		enviar_f_close(parametro,cliente_fd,EJECUTAR_F_CLOSE);
 		break;
 	case F_SEEK:
+		hayInterrupcion = true;
 		log_info(logger_consola_cpu,"entendi el mensaje F_SEEK");
+		parametro= list_get(instrucciones->parametros,0);
+		parametro2= list_get(instrucciones->parametros,1);
+		valor_uint1 = strtoul(parametro2, NULL, 10);
+		enviar_f_open(parametro,valor_uint1,cliente_fd,EJECUTAR_F_SEEK);
 		break;
 	case F_READ:
+		hayInterrupcion = true;
 		log_info(logger_consola_cpu,"entendi el mensaje F_READ");
+		parametro= list_get(instrucciones->parametros,0);
+		parametro2= list_get(instrucciones->parametros,1);
+		valor_uint1 = strtoul(parametro2, NULL, 10);
+		enviar_f_open(parametro,valor_uint1,cliente_fd,EJECUTAR_F_SEEK);
 		break;
 	case F_WRITE:
+		hayInterrupcion = true;
 		log_info(logger_consola_cpu,"entendi el mensaje F_WRITE");
+		parametro= list_get(instrucciones->parametros,0);
+		parametro2= list_get(instrucciones->parametros,1);
+		valor_uint1 = strtoul(parametro2, NULL, 10);
+		enviar_f_open(parametro,valor_uint1,cliente_fd,EJECUTAR_F_WRITE);
 		break;
 	case F_TRUNCATE:
-		//hayInterrupcion = true;
+
+		hayInterrupcion = true;
 		log_info(logger_consola_cpu,"entendi el mensaje F_TRUNCATE");
+		parametro= list_get(instrucciones->parametros,0);
+		parametro2= list_get(instrucciones->parametros,1);
+		valor_uint1 = strtoul(parametro2, NULL, 10);
+		enviar_f_open(parametro,valor_uint1,cliente_fd,EJECUTAR_F_WRITE);
 		break;
 	case EXIT:
 		//TODO semaforo
@@ -481,6 +509,46 @@ void enviar_sleep(int tiempo,int conexion,op_code operacion){
 	enviar_paquete(paquete, conexion);
 	eliminar_paquete(paquete);
 }
+
+void enviar_f_open(char* archivo, char* modo, int conexion, op_code operacion) {
+    t_paquete* paquete = crear_paquete(operacion);
+    agregar_a_paquete(paquete, archivo, strlen(archivo) + 1); // Incluye el carácter nulo
+    agregar_a_paquete(paquete, modo, strlen(modo) + 1); // Incluye el carácter nulo
+    enviar_paquete(paquete, conexion);
+    eliminar_paquete(paquete);
+}
+
+void enviar_f_close(char* archivo, int conexion, op_code operacion) {
+    t_paquete* paquete = crear_paquete(operacion);
+    agregar_a_paquete(paquete, archivo, strlen(archivo) + 1); // Incluye el carácter nulo
+    enviar_paquete(paquete, conexion);
+    eliminar_paquete(paquete);
+}
+
+void enviar_f_seek(char* archivo, uint32_t offset, int conexion, op_code operacion) {
+    t_paquete* paquete = crear_paquete(operacion);
+    agregar_a_paquete(paquete, archivo, strlen(archivo) + 1); // Incluye el carácter nulo
+    agregar_a_paquete(paquete, &offset, sizeof(uint32_t));
+    enviar_paquete(paquete, conexion);
+    eliminar_paquete(paquete);
+}
+
+void enviar_f_read(char* archivo, uint32_t size, int conexion, op_code operacion) {
+    t_paquete* paquete = crear_paquete(operacion);
+    agregar_a_paquete(paquete, archivo, strlen(archivo) + 1); // Incluye el carácter nulo
+    agregar_a_paquete(paquete, &size, sizeof(uint32_t));
+    enviar_paquete(paquete, conexion);
+    eliminar_paquete(paquete);
+}
+
+void enviar_f_write(char* archivo, uint32_t size, int conexion, op_code operacion) {
+    t_paquete* paquete = crear_paquete(operacion);
+    agregar_a_paquete(paquete, archivo, strlen(archivo) + 1); // Incluye el carácter nulo
+    agregar_a_paquete(paquete, &size, sizeof(uint32_t));
+    enviar_paquete(paquete, conexion);
+    eliminar_paquete(paquete);
+}
+
 
 
 //transformar en enum
