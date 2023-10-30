@@ -93,6 +93,12 @@ void procesar_conexion(void *conexion1){
 			    log_info(logger, "me llegó la instrucción ejecutar ftruncate del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_TRUCATE
 			    paquete = recibir_paquete(cliente_fd);
+
+			    char* nombre_archivo_truncate = list_get(paquete,0);
+			    int* tamanio = list_get(paquete,1);
+			    log_info(logger, "el archivo es %s",nombre_archivo_truncate);
+			    log_info(logger, "el tamanio es  %",*tamanio);
+
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
 			    agregar_a_cola_ready(pcb_aux);
@@ -102,6 +108,10 @@ void procesar_conexion(void *conexion1){
 			case EJECUTAR_F_OPEN:
 			    log_info(logger, "me llegó la instrucción ejecutar fopen del CPU");
 			    paquete = recibir_paquete(cliente_fd);
+			    char* nombre_archivo = list_get(paquete,0);
+			    char* modo_apertura = list_get(paquete,1);
+			    log_info(logger, "el archivo es %s",nombre_archivo);
+			    log_info(logger, "el modo del archivo es %s",modo_apertura);
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
 			    agregar_a_cola_ready(pcb_aux);
@@ -113,6 +123,9 @@ void procesar_conexion(void *conexion1){
 			    log_info(logger, "me llegó la instrucción ejecutar fclose del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_CLOSE
 			    paquete = recibir_paquete(cliente_fd);
+			    char* nombre_archivo_close = list_get(paquete,0);
+			    log_info(logger, "el archivo a cerrar es %s",nombre_archivo_close);
+
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
 			    agregar_a_cola_ready(pcb_aux);
@@ -123,6 +136,12 @@ void procesar_conexion(void *conexion1){
 			    log_info(logger, "me llegó la instrucción ejecutar fseek del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_SEEK
 			    paquete = recibir_paquete(cliente_fd);
+
+			    char* nombre_archivo_feseek = list_get(paquete,0);
+			    int* posicion = list_get(paquete,1);
+			    log_info(logger, "el archivo f_seek es %s",nombre_archivo_feseek);
+			    log_info(logger, "el posicion del archivo es %i",*posicion);
+
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
 			    agregar_a_cola_ready(pcb_aux);
@@ -133,6 +152,12 @@ void procesar_conexion(void *conexion1){
 			    log_info(logger, "me llegó la instrucción ejecutar fread del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_READ
 			    paquete = recibir_paquete(cliente_fd);
+
+			    char* nombre_archivo_f_read = list_get(paquete,0);
+			    int* direccion_logica_read= list_get(paquete,1);
+			    log_info(logger, "el archivo es %s",nombre_archivo_f_read);
+			    log_info(logger, "el direccion logica es %i",*direccion_logica_read);
+
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
 			    agregar_a_cola_ready(pcb_aux);
@@ -143,6 +168,12 @@ void procesar_conexion(void *conexion1){
 			    log_info(logger, "me llegó la instrucción ejecutar fwrite del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_WRITE
 			    paquete = recibir_paquete(cliente_fd);
+
+			    char* nombre_archivo_write = list_get(paquete,0);
+			    char* direccion_logica_write= list_get(paquete,1);
+			    log_info(logger, "el archivo es %s",nombre_archivo_write);
+			    log_info(logger, "el direccion logica es %i",direccion_logica_write);
+
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
 			    agregar_a_cola_ready(pcb_aux);
@@ -150,7 +181,7 @@ void procesar_conexion(void *conexion1){
 			    break;
 
 			default:
-				log_error(logger, "che %s no se que me mandaste", cliente_fd);
+				log_error(logger, "che no se que me mandaste");
 				break;
 			}
 			break;

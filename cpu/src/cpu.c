@@ -486,7 +486,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		enviar_f_truncate(parametro,valor_int,cliente_fd,EJECUTAR_F_WRITE);
 		break;
 	case EXIT:
-		//TODO semaforo
 		log_info(logger_consola_cpu, "llego hasta aca sssssss");
 		hayInterrupcion = true;
 		imprimir_valores_registros(pcb->contexto->registros_cpu);
