@@ -160,7 +160,10 @@ void procesar_conexion(int cliente_fd){
 
 	            	lista = recibir_paquete(cliente_fd);
 	            	int *nro_pagina = list_get(lista,0);
+	            	uint32_t nro_pagina_mov_in = (uint32_t) *nro_pagina;
+
 	            	int *desplazamiento = list_get(lista,1);
+	            	uint32_t desplazamiento_mov_in = (uint32_t) *desplazamiento;
 	            	log_info(logger, "Me llegaron los siguientes valores de nro_pag: %i",*nro_pagina);
 	            	log_info(logger, "Me llegaron los siguientes valores de desplazamiento: %i",*desplazamiento);
 

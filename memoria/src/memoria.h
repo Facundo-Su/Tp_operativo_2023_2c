@@ -29,6 +29,11 @@ typedef struct {
     uint32_t num_marcos;
 }t_tabla_paginas;
 
+typedef struct{
+	uint32_t tamanio;
+	uint32_t nro_marco;
+};
+
 
 typedef struct{
 	int pid;
