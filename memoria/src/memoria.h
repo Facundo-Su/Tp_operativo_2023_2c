@@ -65,6 +65,8 @@ char** parsear_instruccion(char*);
 op_instrucciones asignar_cod_instruccion(char* );
 bool encontrar_instrucciones(void * );
 char* obtener_nombre_instruccion(op_instrucciones ) ;
+void enviar_tam_pagina(int  , int );
+enviar_registro_leido_mov_in(int  , op_code ,int );
 
 
 #endif /* KERNEL_H_ */

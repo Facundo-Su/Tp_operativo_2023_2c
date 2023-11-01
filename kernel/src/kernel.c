@@ -179,6 +179,9 @@ void procesar_conexion(void *conexion1){
 			    agregar_a_cola_ready(pcb_aux);
 			    sem_post(&contador_cola_ready);
 			    break;
+			case PAGE_FAULT:
+				//TODO enviar a cola bloqueado
+				break;
 
 			default:
 				log_error(logger, "che no se que me mandaste");
@@ -196,6 +199,7 @@ void procesar_conexion(void *conexion1){
 			sem_post(&contador_ejecutando_cpu);
 			sem_post(&proceso_desalojo);
 			break;
+
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
@@ -430,10 +434,10 @@ t_contexto_ejecucion* crear_contexto(){
 
 t_registro_cpu* crear_registro(){
     t_registro_cpu* reg = malloc(sizeof(t_registro_cpu));
-    reg->ax = 1;
-    reg->bx = 1;
-    reg->cx = 1;
-    reg->dx = 1;
+    reg->ax = 0;
+    reg->bx = 0;
+    reg->cx = 0;
+    reg->dx = 0;
     return reg;
 }
 

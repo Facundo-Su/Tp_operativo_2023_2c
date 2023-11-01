@@ -89,6 +89,9 @@ void obtener_configuraciones() {
     puerto_filesystem = config_get_string_value(config, "PUERTO_FILESYSTEM");
     ip_file_system = config_get_string_value(config, "IP_FILESYSTEM");
     path_instrucciones =config_get_string_value(config,"PATH_INSTRUCCIONES");
+    tam_memoria = config_get_int_value(config,"TAM_MEMORIA");
+    tam_pagina = config_get_int_value(config,"TAM_PAGINA");
+
     int auxiliar = config_get_int_value(config,"RETARDO_RESPUESTA");
     strcat(path_instrucciones,"/");
     auxiliar = auxiliar* 1000;
@@ -116,6 +119,7 @@ void procesar_conexion(int cliente_fd){
 	while (1) {
 	            int cod_op = recibir_operacion(cliente_fd);
 	            t_list * lista;
+
 	            switch (cod_op) {
 	            case MENSAJE:
 	                recibir_mensaje(cliente_fd);
@@ -148,6 +152,32 @@ void procesar_conexion(int cliente_fd){
 
 	                cargar_lista_instruccion(ruta,size,prioridad,*pid);
 	                break;
+	            case MANDAME_PAGINA:
+	            	recibir_mensaje(cliente_fd);
+	            	enviar_tam_pagina(tam_pagina, cliente_fd);
+	            	break;
+	            case ENVIO_MOV_IN:
+
+	            	lista = recibir_paquete(cliente_fd);
+	            	int *nro_pagina = list_get(lista,0);
+	            	int *desplazamiento = list_get(lista,1);
+	            	log_info(logger, "Me llegaron los siguientes valores de nro_pag: %i",*nro_pagina);
+	            	log_info(logger, "Me llegaron los siguientes valores de desplazamiento: %i",*desplazamiento);
+
+
+	            	enviar_registro_leido_mov_in(9,ENVIO_MOV_IN,cliente_fd);
+
+	            	break;
+	            case ENVIO_MOV_OUT:
+	            	lista = recibir_paquete(cliente_fd);
+	            	int *nro_pagina_out = list_get(lista,0);
+	            	int *desplazamiento_out= list_get(lista,1);
+	            	int *valor_remplazar = list_get(lista,2);
+	            	log_info(logger, "Me llegaron los siguientes valores de nro_pag: %i",*nro_pagina_out);
+	            	log_info(logger, "Me llegaron los siguientes valores de desplazamiento: %i",*desplazamiento_out);
+	            	log_info(logger, "Me llegaron los siguientes valores de escritura: %i",*valor_remplazar);
+	            	//TODO realizar operacion;
+	            	break;
 	            case FINALIZAR:
 
 	            	t_list * paquete = recibir_paquete(cliente_fd);
@@ -200,6 +230,21 @@ void procesar_conexion(int cliente_fd){
 	                break;
 	            }
 	        }
+}
+
+enviar_registro_leido_mov_in(int valor_encontrado , op_code operacion,int cliente_fd){
+	t_paquete* paquete = crear_paquete(operacion);
+	agregar_a_paquete(paquete, &valor_encontrado, sizeof(int));
+	enviar_paquete(paquete, cliente_fd);
+	eliminar_paquete(paquete);
+}
+
+
+void enviar_tam_pagina(int tam , int cliente_fd){
+	t_paquete* paquete = crear_paquete(MANDAME_PAGINA);
+	agregar_a_paquete(paquete, &tam, sizeof(int));
+	enviar_paquete(paquete, cliente_fd);
+	eliminar_paquete(paquete);
 }
 
 

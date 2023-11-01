@@ -32,6 +32,7 @@ void iniciar_recurso(){
 	recibi_archivo=false;
 	hayInterrupcion = false;
 	sem_init(&contador_instruccion, 0,0);
+	sem_init(&contador_esperando_mov,0,0);
 	instruccion_a_realizar= malloc(sizeof(t_instruccion));
 	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	//sem_init(&instruccion_ejecutando, 0,1);
@@ -75,7 +76,8 @@ void procesar_conexion(void *conexion1){
 	int *conexion = (int*)conexion1;
 	int cliente_fd = *conexion;
 	t_list* lista = list_create();
-
+	t_list* paquete1;
+	int* auxiliar2;
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
 
@@ -118,6 +120,23 @@ void procesar_conexion(void *conexion1){
 			break;
 		case CPU_ENVIA_A_MEMORIA:
 			enviar_mensaje("hola capo", conexion_memoria);
+			break;
+		case MANDAME_PAGINA:
+			paquete1= recibir_paquete(cliente_fd);
+			auxiliar2= list_get(paquete1,0);
+			tamanio_pagina= *auxiliar2;
+			log_info(logger, "me llego el tamanio %i",tamanio_pagina);
+			break;
+		case ENVIO_MOV_IN:
+			paquete1= recibir_paquete(cliente_fd);
+			auxiliar2 = list_get(paquete1,0);
+			int *valor_aux2 = list_get(paquete1,1);
+			marco = *valor_aux2;
+
+			log_info(logger, "el valor registro %i",*auxiliar2);
+			registro_por_mov = *auxiliar2;
+			sem_post(&contador_esperando_mov);
+
 			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
@@ -285,6 +304,7 @@ void generar_conexion_memoria(){
 	pthread_t conexion_memoria_hilo_cpu;
 	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
 	pthread_create(&conexion_memoria_hilo_cpu,NULL,(void*) procesar_conexion,(void *)&conexion_memoria);
+	enviar_mensaje_instrucciones("mandame las instrucciones plz ",conexion_memoria,MANDAME_PAGINA);
 }
 /*
 void atendiendo_pedido(int cliente_fd){
@@ -363,6 +383,17 @@ void solicitar_instruccion_ejecutar_segun_pc(int pc,int pid){
 
 }
 
+t_traduccion* traducir_a_direccion_fisica(int dir_logica){
+
+	t_traduccion *valor_traducido = malloc(sizeof(t_traduccion));
+	int nro_pagina =  floor(dir_logica / tamanio_pagina);
+	valor_traducido->nro_pagina= nro_pagina;
+	int desplazamiento = dir_logica - nro_pagina * tamanio_pagina;
+	valor_traducido->desplazamiento = desplazamiento;
+
+	return valor_traducido;
+}
+
 
 void decode(t_instruccion* instrucciones,int cliente_fd){
 	t_estrucutra_cpu registro_aux;
@@ -403,8 +434,8 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		parametro = list_get(instrucciones->parametros,0);
 		parametro2 =list_get(instrucciones->parametros,1);
 		registro_aux = devolver_registro(parametro);
-		char* valorObtenido = obtener_valor(registro_aux);
-		if(strcmp(valorObtenido,"0") ==0){
+		valor_uint1 = obtener_valor(registro_aux);
+		if(valor_uint1 ==0){
 			int valorEntero = atoi(parametro2);
 			pcb->contexto->pc =valorEntero;
 		}
@@ -420,6 +451,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
    case WAIT:
 		recurso= list_get(instrucciones->parametros,0);
 		enviar_pcb(pcb,cliente_fd,EJECUTAR_WAIT);
+		enviar_recurso_a_kernel(recurso,EJECUTAR_WAIT,cliente_fd);
 		break;
 	case SIGNAL:
 		recurso = list_get(instrucciones->parametros,0);
@@ -427,9 +459,42 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		enviar_mensaje(recurso,cliente_fd);
 		break;
 	case MOV_IN:
+		parametro= list_get(instrucciones->parametros,0);
+		parametro2= list_get(instrucciones->parametros,1);
+		valor_int = atoi(parametro2);
+		t_traduccion* traducido = traducir_a_direccion_fisica(valor_int);
+		enviar_traduccion(traducido,ENVIO_MOV_IN);
+		sem_wait(&contador_esperando_mov);
+
+		if(marco ==-1){
+			pcb->contexto->pc-1;
+			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
+			enviar_pagina_a_kernel(traducido,PAGE_FAULT, cliente_fd);
+			hayInterrupcion=true;
+		}else{
+			registro_aux = devolver_registro(parametro);
+			valor_uint1 = (uint32_t) registro_por_mov;
+			setear(registro_aux, valor_uint1);
+		}
 		log_info(logger_consola_cpu,"entendi el mensaje MOV_IN");
 		break;
 	case MOV_OUT:
+		parametro= list_get(instrucciones->parametros,0);
+		parametro2= list_get(instrucciones->parametros,1);
+		valor_int = atoi(parametro);
+
+		registro_aux = devolver_registro(parametro2);
+		valor_uint1 = obtener_valor(registro_aux);
+		valor_int = (int) valor_uint1;
+
+		t_traduccion* traducido2 = traducir_a_direccion_fisica(valor_int);
+		enviar_traduccion_mov_out(traducido2,ENVIO_MOV_OUT,valor_int);
+		if(marco ==-1){
+			pcb->contexto->pc-1;
+			enviar_pcb(pcb,cliente_fd,PAGE_FAULT);
+			enviar_pagina_a_kernel(traducido,PAGE_FAULT, cliente_fd);
+			hayInterrupcion=true;
+		}
 		log_info(logger_consola_cpu,"entendi el mensaje MOV_OUT");
 		break;
 	case F_OPEN:
@@ -448,6 +513,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_f_close(parametro,cliente_fd,EJECUTAR_F_CLOSE);
 		break;
+
 	case F_SEEK:
 		hayInterrupcion = true;
 		log_info(logger_consola_cpu,"entendi el mensaje F_SEEK");
@@ -498,6 +564,20 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 	instruccion_ejecutando= false;
 }
 
+void enviar_recurso_a_kernel(char* recurso,op_code operacion,int cliente_fd){
+	t_paquete* paquete = crear_paquete(operacion);
+	agregar_a_paquete(paquete, recurso, strlen(recurso)+1);
+	enviar_paquete(paquete, cliente_fd);
+	eliminar_paquete(paquete);
+}
+
+void enviar_pagina_a_kernel(t_traduccion* traducido ,op_code operacion , int cliente_fd){
+	t_paquete* paquete = crear_paquete(operacion);
+	agregar_a_paquete(paquete, &(traducido->nro_pagina),sizeof(int));
+	enviar_paquete(paquete, cliente_fd);
+	eliminar_paquete(paquete);
+}
+
 void setear(t_estrucutra_cpu pos, uint32_t valor) {
     switch(pos) {
         case AX: pcb->contexto->registros_cpu->ax = valor; break;
@@ -508,6 +588,23 @@ void setear(t_estrucutra_cpu pos, uint32_t valor) {
     }
 }
 
+
+void enviar_traduccion(t_traduccion* traducido,op_code operacion){
+	t_paquete* paquete = crear_paquete(operacion);
+	agregar_a_paquete(paquete, &(traducido->nro_pagina), sizeof(int));
+	agregar_a_paquete(paquete, &(traducido->desplazamiento), sizeof(int));
+	enviar_paquete(paquete, conexion_memoria);
+	eliminar_paquete(paquete);
+}
+
+void enviar_traduccion_mov_out(t_traduccion* traducido,op_code operacion,int valor_int){
+	t_paquete* paquete = crear_paquete(operacion);
+	agregar_a_paquete(paquete, &(traducido->nro_pagina), sizeof(int));
+	agregar_a_paquete(paquete, &(traducido->desplazamiento), sizeof(int));
+	agregar_a_paquete(paquete, &valor_int, sizeof(int));
+	enviar_paquete(paquete, conexion_memoria);
+	eliminar_paquete(paquete);
+}
 
 void enviar_sleep(int tiempo,int conexion,op_code operacion){
 	t_paquete * paquete = crear_paquete(operacion);
@@ -562,6 +659,9 @@ void enviar_f_truncate(char* archivo, int tamanio, int conexion, op_code operaci
     enviar_paquete(paquete, conexion);
     eliminar_paquete(paquete);
 }
+
+
+
 
 
 //transformar en enum

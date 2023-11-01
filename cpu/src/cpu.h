@@ -22,6 +22,13 @@ t_log* logger_instruciones;
 t_list* instrucciones ;
 bool recibi_archivo;
 
+int tamanio_pagina;
+
+typedef struct{
+	int nro_pagina;
+	int desplazamiento;
+}t_traduccion;
+
 int conexion_memoria;
 char *ip_memoria;
 char *puerto_memoria;
@@ -30,6 +37,8 @@ char *puerto_escucha_interrupt;
 
 bool instruccion_ejecutando;
 
+int registro_por_mov;
+int marco;
 
 t_log *logger_consola_cpu;
 bool hayInterrupcion;
@@ -41,6 +50,7 @@ bool hay_desalojo;
 
 sem_t contador_recibiendoArchivo;
 sem_t contador_instruccion;
+sem_t contador_esperando_mov;
 
 void obtener_configuracion();
 void terminar_programa();
@@ -74,6 +84,9 @@ void enviar_f_seek(char* archivo, int offset, int conexion, op_code operacion);
 void enviar_f_read(char* archivo, int size, int conexion, op_code operacion);
 void enviar_f_write(char* archivo, int size, int conexion, op_code operacion);
 void enviar_f_truncate(char* archivo, int tamanio, int conexion, op_code operacion);
-
+void enviar_traduccion(t_traduccion* ,op_code );
+void enviar_traduccion_mov_out(t_traduccion* ,op_code ,int);
+void enviar_recurso_a_kernel(char* ,op_code ,int );
+void enviar_pagina_a_kernel(t_traduccion*  ,op_code  , int );
 
 #endif /* SRC_CPU_H_ */
