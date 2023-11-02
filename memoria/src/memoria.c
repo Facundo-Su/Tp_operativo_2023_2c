@@ -27,6 +27,7 @@ int main(int argc, char* argv[]) {
 
 void iniciar_recursos(){
 	lista_instrucciones = list_create();
+	lista_tabla_paginas = list_create();
 	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
 }
 
@@ -151,6 +152,7 @@ void procesar_conexion(int cliente_fd){
 
 
 	                cargar_lista_instruccion(ruta,size,prioridad,*pid);
+	                crear_proceso(*pid, *size);
 	                break;
 	            case MANDAME_PAGINA:
 	            	recibir_mensaje(cliente_fd);
@@ -187,6 +189,7 @@ void procesar_conexion(int cliente_fd){
 	            	t_pcb* pcb_recibido = desempaquetar_pcb(paquete);
 	            	//valor_pid= recibir_pcb(cliente_fd);
 	            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",pcb_recibido->pid);
+	            	finalizar_proceso(pcb_recibido->pid);
 	            	//realizar_proceso_finalizar(valor_pid->pid);
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
@@ -378,6 +381,49 @@ op_instrucciones asignar_cod_instruccion(char* instruccion){
 	    }
 
 }
+void crear_proceso(int pid, int size){
+	t_tabla_paginas * tabla_paginas = inicializar_paginas(pid, size);
+	list_add(lista_tabla_paginas,tabla_paginas);
 
+
+}
+
+t_tabla_paginas *inicializar_paginas(int pid, int size){
+	t_tabla_paginas* tabla_paginas = malloc(sizeof(t_tabla_paginas));
+	tabla_paginas->pid = pid;
+	tabla_paginas->tamanio_proceso = size;
+	tabla_paginas->paginas_necesarias = (size + tam_pagina -1)/tam_pagina;
+	tabla_paginas->paginas= list_create;
+	log_info(logger, "Se creo la tabla de paginas con el PID %i", pid);
+	return tabla_paginas;
+}
+
+void finalizar_proceso(int pid){
+	t_list_iterator* iterador = list_iterator_create(lista_tabla_paginas);
+	int j =0;
+	while(list_iterator_has_next(iterador)){
+		t_tabla_paginas* tabla_paginas = (t_tabla_paginas*)list_iterator_next(iterador);
+		if( pid == tabla_paginas->pid){
+			list_remove(lista_tabla_paginas,j);
+			liberar_tabla_paginas(tabla_paginas);
+			log_info(logger, "Se elimino la tabla de paginas con el PID %i", pid);
+		}
+		j++;
+	}
+	list_iterator_destroy(iterador);
+}
+void liberar_tabla_paginas(t_tabla_paginas *tabla){
+	//list_destroy_and_destroy_elements(tabla->paginas, liberar_paginas);
+	free(tabla->paginas_necesarias);
+	free(tabla->pid);
+	free(tabla->tamanio_proceso);
+	free(tabla);
+}
+
+void liberar_paginas(void *pagina) {
+    free(pagina);
+}
+
+void algoritmo_de_remplazo(){}
 
 

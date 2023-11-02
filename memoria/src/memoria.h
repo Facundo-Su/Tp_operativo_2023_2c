@@ -12,6 +12,7 @@
 t_log* logger;
 t_config* config;
 t_log * logger_consola_memoria;
+t_list * lista_tabla_paginas;
 
 typedef enum{
 	FIFO,
@@ -19,20 +20,26 @@ typedef enum{
 }t_algoritmo;
 
 typedef struct {
-    uint32_t pos_en_swap;
-    bool P;
-    bool M;
+	int num_marco;
+    int P;
+    int M;
+    int pos_en_swap;
 } t_marco;
 
 typedef struct {
-    t_marco* marcos;
-    uint32_t num_marcos;
+	int pid;
+    t_list * paginas;
+    int tamanio_proceso;
+    int paginas_necesarias;
+
 }t_tabla_paginas;
 
 typedef struct{
-	uint32_t tamanio;
-	uint32_t nro_marco;
-};
+	void * tam_memoria;
+	t_list * marcos_asignados;
+	int tamanio_marcos;
+	int cantidad_marcos;
+}t_memoria;
 
 
 typedef struct{
@@ -71,7 +78,11 @@ op_instrucciones asignar_cod_instruccion(char* );
 bool encontrar_instrucciones(void * );
 char* obtener_nombre_instruccion(op_instrucciones ) ;
 void enviar_tam_pagina(int  , int );
+void liberar_paginas(void *);
+t_tabla_paginas * inicializar_paginas(int , int );
+void finalizar_proceso(int );
 enviar_registro_leido_mov_in(int  , op_code ,int );
+void liberar_tabla_paginas(t_tabla_paginas *);
 
 
 #endif /* KERNEL_H_ */
