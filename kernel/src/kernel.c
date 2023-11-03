@@ -12,6 +12,22 @@ int main(int argc, char **argv){
 
     obtener_configuracion();
     iniciar_recurso();
+    int i =0;
+	lista_recursos = list_create();
+
+    while(recursos_config[i]!=NULL){
+    	t_recurso* recurso = malloc(sizeof(t_recurso));
+    	recurso->nombre = recursos_config[i];
+    	recurso->instancias = atoi(instancias_recursos_config[i]);
+    	recurso->cola_bloqueados = queue_create();
+    	list_add(lista_recursos,recurso);
+    	t_recurso* recurso1 = list_get(lista_recursos,i);
+    	log_info(logger,"Cree el recurso %s", recurso->nombre);
+
+    	t_recurso* aux = list_get(lista_recursos,i);
+    	log_info(logger,"la instacia de recurso es %i", aux->instancias);
+    	i++;
+    }
     iniciar_consola();
 
     //envio de mensajes
@@ -274,20 +290,10 @@ void iniciar_recurso(){
 	cola_new = queue_create();
 	cola_ready = queue_create();
 	pcb_en_ejecucion = list_create();
-	lista_recursos = list_create();
+
     lista_recursos_pcb = list_create();
     lista_bloqueados = list_create();
-    int i =0;
-    while(recursos_config[i]!=NULL){
-    	t_recurso* recurso = malloc(sizeof(t_recurso));
-    	recurso->nombre = recursos_config[i];
-    	recurso->instancias = atoi(instancias_recursos_config[i]);
-    	recurso->cola_bloqueados = queue_create();
-    	list_add(lista_recursos,recurso);
-    	t_recurso* recurso1 = list_get(lista_recursos,i);
-    	log_info(logger,"Cree el recurso %s", recurso->nombre);
-    	i++;
-    }
+
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, 10);
 	sem_init(&mutex_cola_new, 0, 1);
@@ -719,12 +725,13 @@ void ejecutar_wait(char*nombre,t_pcb*pcb){
 				log_info(logger,"EJECUTANDO WAIT %d" ,recurso->instancias);
 				list_replace(lista_recursos,j,recurso);
 				agregar_recurso_pcb(pcb->pid,nombre);
+				break;
 			}else{
 				pcb->estado = WAITING;
 				queue_push(recurso->cola_bloqueados  ,pcb);
 				list_add(lista_bloqueados,pcb);
 				log_info(logger,"Se agrego a la cola de bloqueados el pid %s", pcb->pid);
-
+				break;
 			}
 		}
 		j++;
@@ -840,11 +847,14 @@ void quitar_recurso_pcb(int pid, char*nombre){
 }
 
 void liberar_recursos(int pid){
+
 	t_list_iterator* iterador = list_iterator_create(lista_recursos);
+
 		int j=0;
 		while(list_iterator_has_next(iterador)){
 			t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
 			t_recurso_pcb * recurso_pcb = buscar_recurso_pcb(recurso->nombre,pid);
+
 			if(recurso_pcb != NULL){
 				int instancias = recurso_pcb->instancias;
 				while(instancias!=0){
