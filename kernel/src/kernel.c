@@ -12,20 +12,6 @@ int main(int argc, char **argv){
 
     obtener_configuracion();
     iniciar_recurso();
-    lista_recursos = list_create();
-    	t_recurso * nuevo_recurso = malloc(sizeof(t_recurso));
-    	nuevo_recurso->instancias = 3;
-    	nuevo_recurso->nombre = strdup("RA");
-    	nuevo_recurso->cola_bloqueados = queue_create();
-    	//sem_init(&nuevo_recurso->sem_recurso,0,0);
-
-    	log_info(logger,"El nombre del nuevo recurso es %s",nuevo_recurso->nombre);
-    	//nuevo_recurso->cola_bloqueados = queue_create();
-
-    	list_add(lista_recursos,nuevo_recurso);
-
-    	t_recurso *recurso = list_get(lista_recursos,0);
-    	log_info(logger,"El nombre del recurso es %s",recurso->nombre);
     iniciar_consola();
 
     //envio de mensajes
@@ -68,26 +54,14 @@ void procesar_conexion(void *conexion1){
 				sem_post(&contador_cola_ready);
 				break;
 			case EJECUTAR_WAIT:
-//				paquete = recibir_paquete(cliente_fd);
-//				pcb_aux = desempaquetar_pcb(paquete);
-				char * nombre_recurso = "RB";//obtener_mensaje(cliente_fd);
-	//			if(recurso != NULL){
-	//				log_info(logger,"esta vaciooooooooooooooooooo");
-	//			}
-				int instacias;
+				paquete = recibir_paquete(cliente_fd);
+				char *nombre_recurso =list_get(paquete,0);
 				ejecutar_wait(nombre_recurso,pcb_aux);
 				break;
 			case EJECUTAR_SIGNAL:
-//				paquete = recibir_paquete(cliente_fd);
-//				pcb_aux = desempaquetar_pcb(paquete);
-				char * nombre_recurso2 = "RA";// obtener_mensaje(cliente_fd);
-				t_recurso *recurso3 = list_get(lista_recursos,0);
-				instacias= recurso3->instancias;
-				log_info(logger,"ejecutando signal %i",instacias);
+				paquete = recibir_paquete(cliente_fd);
+				char * nombre_recurso2 =list_get(paquete,0);
 				ejecutar_signal(nombre_recurso2,pcb_aux);
-				t_recurso *recurso4 = list_get(lista_recursos,0);
-				instacias= recurso4->instancias;
-				log_info(logger,"ejecutando signal %i",instacias);
 				break;
 			case EJECUTAR_F_TRUNCATE:
 			    log_info(logger, "me llegó la instrucción ejecutar ftruncate del CPU");
@@ -300,9 +274,20 @@ void iniciar_recurso(){
 	cola_new = queue_create();
 	cola_ready = queue_create();
 	pcb_en_ejecucion = list_create();
+	lista_recursos = list_create();
     lista_recursos_pcb = list_create();
     lista_bloqueados = list_create();
-	log_info(logger,"llegue");
+    int i =0;
+    while(recursos_config[i]!=NULL){
+    	t_recurso* recurso = malloc(sizeof(t_recurso));
+    	recurso->nombre = recursos_config[i];
+    	recurso->instancias = atoi(instancias_recursos_config[i]);
+    	recurso->cola_bloqueados = queue_create();
+    	list_add(lista_recursos,recurso);
+    	t_recurso* recurso1 = list_get(lista_recursos,i);
+    	log_info(logger,"Cree el recurso %s", recurso->nombre);
+    	i++;
+    }
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, 10);
 	sem_init(&mutex_cola_new, 0, 1);
@@ -313,7 +298,7 @@ void iniciar_recurso(){
 	sem_init(&proceso_desalojo,0,0);
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
     pthread_t deadlock;
-    pthread_create(&deadlock,NULL,(void*) detect_deadlock,NULL);
+    //pthread_create(&deadlock,NULL,(void*) detect_deadlock,NULL);
 }
 
 void enviar_mensaje_kernel() {
@@ -688,10 +673,9 @@ void obtener_configuracion(){
     puerto_cpu_interrupt = config_get_string_value(config, "PUERTO_CPU_INTERRUPT");
     quantum = config_get_int_value(config, "QUANTUM");
     grado_multiprogramacion_ini = config_get_int_value(config, "GRADO_MULTIPROGRAMACION_INI");
-    //recursos = config_get_array_value(config, "RECURSOS");
-    char **instancias = config_get_array_value(config, "INSTANCIAS_RECURSOS");
-    instancias_recursos = string_to_int_array(instancias);
-    string_array_destroy(instancias);
+    recursos_config = config_get_array_value(config, "RECURSOS");
+    instancias_recursos_config = config_get_array_value(config, "INSTANCIAS_RECURSOS");
+
 }
 
 void asignar_algoritmo(char *algoritmo){
@@ -739,7 +723,7 @@ void ejecutar_wait(char*nombre,t_pcb*pcb){
 				pcb->estado = WAITING;
 				queue_push(recurso->cola_bloqueados  ,pcb);
 				list_add(lista_bloqueados,pcb);
-				log_info(logger,"Se agrego a la cola de bloqueados ");
+				log_info(logger,"Se agrego a la cola de bloqueados el pid %s", pcb->pid);
 
 			}
 		}
@@ -813,7 +797,6 @@ void agregar_recurso_pcb(int pid, char*nombre){
 		t_recurso_pcb* recurso = (t_recurso_pcb*)list_iterator_next(iterador);
 		if((strcmp(nombre,recurso->nombre) == 0) && (pid == recurso->pid)){
 			encontro = 1;
-			log_info(logger,"ENCONTRO EL RECURSO AG");
 			recurso->instancias++;
 			list_replace(lista_recursos_pcb, j, recurso);
 		}
@@ -881,6 +864,8 @@ void liberar_recursos(int pid){
 		}
 		list_iterator_destroy(iterador);
 }
+
+
 bool can_allocate(int pid, int work[]) {
     for (int i = 0; i < list_size(lista_recursos_pcb); i++) {
         t_recurso_pcb* recurso_pcb = list_get(lista_recursos_pcb, i);

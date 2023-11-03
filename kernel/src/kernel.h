@@ -18,6 +18,8 @@ int conexion_memoria;
 int conexion_file_system;
 int conexion_cpu;
 int conexion_cpu_interrupt;
+char ** recursos_config;
+char ** instancias_recursos_config;
 //estructura de algoritmo
 
 typedef enum{
