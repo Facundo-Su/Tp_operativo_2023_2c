@@ -12,6 +12,16 @@ int main(int argc, char **argv){
 
     obtener_configuracion();
     iniciar_recurso();
+    lista_recursos = list_create();
+    int i =0;
+    while(recursos_config[i]!=NULL){
+    	t_recurso* recurso = malloc(sizeof(t_recurso));
+    	recurso->nombre = recursos_config[i];
+    	recurso->instancias = atoi(instancias_recursos_config[i]);
+    	recurso->cola_bloqueados = queue_create();
+    	list_add(lista_recursos,recurso);
+    	i++;
+    }
     iniciar_consola();
 
     //envio de mensajes
@@ -274,20 +284,8 @@ void iniciar_recurso(){
 	cola_new = queue_create();
 	cola_ready = queue_create();
 	pcb_en_ejecucion = list_create();
-	lista_recursos = list_create();
     lista_recursos_pcb = list_create();
     lista_bloqueados = list_create();
-    int i =0;
-    while(recursos_config[i]!=NULL){
-    	t_recurso* recurso = malloc(sizeof(t_recurso));
-    	recurso->nombre = recursos_config[i];
-    	recurso->instancias = atoi(instancias_recursos_config[i]);
-    	recurso->cola_bloqueados = queue_create();
-    	list_add(lista_recursos,recurso);
-    	t_recurso* recurso1 = list_get(lista_recursos,i);
-    	log_info(logger,"Cree el recurso %s", recurso->nombre);
-    	i++;
-    }
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, 10);
 	sem_init(&mutex_cola_new, 0, 1);
@@ -297,7 +295,6 @@ void iniciar_recurso(){
 	sem_init(&contador_cola_ready,0,0);
 	sem_init(&proceso_desalojo,0,0);
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
-    pthread_t deadlock;
     //pthread_create(&deadlock,NULL,(void*) detect_deadlock,NULL);
 }
 
@@ -758,8 +755,8 @@ void ejecutar_signal(char*nombre,t_pcb*pcb){
 				quitar_recurso_pcb(pcb->pid,nombre);
 				if(!queue_is_empty(recurso->cola_bloqueados)){
 					t_pcb* pcb_bloqueado = queue_pop(recurso->cola_bloqueados);
-					agregar_a_cola_ready(pcb_bloqueado);
 					list_remove_element(lista_bloqueados,pcb_bloqueado);
+					agregar_a_cola_ready(pcb_bloqueado);
 				}
 			}else{
 				enviar_pcb(pcb,conexion_memoria,FINALIZAR);
@@ -865,72 +862,4 @@ void liberar_recursos(int pid){
 		list_iterator_destroy(iterador);
 }
 
-
-bool can_allocate(int pid, int work[]) {
-    for (int i = 0; i < list_size(lista_recursos_pcb); i++) {
-        t_recurso_pcb* recurso_pcb = list_get(lista_recursos_pcb, i);
-        if (recurso_pcb->pid == pid) {
-            int index = -1;
-            for (int j = 0; j < list_size(lista_recursos); j++) {
-                t_recurso* recurso = list_get(lista_recursos, j);
-                if (strcmp(recurso->nombre, recurso_pcb->nombre) == 0) {
-                    index = j;
-                    break;
-                }
-            }
-            if (index == -1 || work[index] < recurso_pcb->instancias) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-void detect_deadlock() {
-    int n_resources = list_size(lista_recursos);
-    int work[n_resources];
-
-    for (int i = 0; i < n_resources; i++) {
-        t_recurso* recurso = list_get(lista_recursos, i);
-        work[i] = recurso->instancias;
-    }
-
-    bool progress = true;
-    while (progress) {
-        progress = false;
-        for (int i = 0; i < list_size(lista_bloqueados); i++) {
-            int pid = list_get(lista_bloqueados, i);
-            if (can_allocate(pid, work)) {
-                for (int j = 0; j < list_size(lista_recursos_pcb); j++) {
-                    t_recurso_pcb* recurso_pcb = list_get(lista_recursos_pcb, j);
-                    if (recurso_pcb->pid == pid) {
-                        int index = -1;
-                        for (int k = 0; k < n_resources; k++) {
-                            t_recurso* recurso = list_get(lista_recursos, k);
-                            if (strcmp(recurso->nombre, recurso_pcb->nombre) == 0) {
-                                index = k;
-                                break;
-                            }
-                        }
-                        if (index != -1) {
-                            work[index] += recurso_pcb->instancias;
-                        }
-                    }
-                }
-                list_remove(lista_bloqueados, i);
-                progress = true;
-            }
-        }
-    }
-
-    printf("Procesos en deadlock: ");
-    if (list_is_empty(lista_bloqueados)) {
-        printf("Ninguno");
-    } else {
-        for (int i = 0; i < list_size(lista_bloqueados); i++) {
-            printf("%d ", list_get(lista_bloqueados, i));
-        }
-    }
-    printf("\n");
-}
 

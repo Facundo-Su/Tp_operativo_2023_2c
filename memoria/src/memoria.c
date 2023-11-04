@@ -414,9 +414,6 @@ void finalizar_proceso(int pid){
 }
 void liberar_tabla_paginas(t_tabla_paginas *tabla){
 	//list_destroy_and_destroy_elements(tabla->paginas, liberar_paginas);
-	free(tabla->paginas_necesarias);
-	free(tabla->pid);
-	free(tabla->tamanio_proceso);
 	free(tabla);
 }
 
@@ -425,5 +422,19 @@ void liberar_paginas(void *pagina) {
 }
 
 void algoritmo_de_remplazo(){}
+
+void inicializar_memoria(){
+	memoria = malloc(sizeof(t_memoria));
+	memoria->tam_memoria= malloc(tam_memoria);
+	memoria->tamanio_marcos = tam_pagina;
+	memoria->cantidad_marcos = tam_memoria/tam_pagina;
+	memoria->marcos_asignados = list_create();
+}
+void finalizar_memoria(){
+	free(memoria->tam_memoria);
+	list_destroy_and_destroy_elements(memoria->marcos_asignados, free);
+	free(memoria);
+}
+
 
 
