@@ -13,6 +13,7 @@ t_log* logger;
 t_config* config;
 t_log * logger_consola_memoria;
 t_list * lista_tabla_paginas;
+t_memoria memoria;
 
 typedef enum{
 	FIFO,
