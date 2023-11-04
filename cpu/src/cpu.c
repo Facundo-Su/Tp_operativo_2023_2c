@@ -414,6 +414,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		registro_aux = devolver_registro(parametro);
 		setear(registro_aux,valor_uint1);
 		//ADormir(x segundo);
+		log_info(logger,"entendi el mensaje SET setie al registro %s , el valor [%u]",parametro,valor_uint1);
 		break;
 	case SUB:
 		parametro= list_get(instrucciones->parametros,0);
@@ -449,14 +450,18 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		enviar_sleep(tiempo,cliente_fd,EJECUTAR_SLEEP);
 		break;
    case WAIT:
+	    hayInterrupcion =true;
 		recurso= list_get(instrucciones->parametros,0);
-		enviar_pcb(pcb,cliente_fd,EJECUTAR_WAIT);
+		recurso = strtok(recurso, "\n");
+		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_recurso_a_kernel(recurso,EJECUTAR_WAIT,cliente_fd);
+		log_info(logger,"entendi el mensaje WAIT el recurso es %s",recurso);
 		break;
 	case SIGNAL:
 		recurso = list_get(instrucciones->parametros,0);
 		enviar_pcb(pcb,cliente_fd,EJECUTAR_SIGNAL);
 		enviar_mensaje(recurso,cliente_fd);
+		log_info(logger,"entendi el mensaje SIGNAL el recurso es  %s",recurso);
 		break;
 	case MOV_IN:
 		parametro= list_get(instrucciones->parametros,0);

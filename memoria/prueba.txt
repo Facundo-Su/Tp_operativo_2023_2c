@@ -1,2 +1,6 @@
+<<<<<<< HEAD
 SLEEP 10000
+=======
+WAIT RA
+>>>>>>> f8e4c07e2178865bac6d7d6dee63e1ab417926fd
 EXIT
