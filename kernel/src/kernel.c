@@ -63,11 +63,11 @@ void procesar_conexion(void *conexion1){
 				agregar_a_cola_ready(pcb_aux);
 				sem_post(&contador_cola_ready);
 				break;
+				//TODO
 			case EJECUTAR_WAIT:
 				paquete = recibir_paquete(cliente_fd);
 				char *nombre_recurso =list_get(paquete,0);
 				ejecutar_wait(nombre_recurso,pcb_aux);
-				sem_post(&contador_ejecutando_cpu);
 				break;
 			case EJECUTAR_SIGNAL:
 				paquete = recibir_paquete(cliente_fd);
@@ -451,6 +451,7 @@ void agregar_a_cola_ready(t_pcb* pcb){
 void agregar_a_inicio_cola_ready(t_pcb* pcb){
 	sem_wait(&mutex_cola_ready);
 	list_add_in_index(cola_ready,0,pcb);
+
 	pcb->estado=READY;
 	sem_post(&mutex_cola_ready);
 	log_info(logger,"El proceso [%d] fue agregado a la cola ready",pcb->pid);
@@ -734,8 +735,7 @@ void ejecutar_wait(char*nombre,t_pcb*pcb){
 				log_info(logger,"EJECUTANDO WAIT %d" ,recurso->instancias);
 				list_replace(lista_recursos,j,recurso);
 				agregar_recurso_pcb(pcb->pid,nombre);
-				agregar_a_inicio_cola_ready(pcb);
-				sem_post(&contador_cola_ready);
+				enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
 				break;
 			}else{
 				pcb->estado = WAITING;
