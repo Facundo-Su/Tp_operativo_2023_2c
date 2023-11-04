@@ -21,6 +21,7 @@ int conexion_cpu_interrupt;
 char ** recursos_config;
 char ** instancias_recursos_config;
 //estructura de algoritmo
+bool detener;
 
 typedef enum{
 	FIFO,
@@ -80,8 +81,7 @@ sem_t grado_multiprogramacion;
 sem_t contador_agregando_new;
 sem_t contador_cola_ready;
 sem_t proceso_desalojo;
-
-
+sem_t cont_detener_planificacion;
 
 
 char *puerto_memoria;
@@ -91,6 +91,7 @@ char *puerto_cpu_interrupt;
 int quantum;
 int grado_multiprogramacion_ini;
 t_planificador planificador;
+bool detener;
 
 int *instancias_recursos;
 
@@ -153,6 +154,7 @@ t_recurso_pcb* buscar_recurso_pcb(char*,int );
 void liberar_recursos(int );
 void detect_deadlock();
 bool can_allocate(int pid, int work[]);
+void detener_planificacion_corto_largo();
 
 
 #endif /* KERNEL_H_ */

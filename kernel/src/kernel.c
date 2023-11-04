@@ -12,28 +12,14 @@ int main(int argc, char **argv){
 
     obtener_configuracion();
     iniciar_recurso();
-<<<<<<< HEAD
     lista_recursos = list_create();
     int i =0;
-=======
-    int i =0;
-	lista_recursos = list_create();
-
->>>>>>> f8e4c07e2178865bac6d7d6dee63e1ab417926fd
     while(recursos_config[i]!=NULL){
     	t_recurso* recurso = malloc(sizeof(t_recurso));
     	recurso->nombre = recursos_config[i];
     	recurso->instancias = atoi(instancias_recursos_config[i]);
     	recurso->cola_bloqueados = queue_create();
     	list_add(lista_recursos,recurso);
-<<<<<<< HEAD
-=======
-    	t_recurso* recurso1 = list_get(lista_recursos,i);
-    	log_info(logger,"Cree el recurso %s", recurso->nombre);
-
-    	t_recurso* aux = list_get(lista_recursos,i);
-    	log_info(logger,"la instacia de recurso es %i", aux->instancias);
->>>>>>> f8e4c07e2178865bac6d7d6dee63e1ab417926fd
     	i++;
     }
     iniciar_consola();
@@ -87,7 +73,6 @@ void procesar_conexion(void *conexion1){
 				paquete = recibir_paquete(cliente_fd);
 				char * nombre_recurso2 =list_get(paquete,0);
 				ejecutar_signal(nombre_recurso2,pcb_aux);
-				sem_post(&contador_ejecutando_cpu);
 				break;
 			case EJECUTAR_F_TRUNCATE:
 			    log_info(logger, "me llegó la instrucción ejecutar ftruncate del CPU");
@@ -254,7 +239,6 @@ void iniciar_consola(){
 				int prioridad = atoi(readline(">"));
 
 				iniciar_proceso(ruta,size,prioridad,contador_pid);
-				free(ruta);
 				break;
 			case '2':
 				log_info(logger_consola, "ingrese pid");
@@ -266,7 +250,7 @@ void iniciar_consola(){
 				iniciar_planificacion();
 				break;
 			case '4':
-				detener_planificacion();
+				detener_planificacion_corto_largo();
 				break;
 			case '5':
 				modificar_grado_multiprogramacion();
@@ -300,15 +284,8 @@ void iniciar_recurso(){
 	cola_new = queue_create();
 	cola_ready = queue_create();
 	pcb_en_ejecucion = list_create();
-<<<<<<< HEAD
     lista_recursos_pcb = list_create();
     lista_bloqueados = list_create();
-=======
-
-    lista_recursos_pcb = list_create();
-    lista_bloqueados = list_create();
-
->>>>>>> f8e4c07e2178865bac6d7d6dee63e1ab417926fd
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, 10);
 	sem_init(&mutex_cola_new, 0, 1);
@@ -318,6 +295,8 @@ void iniciar_recurso(){
 	sem_init(&contador_cola_ready,0,0);
 	sem_init(&proceso_desalojo,0,0);
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
+    sem_init(&cont_detener_planificacion,0,0);
+    detener = false;
     //pthread_create(&deadlock,NULL,(void*) detect_deadlock,NULL);
 }
 
@@ -468,6 +447,14 @@ void agregar_a_cola_ready(t_pcb* pcb){
 	sem_post(&mutex_cola_ready);
 	log_info(logger,"El proceso [%d] fue agregado a la cola ready",pcb->pid);
 }
+
+void agregar_a_inicio_cola_ready(t_pcb* pcb){
+	sem_wait(&mutex_cola_ready);
+	list_add_in_index(cola_ready,0,pcb);
+	pcb->estado=READY;
+	sem_post(&mutex_cola_ready);
+	log_info(logger,"El proceso [%d] fue agregado a la cola ready",pcb->pid);
+}
 t_pcb* quitar_de_cola_ready(){
 	sem_wait(&mutex_cola_ready);
 	t_pcb* pcb=queue_pop(cola_ready);
@@ -478,6 +465,10 @@ t_pcb* quitar_de_cola_ready(){
 
 void planificador_largo_plazo(){
 	while(1){
+		if(detener){
+			//sem_wait(&cont_detener_planificacion);
+			break;
+		}
 		sem_wait(&contador_agregando_new);
 		sem_wait(&grado_multiprogramacion);
 		t_pcb* pcb =quitar_de_cola_new();
@@ -490,6 +481,11 @@ void planificador_largo_plazo(){
 //TODO MOTIVO DE QUE DESPUES DE INICIAR PLANIFICACION NO ME DEJA INGRESAR OTRA OPERACION
 void planificador_corto_plazo(){
 	while(1){
+		if(detener){
+			//sem_wait(&cont_detener_planificacion);
+			break;
+		}
+
 		log_info(logger,"EJECUTANDO UN NUEVO PROCESO");
 		sem_wait(&contador_cola_ready);
 		//sem_wait(&contador_ejecutando_cpu);
@@ -652,7 +648,8 @@ int buscarPosicionQueEstaElPid(int valor){
 
 
 void iniciar_planificacion(){
-
+	sem_post(&cont_detener_planificacion);
+	sem_post(&cont_detener_planificacion);
 	pthread_t * hilo_corto_plazo;
 	pthread_t * hilo_largo_plazo;
 	log_info(logger_consola,"inicio el proceso de planificacion");
@@ -665,11 +662,8 @@ void iniciar_planificacion(){
 }
 
 
-void detener_planificacion(){
-
-
-
-
+void detener_planificacion_corto_largo(){
+	detener= true;
 }
 void modificar_grado_multiprogramacion(){
     terminar_programa(conexion_memoria, logger, config);
@@ -740,6 +734,8 @@ void ejecutar_wait(char*nombre,t_pcb*pcb){
 				log_info(logger,"EJECUTANDO WAIT %d" ,recurso->instancias);
 				list_replace(lista_recursos,j,recurso);
 				agregar_recurso_pcb(pcb->pid,nombre);
+				agregar_a_inicio_cola_ready(pcb);
+				sem_post(&contador_cola_ready);
 				break;
 			}else{
 				pcb->estado = WAITING;

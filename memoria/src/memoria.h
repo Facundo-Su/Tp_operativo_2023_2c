@@ -13,7 +13,7 @@ t_log* logger;
 t_config* config;
 t_log * logger_consola_memoria;
 t_list * lista_tabla_paginas;
-t_memoria memoria;
+
 
 typedef enum{
 	FIFO,
@@ -42,6 +42,7 @@ typedef struct{
 	int cantidad_marcos;
 }t_memoria;
 
+t_memoria* memoria;
 
 typedef struct{
 	int pid;
