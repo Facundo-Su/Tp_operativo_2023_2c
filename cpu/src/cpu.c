@@ -458,9 +458,11 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger,"entendi el mensaje WAIT el recurso es %s",recurso);
 		break;
 	case SIGNAL:
+	    hayInterrupcion =true;
 		recurso = list_get(instrucciones->parametros,0);
-		enviar_pcb(pcb,cliente_fd,EJECUTAR_SIGNAL);
-		enviar_mensaje(recurso,cliente_fd);
+		recurso = strtok(recurso, "\n");
+		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
+		enviar_recurso_a_kernel(recurso,EJECUTAR_SIGNAL,cliente_fd);
 		log_info(logger,"entendi el mensaje SIGNAL el recurso es  %s",recurso);
 		break;
 	case MOV_IN:

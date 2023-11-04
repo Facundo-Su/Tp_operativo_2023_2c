@@ -73,11 +73,13 @@ void procesar_conexion(void *conexion1){
 				paquete = recibir_paquete(cliente_fd);
 				char *nombre_recurso =list_get(paquete,0);
 				ejecutar_wait(nombre_recurso,pcb_aux);
+				sem_post(&contador_ejecutando_cpu);
 				break;
 			case EJECUTAR_SIGNAL:
 				paquete = recibir_paquete(cliente_fd);
 				char * nombre_recurso2 =list_get(paquete,0);
 				ejecutar_signal(nombre_recurso2,pcb_aux);
+				sem_post(&contador_ejecutando_cpu);
 				break;
 			case EJECUTAR_F_TRUNCATE:
 			    log_info(logger, "me llegó la instrucción ejecutar ftruncate del CPU");
@@ -244,6 +246,7 @@ void iniciar_consola(){
 				int prioridad = atoi(readline(">"));
 
 				iniciar_proceso(ruta,size,prioridad,contador_pid);
+				free(ruta);
 				break;
 			case '2':
 				log_info(logger_consola, "ingrese pid");
@@ -276,7 +279,6 @@ void iniciar_consola(){
 				break;
 			default:
 				log_info(logger_consola,"no corresponde a ninguno");
-				exit(2);
 		}
 		free(variable);
 
@@ -653,6 +655,9 @@ void iniciar_planificacion(){
 
 void detener_planificacion(){
 
+
+
+
 }
 void modificar_grado_multiprogramacion(){
     terminar_programa(conexion_memoria, logger, config);
@@ -661,8 +666,6 @@ void modificar_grado_multiprogramacion(){
 
 }
 void listar_proceso_estado(){
-	t_paquete * aux = crear_paquete(CPU_ENVIA_A_MEMORIA);
-	enviar_paquete(aux, conexion_cpu);
 }
 
 
@@ -716,7 +719,7 @@ void ejecutar_wait(char*nombre,t_pcb*pcb){
 	while(list_iterator_has_next(iterador)){
 		t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
 		log_info(logger,"el nombre del recurso es %s" ,nombre);
-		log_info(logger,"el nombre del recurso es %s" ,recurso->nombre);
+		log_info(logger,"el nombre del recurso a comparar es %s" ,recurso->nombre);
 		if(strcmp(nombre,recurso->nombre) == 0){
 			encontro = 1;
 			log_info(logger,"ENCONTRO EL RECURSO");
@@ -731,13 +734,24 @@ void ejecutar_wait(char*nombre,t_pcb*pcb){
 				queue_push(recurso->cola_bloqueados  ,pcb);
 				list_add(lista_bloqueados,pcb);
 				log_info(logger,"Se agrego a la cola de bloqueados el pid %s", pcb->pid);
+
 				break;
 			}
 		}
 		j++;
 	}
 	if(encontro ==0){
+		pcb->estado = TERMINATED;
+		log_pcb_info(pcb);
+		liberar_recursos(pcb->pid);
 		enviar_pcb(pcb,conexion_memoria,FINALIZAR);
+		if(!list_is_empty(pcb_en_ejecucion)){
+			list_remove(pcb_en_ejecucion,0);
+		}
+		sem_post(&grado_multiprogramacion);
+		sem_post(&contador_ejecutando_cpu);
+		sem_post(&contador_cola_ready);
+		log_info(logger,"recurso inexistente");
 	}
 	list_iterator_destroy(iterador);
 }
@@ -753,7 +767,14 @@ void ejecutar_signal(char*nombre,t_pcb*pcb){
 	while(list_iterator_has_next(iterador)){
 		t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
 		log_info(logger,"el nombre del recurso es %s" ,nombre);
-		log_info(logger,"el nombre del recurso es %s" ,recurso->nombre);
+
+		if(strcmp(nombre,recurso->nombre) ==0){
+			log_info(logger,"son lo mismo \n");
+		}else{
+			log_info(logger,"no son lo mismo \n");
+		}
+
+
 		if(strcmp(nombre,recurso->nombre) == 0){
 			encontro = 1;
 			t_recurso_pcb * recurso_pcb = buscar_recurso_pcb(nombre, pcb->pid);
@@ -769,13 +790,33 @@ void ejecutar_signal(char*nombre,t_pcb*pcb){
 					list_remove_element(lista_bloqueados,pcb_bloqueado);
 				}
 			}else{
+				pcb->estado = TERMINATED;
+				log_pcb_info(pcb);
+				liberar_recursos(pcb->pid);
 				enviar_pcb(pcb,conexion_memoria,FINALIZAR);
+				if(!list_is_empty(pcb_en_ejecucion)){
+					list_remove(pcb_en_ejecucion,0);
+				}
+				sem_post(&grado_multiprogramacion);
+				sem_post(&contador_ejecutando_cpu);
+				sem_post(&contador_cola_ready);
+				log_info(logger,"recurso no tomado");
 			}
 		}
 		j++;
 	}
 	if(encontro ==0){
+		pcb->estado = TERMINATED;
+		log_pcb_info(pcb);
+		liberar_recursos(pcb->pid);
 		enviar_pcb(pcb,conexion_memoria,FINALIZAR);
+		if(!list_is_empty(pcb_en_ejecucion)){
+			list_remove(pcb_en_ejecucion,0);
+		}
+		sem_post(&grado_multiprogramacion);
+		sem_post(&contador_ejecutando_cpu);
+		sem_post(&contador_cola_ready);
+		log_info(logger,"recurso inexistente");
 	}
 	list_iterator_destroy(iterador);
 }

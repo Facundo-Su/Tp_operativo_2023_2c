@@ -81,8 +81,9 @@ void enviar_tam_pagina(int  , int );
 void liberar_paginas(void *);
 t_tabla_paginas * inicializar_paginas(int , int );
 void finalizar_proceso(int );
-enviar_registro_leido_mov_in(int  , op_code ,int );
+void enviar_registro_leido_mov_in(int  , op_code ,int );
 void liberar_tabla_paginas(t_tabla_paginas *);
+char* obtener_ruta(char* );
 
 
 #endif /* KERNEL_H_ */

@@ -67,6 +67,7 @@ t_list *lista_recursos;
 t_list * pcb_en_ejecucion;
 
 
+
 //SEMAFORO=================================================================================================
 sem_t mutex_cola_new;
 sem_t mutex_cola_ready;

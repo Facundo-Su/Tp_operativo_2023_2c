@@ -136,20 +136,19 @@ void procesar_conexion(int cliente_fd){
 
 	            	t_list* valorRecibido;
 					valorRecibido=recibir_paquete(cliente_fd);
-
+					char * aux =list_get(valorRecibido,0);
 					//TODO DESBLOQUEAR DESPUES
-					//char* ruta = strcat(path_instrucciones,list_get(valorRecibido,0));
-					//ruta = strcat(ruta,".txt");
+
+
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
-					char *ruta = "./prueba.txt";
-
+					//char *ruta = "./prueba.txt";
+					char *ruta =	obtener_ruta(aux);
 	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
 	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
 	                log_info(logger, "Me llegaron los siguientes valores de pid: %i",*pid);
-
 
 	                cargar_lista_instruccion(ruta,size,prioridad,*pid);
 	                crear_proceso(*pid, *size);
@@ -238,7 +237,15 @@ void procesar_conexion(int cliente_fd){
 	        }
 }
 
-enviar_registro_leido_mov_in(int valor_encontrado , op_code operacion,int cliente_fd){
+char* obtener_ruta(char* valorRecibido) {
+    char* ruta = malloc(strlen(path_instrucciones) + strlen(valorRecibido) + 5); // +5 para ".txt" y el carácter nulo
+    strcpy(ruta, path_instrucciones);
+    strcat(ruta, valorRecibido);
+    strcat(ruta, ".txt");
+    return ruta;
+}
+
+void enviar_registro_leido_mov_in(int valor_encontrado , op_code operacion,int cliente_fd){
 	t_paquete* paquete = crear_paquete(operacion);
 	agregar_a_paquete(paquete, &valor_encontrado, sizeof(int));
 	enviar_paquete(paquete, cliente_fd);
@@ -254,26 +261,31 @@ void enviar_tam_pagina(int tam , int cliente_fd){
 }
 
 
-void cargar_lista_instruccion(char *ruta,int size,int prioridad,int pid){
-	t_instrucciones * instruccion = malloc(sizeof(t_instruccion));
-	log_info(logger_consola_memoria,"%i",pid);
-	instruccion->pid = pid;
-	instruccion->instrucciones = list_create();
-	FILE * archivo = fopen(ruta,"r");
-	t_list* auxiliar = leer_pseudocodigo(archivo);
+void cargar_lista_instruccion(char *ruta, int size, int prioridad, int pid) {
+    t_instrucciones* instruccion = malloc(sizeof(t_instruccion));
+    log_info(logger_consola_memoria, "%i", pid);
+    instruccion->pid = pid;
+    instruccion->instrucciones = list_create();
+    FILE* archivo = fopen(ruta, "r");
 
-	list_add_all(instruccion->instrucciones,auxiliar);
-	list_add(lista_instrucciones,instruccion);
-	int cantidad = list_size(auxiliar);
+    if (archivo == NULL) {
+        log_error(logger_consola_memoria, "El archivo %s no pudo ser abierto.", ruta);
+        free(instruccion);  // Liberar la memoria asignada a instruccion
+    } else {
+        t_list* auxiliar = leer_pseudocodigo(archivo);
+        list_add_all(instruccion->instrucciones, auxiliar);
+        list_add(lista_instrucciones, instruccion);
+        int cantidad = list_size(auxiliar);
 
-	t_instrucciones* instruuu = list_get(lista_instrucciones,0);
-	int cantidad2 = list_size(lista_instrucciones);
-	log_info(logger_consola_memoria,"la lista total total de general es %i",cantidad2);
+        t_instrucciones* instruuu = list_get(lista_instrucciones, 0);
+        int cantidad2 = list_size(lista_instrucciones);
 
-	log_info(logger_consola_memoria,"el valor de la pid primero es  %i",instruuu->pid);
-	fclose(archivo);
-
+        log_info(logger_consola_memoria, "La lista total total de general es %i", cantidad2);
+        log_info(logger_consola_memoria, "El valor de la pid primero es %i", instruuu->pid);
+        fclose(archivo);
+    }
 }
+
 
 
 t_list* leer_pseudocodigo(FILE* pseudocodigo){
