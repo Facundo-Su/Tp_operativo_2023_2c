@@ -25,6 +25,8 @@ typedef struct {
     int P;
     int M;
     int pos_en_swap;
+    char * base;
+    bool free;
 } t_marco;
 
 typedef struct {
@@ -84,7 +86,6 @@ void liberar_paginas(void *);
 t_tabla_paginas * inicializar_paginas(int , int );
 void finalizar_proceso(int );
 void enviar_registro_leido_mov_in(int  , op_code ,int );
-void liberar_tabla_paginas(t_tabla_paginas *);
 char* obtener_ruta(char* );
 
 

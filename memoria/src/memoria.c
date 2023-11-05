@@ -425,12 +425,8 @@ void finalizar_proceso(int pid){
 	list_iterator_destroy(iterador);
 }
 void liberar_tabla_paginas(t_tabla_paginas *tabla){
-	//list_destroy_and_destroy_elements(tabla->paginas, liberar_paginas);
+	list_destroy_and_destroy_elements(tabla->paginas, free);
 	free(tabla);
-}
-
-void liberar_paginas(void *pagina) {
-    free(pagina);
 }
 
 void algoritmo_de_remplazo(){}
@@ -441,12 +437,54 @@ void inicializar_memoria(){
 	memoria->tamanio_marcos = tam_pagina;
 	memoria->cantidad_marcos = tam_memoria/tam_pagina;
 	memoria->marcos_asignados = list_create();
+	iniciar_particionamiento_memoria();
 }
 void finalizar_memoria(){
 	free(memoria->tam_memoria);
 	list_destroy_and_destroy_elements(memoria->marcos_asignados, free);
 	free(memoria);
 }
+void iniciar_particionamiento_memoria() {
+    int i, desplazamiento = 0;
+    t_marco *marco = NULL;
+
+    for(i=0; i<memoria->cantidad_marcos; i++) {
+        marco = malloc(sizeof(t_marco));
+        marco->base = memoria->tam_memoria + desplazamiento;
+        marco->free = true;
+        marco->num_marco = i;
+        list_add(memoria->marcos_asignados, marco);
+        desplazamiento+= memoria->tamanio_marcos;
+    }
+}
 
 
+int encontrar_marco_libre() {
+    int i;
+    t_marco *marco = NULL;
+    for(i=0;i<memoria->cantidad_marcos;i++) {
+		marco = list_get(memoria->marcos_asignados, i);
+		if(marco->free) {
+            return i;
+		}
+	}
+    return -1;
+}
 
+/*void asignar_frame(t_tabla_paginas * tabla){
+	t_marco * marco;
+	int marcos_asignados = list_size(tabla->paginas);
+	if(marcos_asignados<tabla->paginas_necesarias){
+		int i = encontrar_marco_libre();
+		marco = list_get(memoria->marcos_asignados,i);
+		marco->free = false;
+		marco->P = 1;
+		list_replace(memoria->marcos_asignados,i,marco);
+		t_marco * pagina = malloc(sizeof(t_marco));
+		pagina->P = 1;
+		pagina->num_marco = marco->num_marco;
+		list_add(tabla->paginas, pagina);
+	}else{
+		//algoritmo_replazo();
+	}
+}*/
