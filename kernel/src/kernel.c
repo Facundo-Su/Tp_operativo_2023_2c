@@ -483,7 +483,6 @@ void planificador_largo_plazo(){
 void planificador_corto_plazo(){
 	while(1){
 		if(detener){
-			//sem_wait(&cont_detener_planificacion);
 			break;
 		}
 
@@ -649,8 +648,7 @@ int buscarPosicionQueEstaElPid(int valor){
 
 
 void iniciar_planificacion(){
-	sem_post(&cont_detener_planificacion);
-	sem_post(&cont_detener_planificacion);
+	detener = false;
 	pthread_t * hilo_corto_plazo;
 	pthread_t * hilo_largo_plazo;
 	log_info(logger_consola,"inicio el proceso de planificacion");
