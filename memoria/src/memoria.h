@@ -25,16 +25,20 @@ typedef struct {
     int P;
     int M;
     int pos_en_swap;
-    char * base;
-    bool free;
 } t_marco;
+
+typedef struct {
+	int num_marco;
+    char * base;
+    bool is_free;
+    int pid;
+} t_marco_memoria;
 
 typedef struct {
 	int pid;
     t_list * paginas;
     int tamanio_proceso;
     int paginas_necesarias;
-
 }t_tabla_paginas;
 
 typedef struct{
@@ -87,7 +91,7 @@ t_tabla_paginas * inicializar_paginas(int , int );
 void finalizar_proceso(int );
 void enviar_registro_leido_mov_in(int  , op_code ,int );
 char* obtener_ruta(char* );
-
+t_list * crear_paginas(int );
 
 #endif /* KERNEL_H_ */
 

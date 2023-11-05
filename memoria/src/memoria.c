@@ -396,18 +396,30 @@ op_instrucciones asignar_cod_instruccion(char* instruccion){
 void crear_proceso(int pid, int size){
 	t_tabla_paginas * tabla_paginas = inicializar_paginas(pid, size);
 	list_add(lista_tabla_paginas,tabla_paginas);
-
-
 }
 
 t_tabla_paginas *inicializar_paginas(int pid, int size){
 	t_tabla_paginas* tabla_paginas = malloc(sizeof(t_tabla_paginas));
+	int p = (size + tam_pagina -1)/tam_pagina;
 	tabla_paginas->pid = pid;
 	tabla_paginas->tamanio_proceso = size;
-	tabla_paginas->paginas_necesarias = (size + tam_pagina -1)/tam_pagina;
-	tabla_paginas->paginas= list_create;
+	tabla_paginas->paginas_necesarias = p;
+	tabla_paginas->paginas = crear_paginas(p);
 	log_info(logger, "Se creo la tabla de paginas con el PID %i", pid);
 	return tabla_paginas;
+}
+
+t_list * crear_paginas(int paginas_necesarias){
+	t_list * paginas = list_create();
+	for(int c =0; c<paginas_necesarias;c++){
+		t_marco * pagina = malloc(sizeof(t_marco));
+		pagina->M =0;
+		pagina->P =0;
+		int pos_swap =0; //= recibir_pos_swap(pid,conexion_filesystem,RESERVAR_SWAP);
+		pagina->pos_en_swap = pos_swap;
+		list_add(paginas,pagina);
+	}
+	return paginas;
 }
 
 void finalizar_proceso(int pid){
@@ -444,14 +456,12 @@ void finalizar_memoria(){
 	list_destroy_and_destroy_elements(memoria->marcos_asignados, free);
 	free(memoria);
 }
-void iniciar_particionamiento_memoria() {
+void iniciar_particionamiento_memoria(){
     int i, desplazamiento = 0;
-    t_marco *marco = NULL;
-
     for(i=0; i<memoria->cantidad_marcos; i++) {
-        marco = malloc(sizeof(t_marco));
+        t_marco_memoria *marco = malloc(sizeof(t_marco_memoria));
         marco->base = memoria->tam_memoria + desplazamiento;
-        marco->free = true;
+        marco->is_free = true;
         marco->num_marco = i;
         list_add(memoria->marcos_asignados, marco);
         desplazamiento+= memoria->tamanio_marcos;
@@ -461,30 +471,26 @@ void iniciar_particionamiento_memoria() {
 
 int encontrar_marco_libre() {
     int i;
-    t_marco *marco = NULL;
     for(i=0;i<memoria->cantidad_marcos;i++) {
-		marco = list_get(memoria->marcos_asignados, i);
-		if(marco->free) {
+    	t_marco_memoria *marco = list_get(memoria->marcos_asignados, i);
+		if(marco->is_free) {
             return i;
 		}
 	}
     return -1;
 }
 
-/*void asignar_frame(t_tabla_paginas * tabla){
-	t_marco * marco;
+void asignar_marco(t_tabla_paginas * tabla){
+	t_marco_memoria * marco;
 	int marcos_asignados = list_size(tabla->paginas);
-	if(marcos_asignados<tabla->paginas_necesarias){
-		int i = encontrar_marco_libre();
+	int i = encontrar_marco_libre();
+	if(i!=-1){
 		marco = list_get(memoria->marcos_asignados,i);
-		marco->free = false;
-		marco->P = 1;
+		marco->is_free = false;
+		marco->pid = tabla->pid;
 		list_replace(memoria->marcos_asignados,i,marco);
-		t_marco * pagina = malloc(sizeof(t_marco));
-		pagina->P = 1;
-		pagina->num_marco = marco->num_marco;
-		list_add(tabla->paginas, pagina);
+		actualizar_tablas(tabla,i);
 	}else{
-		//algoritmo_replazo();
+
 	}
-}*/
+}

@@ -44,7 +44,8 @@ typedef enum
 	MANDAME_PAGINA,
 	ENVIO_MOV_IN,
 	ENVIO_MOV_OUT,
-	PAGE_FAULT
+	PAGE_FAULT,
+	RESERVAR_SWAP
 }op_code;
 
 typedef struct
