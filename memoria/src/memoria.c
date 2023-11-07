@@ -143,8 +143,8 @@ void procesar_conexion(int cliente_fd){
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
-					char *ruta = "./prueba.txt";
-					//char *ruta =	obtener_ruta(aux);
+					//char *ruta = "./prueba.txt";
+					char *ruta =	obtener_ruta(aux);
 	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
 	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
@@ -480,7 +480,7 @@ int encontrar_marco_libre() {
     return -1;
 }
 
-void asignar_marco(t_tabla_paginas * tabla){
+/*void asignar_marco(t_tabla_paginas * tabla){
 	t_marco_memoria * marco;
 	int marcos_asignados = list_size(tabla->paginas);
 	int i = encontrar_marco_libre();
@@ -493,4 +493,4 @@ void asignar_marco(t_tabla_paginas * tabla){
 	}else{
 
 	}
-}
+}*/

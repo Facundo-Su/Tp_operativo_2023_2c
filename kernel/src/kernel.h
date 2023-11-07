@@ -62,6 +62,7 @@ t_log *logger_consola;
 t_list* lista_pcb;
 t_queue* cola_new;
 t_queue* cola_ready;
+t_queue* cola_sleep;
 t_queue* cola_ejecucion;
 t_list *lista_recursos;
 
@@ -82,7 +83,8 @@ sem_t contador_agregando_new;
 sem_t contador_cola_ready;
 sem_t proceso_desalojo;
 sem_t cont_detener_planificacion;
-
+pthread_t deadlock_hilo;
+sem_t sem_deadlock;
 
 char *puerto_memoria;
 char *puerto_filesystem;
@@ -101,7 +103,7 @@ int* string_to_int_array(char** array_de_strings);
 void paquete(int);
 void mostrar_paquete(t_paquete*);
 
-
+void deteccion_automatica();
 void iterator(char*);
 void interactuar_con_modulo();
 t_config* iniciar_config();
@@ -155,8 +157,8 @@ void liberar_recursos(int );
 void detect_deadlock();
 bool can_allocate(int pid, int work[]);
 void detener_planificacion_corto_largo();
-
-
+void deadlock();
+void mostrar_recursos_pcb(int);
 #endif /* KERNEL_H_ */
 
 
