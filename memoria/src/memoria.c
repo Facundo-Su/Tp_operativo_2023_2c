@@ -160,15 +160,15 @@ void procesar_conexion(int cliente_fd){
 	            case ENVIO_MOV_IN:
 
 	            	lista = recibir_paquete(cliente_fd);
-	            	int *nro_pagina = list_get(lista,0);
-	            	uint32_t nro_pagina_mov_in = (uint32_t) *nro_pagina;
+	            	int *marco = list_get(lista,0);
+	            	uint32_t nro_pagina_mov_in = (uint32_t) *marco;
 
 	            	int *desplazamiento = list_get(lista,1);
 	            	uint32_t desplazamiento_mov_in = (uint32_t) *desplazamiento;
-	            	log_info(logger, "Me llegaron los siguientes valores de nro_pag: %i",*nro_pagina);
+	            	log_info(logger, "Me llegaron los siguientes valores de marco: %i",*marco);
 	            	log_info(logger, "Me llegaron los siguientes valores de desplazamiento: %i",*desplazamiento);
 
-
+	            	//TODO OBTENER_VALOR SEGUN MARCO
 	            	enviar_registro_leido_mov_in(9,ENVIO_MOV_IN,cliente_fd);
 
 	            	break;
@@ -190,6 +190,15 @@ void procesar_conexion(int cliente_fd){
 	            	log_info(logger,"ME LLEGO EL PID CON EL VALOR %i :",pcb_recibido->pid);
 	            	finalizar_proceso(pcb_recibido->pid);
 	            	//realizar_proceso_finalizar(valor_pid->pid);
+	            	break;
+	            case OBTENER_MARCO:
+	            	lista = recibir_paquete(cliente_fd);
+	            	int * pid_proceso = list_get(lista,0);
+	            	int * pagina_proceso = list_get(lista,1);
+
+	            	int marco_encontrado= obtener_marco(*pid_proceso,*pagina_proceso);
+	            	enviar_marco(marco_encontrado, OBTENER_MARCO,cliente_fd);
+
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
 	    			usleep(retardo_respuesta);
@@ -248,6 +257,14 @@ char* obtener_ruta(char* valorRecibido) {
 void enviar_registro_leido_mov_in(int valor_encontrado , op_code operacion,int cliente_fd){
 	t_paquete* paquete = crear_paquete(operacion);
 	agregar_a_paquete(paquete, &valor_encontrado, sizeof(int));
+	enviar_paquete(paquete, cliente_fd);
+	eliminar_paquete(paquete);
+}
+
+
+void enviar_marco(int marco , op_code operacion,int cliente_fd){
+	t_paquete* paquete = crear_paquete(operacion);
+	agregar_a_paquete(paquete, &marco, sizeof(int));
 	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);
 }

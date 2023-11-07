@@ -92,6 +92,7 @@ void finalizar_proceso(int );
 void enviar_registro_leido_mov_in(int  , op_code ,int );
 char* obtener_ruta(char* );
 t_list * crear_paginas(int );
+void enviar_marco(int  , op_code ,int );
 
 #endif /* KERNEL_H_ */
 

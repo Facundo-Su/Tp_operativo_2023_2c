@@ -25,8 +25,9 @@ bool recibi_archivo;
 int tamanio_pagina;
 
 typedef struct{
-	int nro_pagina;
+	int marco;
 	int desplazamiento;
+	int nro_pagina;
 }t_traduccion;
 
 int conexion_memoria;
@@ -38,7 +39,6 @@ char *puerto_escucha_interrupt;
 bool instruccion_ejecutando;
 
 int registro_por_mov;
-int marco;
 
 t_log *logger_consola_cpu;
 bool hayInterrupcion;
@@ -51,6 +51,10 @@ bool hay_desalojo;
 sem_t contador_recibiendoArchivo;
 sem_t contador_instruccion;
 sem_t contador_esperando_mov;
+sem_t contador_marco_obtenido;
+
+int marco_obtenido;
+
 
 void obtener_configuracion();
 void terminar_programa();
@@ -77,6 +81,9 @@ void atendiendo_pedido(int);
 //archivos
 void leer_pseudocodigo(FILE* );
 char** parsear_instruccion(char* );
+
+
+uint32_t obtener_el_valor_de_memoria(t_traduccion* );
 
 void enviar_f_open(char* archivo, char* modo, int conexion, op_code operacion);
 void enviar_f_close(char* archivo, int conexion, op_code operacion);

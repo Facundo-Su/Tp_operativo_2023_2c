@@ -34,6 +34,7 @@ void iniciar_recurso(){
 	sem_init(&contador_instruccion, 0,0);
 	sem_init(&contador_esperando_mov,0,0);
 	instruccion_a_realizar= malloc(sizeof(t_instruccion));
+	sem_init(&contador_marco_obtenido,0,0);
 	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	//sem_init(&instruccion_ejecutando, 0,1);
 }
@@ -130,12 +131,19 @@ void procesar_conexion(void *conexion1){
 		case ENVIO_MOV_IN:
 			paquete1= recibir_paquete(cliente_fd);
 			auxiliar2 = list_get(paquete1,0);
-			int *valor_aux2 = list_get(paquete1,1);
-			marco = *valor_aux2;
 
 			log_info(logger, "el valor registro %i",*auxiliar2);
 			registro_por_mov = *auxiliar2;
 			sem_post(&contador_esperando_mov);
+
+			break;
+		case OBTENER_MARCO:
+
+			paquete1 = recibir_paquete(cliente_fd);
+			auxiliar2 = list_get(paquete1,0);
+			log_info(logger, "el valor del marco es %i",*auxiliar2);
+			marco_obtenido = *auxiliar2;
+			sem_post(&contador_marco_obtenido);
 
 			break;
 		case -1:
@@ -383,15 +391,26 @@ void solicitar_instruccion_ejecutar_segun_pc(int pc,int pid){
 
 }
 
-t_traduccion* traducir_a_direccion_fisica(int dir_logica){
+t_traduccion* mmu_traducir(int dir_logica){
 
-	t_traduccion *valor_traducido = malloc(sizeof(t_traduccion));
+	t_traduccion* traducido= malloc(sizeof(t_traduccion));
 	int nro_pagina =  floor(dir_logica / tamanio_pagina);
-	valor_traducido->nro_pagina= nro_pagina;
+	obtener_el_marco(nro_pagina,OBTENER_MARCO);
+	sem_wait(&contador_marco_obtenido);
 	int desplazamiento = dir_logica - nro_pagina * tamanio_pagina;
-	valor_traducido->desplazamiento = desplazamiento;
 
-	return valor_traducido;
+	traducido->marco= marco_obtenido;
+	traducido->desplazamiento= desplazamiento;
+	traducido->nro_pagina = nro_pagina;
+	return traducido;
+}
+
+void obtener_el_marco(int nro_pagina,op_code operacion){
+	t_paquete* paquete = crear_paquete(operacion);
+	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
+	agregar_a_paquete(paquete, &nro_pagina, sizeof(int));
+	enviar_paquete(paquete, conexion_memoria);
+	eliminar_paquete(paquete);
 }
 
 
@@ -469,16 +488,14 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 		valor_int = atoi(parametro2);
-		t_traduccion* traducido = traducir_a_direccion_fisica(valor_int);
-		enviar_traduccion(traducido,ENVIO_MOV_IN);
-		sem_wait(&contador_esperando_mov);
-
-		if(marco ==-1){
-			pcb->contexto->pc-1;
+		t_traduccion* traducido = mmu_traducir(valor_int);
+		if(traducido->marco ==-1){
+			pcb->contexto->pc-=1;
 			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 			enviar_pagina_a_kernel(traducido,PAGE_FAULT, cliente_fd);
 			hayInterrupcion=true;
 		}else{
+			valor_uint1 = obtener_el_valor_de_memoria(traducido);
 			registro_aux = devolver_registro(parametro);
 			valor_uint1 = (uint32_t) registro_por_mov;
 			setear(registro_aux, valor_uint1);
@@ -494,10 +511,9 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		valor_uint1 = obtener_valor(registro_aux);
 		valor_int = (int) valor_uint1;
 
-		t_traduccion* traducido2 = traducir_a_direccion_fisica(valor_int);
-		enviar_traduccion_mov_out(traducido2,ENVIO_MOV_OUT,valor_int);
-		if(marco ==-1){
-			pcb->contexto->pc-1;
+		t_traduccion* traducido2 = mmu_traducir(valor_int);
+		if(traducido->marco ==-1){
+			pcb->contexto->pc-=1;
 			enviar_pcb(pcb,cliente_fd,PAGE_FAULT);
 			enviar_pagina_a_kernel(traducido,PAGE_FAULT, cliente_fd);
 			hayInterrupcion=true;
@@ -571,6 +587,13 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 	instruccion_ejecutando= false;
 }
 
+uint32_t obtener_el_valor_de_memoria(t_traduccion* traducido){
+	enviar_traduccion(traducido, ENVIO_MOV_IN);
+	sem_wait(&contador_esperando_mov);
+	uint32_t valor_obtenido = registro_por_mov;
+	return valor_obtenido;
+}
+
 void enviar_recurso_a_kernel(char* recurso,op_code operacion,int cliente_fd){
 	t_paquete* paquete = crear_paquete(operacion);
 	agregar_a_paquete(paquete, recurso, strlen(recurso)+1);
@@ -598,7 +621,7 @@ void setear(t_estrucutra_cpu pos, uint32_t valor) {
 
 void enviar_traduccion(t_traduccion* traducido,op_code operacion){
 	t_paquete* paquete = crear_paquete(operacion);
-	agregar_a_paquete(paquete, &(traducido->nro_pagina), sizeof(int));
+	agregar_a_paquete(paquete, &(traducido->marco), sizeof(int));
 	agregar_a_paquete(paquete, &(traducido->desplazamiento), sizeof(int));
 	enviar_paquete(paquete, conexion_memoria);
 	eliminar_paquete(paquete);
