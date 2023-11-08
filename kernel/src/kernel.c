@@ -678,8 +678,6 @@ void modificar_grado_multiprogramacion(){
     terminar_programa(conexion_file_system, logger, config);
 
 }
-void listar_proceso_estado(){
-}
 
 
 void obtener_configuracion(){

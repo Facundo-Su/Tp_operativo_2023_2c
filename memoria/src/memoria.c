@@ -177,19 +177,25 @@ void procesar_conexion(int cliente_fd){
 	            	log_info(logger, "Me llegaron los siguientes valores de marco: %i",*marco);
 	            	log_info(logger, "Me llegaron los siguientes valores de desplazamiento: %i",*desplazamiento);
 
-	            	//TODO OBTENER_VALOR SEGUN MARCO
-	            	enviar_registro_leido_mov_in(9,ENVIO_MOV_IN,cliente_fd);
-
+	            	uint32_t *valor_leido;
+	            	memcpy(valor_leido, memoria->espacio_usuario + (*marco *tam_pagina), sizeof(uint32_t));
+	            	enviar_registro_leido_mov_in(valor_leido,ENVIO_MOV_IN,cliente_fd);
 	            	break;
 	            case ENVIO_MOV_OUT:
 	            	lista = recibir_paquete(cliente_fd);
-	            	int *nro_pagina_out = list_get(lista,0);
+	            	uint32_t *marco_out = list_get(lista,0);
 	            	int *desplazamiento_out= list_get(lista,1);
-	            	int *valor_remplazar = list_get(lista,2);
-	            	log_info(logger, "Me llegaron los siguientes valores de nro_pag: %i",*nro_pagina_out);
+	            	int *pagina_out = list_get(lista,2);
+	            	int *pid_out = list_get(lista,3);
+	            	uint32_t *valor_remplazar = list_get(lista,4);
+	            	log_info(logger, "Me llegaron los siguientes valores de marco: %i",*marco_out);
 	            	log_info(logger, "Me llegaron los siguientes valores de desplazamiento: %i",*desplazamiento_out);
 	            	log_info(logger, "Me llegaron los siguientes valores de escritura: %i",*valor_remplazar);
 	            	//TODO realizar operacion;
+	            	memcpy(memoria->espacio_usuario + memoria->espacio_usuario + (*marco *tam_pagina), *valor_remplazar, sizeof(uint32_t));
+
+	            	modificar_tabla_pagina(*pid_out,*pagina_out);
+
 	            	break;
 	            case FINALIZAR:
 
@@ -205,9 +211,8 @@ void procesar_conexion(int cliente_fd){
 	            	int * pid_proceso = list_get(lista,0);
 	            	int * pagina_proceso = list_get(lista,1);
 
-	            	//int marco_encontrado= obtener_marco(*pid_proceso,*pagina_proceso);
-	            	//enviar_marco(marco_encontrado, OBTENER_MARCO,cliente_fd);
-
+	            	int marco_encontrado= obtener_marco(*pid_proceso,*pagina_proceso);
+	            	enviar_marco(marco_encontrado, OBTENER_MARCO,cliente_fd);
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
 	    			usleep(retardo_respuesta);
@@ -253,6 +258,57 @@ void procesar_conexion(int cliente_fd){
 	                break;
 	            }
 	        }
+}
+
+void modificar_tabla_pagina(int pid , int pagina){
+
+	 bool encontrar_tabla_pagina(void * tabla_pagina){
+	          t_tabla_paginas* un_tabla_pagina = (t_tabla_paginas*)tabla_pagina;
+	          log_info(logger_consola_memoria,"comparando pid %i",pid);
+	          int *valor_comparar =un_tabla_pagina->pid;
+	          log_info(logger_consola_memoria,"comparando el pid %i",*valor_comparar);
+	          return *valor_comparar == pid;
+	    }
+	    t_tabla_paginas* tabla_pagina = list_find(memoria->lista_tabla_paginas, encontrar_tabla_pagina);
+
+	    if (tabla_pagina != NULL) {
+	            // Se encontró un elemento que cumple con la condición
+	            log_info(logger, "Se encontraron la talba de pagina para el PID %i", pid);
+	            t_pagina* pagina = list_get(tabla_pagina->paginas,pagina);
+	            pagina->m=1;
+	        } else {
+	            // No se encontraron instrucciones que cumplan con la condición
+	            log_info(logger, "No se encontraron la pagina para el PID %i", pid);
+	        }
+}
+
+int obtener_marco(int pid, int pagina){
+    bool encontrar_tabla_pagina(void * tabla_pagina){
+          t_tabla_paginas* un_tabla_pagina = (t_tabla_paginas*)tabla_pagina;
+          log_info(logger_consola_memoria,"comparando pid %i",pid);
+          int *valor_comparar =un_tabla_pagina->pid;
+          log_info(logger_consola_memoria,"comparando el pid %i",*valor_comparar);
+          return *valor_comparar == pid;
+    }
+    t_tabla_paginas* tabla_pagina = list_find(memoria->lista_tabla_paginas, encontrar_tabla_pagina);
+
+    if (tabla_pagina != NULL) {
+            // Se encontró un elemento que cumple con la condición
+            log_info(logger, "Se encontraron la talba de pagina para el PID %i", pid);
+            t_pagina* pagina = list_get(tabla_pagina->paginas,pagina);
+            if(pagina->p !=-1){
+            	return pagina->num_marco;
+            }else{
+            	return -1;
+            }
+            // Luego puedes realizar las operaciones que necesites con 'instrucciones'
+        } else {
+            // No se encontraron instrucciones que cumplan con la condición
+            log_info(logger, "No se encontraron la pagina para el PID %i", pid);
+            return -1;
+        }
+
+
 }
 
 char* obtener_ruta(char* valorRecibido) {
@@ -439,8 +495,8 @@ t_list * crear_paginas(int paginas_necesarias){
 	t_list * paginas = list_create();
 	for(int c =0; c<paginas_necesarias;c++){
 		t_pagina * pagina = malloc(sizeof(t_pagina));
-		pagina->M =0;
-		pagina->P =0;
+		pagina->m =0;
+		pagina->p =0;
 		int pos_swap =-1; //= recibir_pos_swap(pid,conexion_filesystem,RESERVAR_SWAP);
 		pagina->pos_en_swap = pos_swap;
 		list_add(paginas,pagina);
@@ -470,7 +526,7 @@ void liberar_tabla_paginas(t_tabla_paginas *tabla){
 
 void inicializar_memoria(){
 	memoria = malloc(sizeof(t_memoria));
-	memoria->tam_memoria= malloc(tam_memoria);
+	memoria->espacio_usuario= malloc(tam_memoria);
 	memoria->tamanio_marcos = tam_pagina;
 	memoria->cantidad_marcos = tam_memoria/tam_pagina;
 	memoria->marcos = list_create();
@@ -478,7 +534,7 @@ void inicializar_memoria(){
 	iniciar_particionamiento_memoria();
 }
 void finalizar_memoria(){
-	free(memoria->tam_memoria);
+	free(memoria->espacio_usuario);
 	list_destroy_and_destroy_elements(memoria->marcos, free);
 	free(memoria);
 }
@@ -486,7 +542,7 @@ void iniciar_particionamiento_memoria(){
     int i, desplazamiento = 0;
     for(i=0; i<memoria->cantidad_marcos; i++) {
         t_marco *marco = malloc(sizeof(t_marco));
-        marco->base = memoria->tam_memoria + desplazamiento;
+        marco->base = memoria->espacio_usuario + desplazamiento;
         marco->is_free = true;
         marco->num_marco = i;
         list_add(memoria->marcos, marco);
@@ -523,10 +579,10 @@ void asignar_marco(t_tabla_paginas * tabla, int nro_pagina){
 int ejecutar_algoritmo(tabla){
 	switch(algoritmo){
 	case FIFO:
-		return ejecutar_fifo(tabla);
+		//return ejecutar_fifo(tabla);
 		break;
 	case LRU:
-		return ejecutar_lru(tabla);
+		//return ejecutar_lru(tabla);
 		break;
 	default:
 		log_info(logger,"ERROR Planificador");
@@ -541,7 +597,7 @@ void actualizar_tablas(int pid, int nro_marco, int nro_pagina){
 		t_tabla_paginas* tabla = (t_tabla_paginas*)list_iterator_next(iterador);
 		if(pid == tabla->pid){
 			t_pagina * pagina = list_get(tabla,nro_pagina);
-			pagina->P = 1;
+			pagina->p = 1;
 			pagina->num_marco = nro_marco;
 			list_replace(tabla->paginas,nro_pagina,pagina);
 			list_replace(memoria->lista_tabla_paginas,j,tabla);

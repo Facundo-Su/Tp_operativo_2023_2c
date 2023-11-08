@@ -509,7 +509,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 
 		registro_aux = devolver_registro(parametro2);
 		valor_uint1 = obtener_valor(registro_aux);
-		valor_int = (int) valor_uint1;
 
 		t_traduccion* traducido2 = mmu_traducir(valor_int);
 		if(traducido->marco ==-1){
@@ -517,6 +516,8 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 			enviar_pcb(pcb,cliente_fd,PAGE_FAULT);
 			enviar_pagina_a_kernel(traducido,PAGE_FAULT, cliente_fd);
 			hayInterrupcion=true;
+		}else{
+			enviar_traduccion_mov_out(traducido2, ENVIO_MOV_OUT, valor_uint1);
 		}
 		log_info(logger_consola_cpu,"entendi el mensaje MOV_OUT");
 		break;
@@ -627,11 +628,13 @@ void enviar_traduccion(t_traduccion* traducido,op_code operacion){
 	eliminar_paquete(paquete);
 }
 
-void enviar_traduccion_mov_out(t_traduccion* traducido,op_code operacion,int valor_int){
+void enviar_traduccion_mov_out(t_traduccion* traducido,op_code operacion,uint32_t valor_int){
 	t_paquete* paquete = crear_paquete(operacion);
-	agregar_a_paquete(paquete, &(traducido->nro_pagina), sizeof(int));
+	agregar_a_paquete(paquete, &(traducido->marco), sizeof(int));
 	agregar_a_paquete(paquete, &(traducido->desplazamiento), sizeof(int));
-	agregar_a_paquete(paquete, &valor_int, sizeof(int));
+	agregar_a_paquete(paquete, &(traducido->nro_pagina), sizeof(int));
+	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
+	agregar_a_paquete(paquete, &valor_int, sizeof(uint32_t));
 	enviar_paquete(paquete, conexion_memoria);
 	eliminar_paquete(paquete);
 }

@@ -22,8 +22,8 @@ typedef enum{
 
 typedef struct {
 	int num_marco;
-    int P;
-    int M;
+    int p;
+    int m;
     int pos_en_swap;
 } t_pagina;
 
@@ -42,7 +42,7 @@ typedef struct {
 }t_tabla_paginas;
 
 typedef struct{
-	void * tam_memoria;
+	void * espacio_usuario;
 	t_list * marcos;
 	t_list * lista_tabla_paginas;
 	int tamanio_marcos;
