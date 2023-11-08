@@ -92,11 +92,21 @@ void obtener_configuraciones() {
     path_instrucciones =config_get_string_value(config,"PATH_INSTRUCCIONES");
     tam_memoria = config_get_int_value(config,"TAM_MEMORIA");
     tam_pagina = config_get_int_value(config,"TAM_PAGINA");
-
     int auxiliar = config_get_int_value(config,"RETARDO_RESPUESTA");
+    char *algoritmo_config = config_get_int_value(config,"ALGORITMO_REEMPLAZO");
+    asignar_algoritmo(algoritmo_config);
     strcat(path_instrucciones,"/");
     auxiliar = auxiliar* 1000;
     retardo_respuesta = (useconds_t) auxiliar;
+}
+void asignar_algoritmo(char *algoritmo_config){
+	if (strcmp(algoritmo_config, "FIFO") == 0) {
+		algoritmo = FIFO;
+	} else if (strcmp(algoritmo_config, "LRU") == 0) {
+		algoritmo = LRU;
+	}else{
+		log_error(logger, "El algoritmo no es valido");
+	}
 }
 
 void iniciar_servidor_memoria(char *puerto) {
@@ -196,8 +206,8 @@ void procesar_conexion(int cliente_fd){
 	            	int * pid_proceso = list_get(lista,0);
 	            	int * pagina_proceso = list_get(lista,1);
 
-	            	int marco_encontrado= obtener_marco(*pid_proceso,*pagina_proceso);
-	            	enviar_marco(marco_encontrado, OBTENER_MARCO,cliente_fd);
+	            	//int marco_encontrado= obtener_marco(*pid_proceso,*pagina_proceso);
+	            	//enviar_marco(marco_encontrado, OBTENER_MARCO,cliente_fd);
 
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
@@ -429,10 +439,10 @@ t_tabla_paginas *inicializar_paginas(int pid, int size){
 t_list * crear_paginas(int paginas_necesarias){
 	t_list * paginas = list_create();
 	for(int c =0; c<paginas_necesarias;c++){
-		t_marco * pagina = malloc(sizeof(t_marco));
+		t_pagina * pagina = malloc(sizeof(t_pagina));
 		pagina->M =0;
 		pagina->P =0;
-		int pos_swap =0; //= recibir_pos_swap(pid,conexion_filesystem,RESERVAR_SWAP);
+		int pos_swap =-1; //= recibir_pos_swap(pid,conexion_filesystem,RESERVAR_SWAP);
 		pagina->pos_en_swap = pos_swap;
 		list_add(paginas,pagina);
 	}
@@ -458,29 +468,28 @@ void liberar_tabla_paginas(t_tabla_paginas *tabla){
 	free(tabla);
 }
 
-void algoritmo_de_remplazo(){}
 
 void inicializar_memoria(){
 	memoria = malloc(sizeof(t_memoria));
 	memoria->tam_memoria= malloc(tam_memoria);
 	memoria->tamanio_marcos = tam_pagina;
 	memoria->cantidad_marcos = tam_memoria/tam_pagina;
-	memoria->marcos_asignados = list_create();
+	memoria->marcos = list_create();
 	iniciar_particionamiento_memoria();
 }
 void finalizar_memoria(){
 	free(memoria->tam_memoria);
-	list_destroy_and_destroy_elements(memoria->marcos_asignados, free);
+	list_destroy_and_destroy_elements(memoria->marcos, free);
 	free(memoria);
 }
 void iniciar_particionamiento_memoria(){
     int i, desplazamiento = 0;
     for(i=0; i<memoria->cantidad_marcos; i++) {
-        t_marco_memoria *marco = malloc(sizeof(t_marco_memoria));
+        t_marco *marco = malloc(sizeof(t_marco));
         marco->base = memoria->tam_memoria + desplazamiento;
         marco->is_free = true;
         marco->num_marco = i;
-        list_add(memoria->marcos_asignados, marco);
+        list_add(memoria->marcos, marco);
         desplazamiento+= memoria->tamanio_marcos;
     }
 }
@@ -489,7 +498,7 @@ void iniciar_particionamiento_memoria(){
 int encontrar_marco_libre() {
     int i;
     for(i=0;i<memoria->cantidad_marcos;i++) {
-    	t_marco_memoria *marco = list_get(memoria->marcos_asignados, i);
+    	t_marco *marco = list_get(memoria->marcos, i);
 		if(marco->is_free) {
             return i;
 		}
@@ -497,17 +506,49 @@ int encontrar_marco_libre() {
     return -1;
 }
 
-/*void asignar_marco(t_tabla_paginas * tabla){
-	t_marco_memoria * marco;
+void asignar_marco(t_tabla_paginas * tabla, int nro_pagina){
+	t_marco * marco;
 	int marcos_asignados = list_size(tabla->paginas);
 	int i = encontrar_marco_libre();
 	if(i!=-1){
-		marco = list_get(memoria->marcos_asignados,i);
+		marco = list_get(memoria->marcos,i);
 		marco->is_free = false;
 		marco->pid = tabla->pid;
-		list_replace(memoria->marcos_asignados,i,marco);
-		actualizar_tablas(tabla,i);
+		list_replace(memoria->marcos,i,marco);
+		actualizar_tablas(tabla->pid,i,nro_pagina);
 	}else{
-
+		int nro_marco_remplazado = ejecutar_algoritmo(tabla);
 	}
-}*/
+}
+int ejecutar_algoritmo(tabla){
+	switch(algoritmo){
+	case FIFO:
+		return ejecutar_fifo(tabla);
+		break;
+	case LRU:
+		return ejecutar_lru(tabla);
+		break;
+	default:
+		log_info(logger,"ERROR Planificador");
+		return -1;
+	break;
+	}
+}
+void actualizar_tablas(int pid, int nro_marco, int nro_pagina){
+	t_list_iterator* iterador = list_iterator_create(lista_tabla_paginas);
+	int j =0;
+	while(list_iterator_has_next(iterador)){
+		t_tabla_paginas* tabla = (t_tabla_paginas*)list_iterator_next(iterador);
+		if(pid == tabla->pid){
+			t_pagina * pagina = list_get(tabla,nro_pagina);
+			pagina->P = 1;
+			pagina->num_marco = nro_marco;
+			list_replace(tabla->paginas,nro_pagina,pagina);
+			list_replace(lista_tabla_paginas,j,tabla);
+		}
+	j++;
+	}
+	list_iterator_destroy(iterador);
+}
+
+

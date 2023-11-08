@@ -25,14 +25,14 @@ typedef struct {
     int P;
     int M;
     int pos_en_swap;
-} t_marco;
+} t_pagina;
 
 typedef struct {
 	int num_marco;
     char * base;
     bool is_free;
     int pid;
-} t_marco_memoria;
+} t_marco;
 
 typedef struct {
 	int pid;
@@ -43,7 +43,7 @@ typedef struct {
 
 typedef struct{
 	void * tam_memoria;
-	t_list * marcos_asignados;
+	t_list * marcos;
 	int tamanio_marcos;
 	int cantidad_marcos;
 }t_memoria;
