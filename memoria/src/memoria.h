@@ -12,7 +12,7 @@
 t_log* logger;
 t_config* config;
 t_log * logger_consola_memoria;
-t_list * lista_tabla_paginas;
+
 
 
 typedef enum{
@@ -44,6 +44,7 @@ typedef struct {
 typedef struct{
 	void * tam_memoria;
 	t_list * marcos;
+	t_list * lista_tabla_paginas;
 	int tamanio_marcos;
 	int cantidad_marcos;
 }t_memoria;

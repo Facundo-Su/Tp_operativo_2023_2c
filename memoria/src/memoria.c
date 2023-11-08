@@ -27,7 +27,6 @@ int main(int argc, char* argv[]) {
 
 void iniciar_recursos(){
 	lista_instrucciones = list_create();
-	lista_tabla_paginas = list_create();
 	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
 }
 
@@ -422,7 +421,7 @@ op_instrucciones asignar_cod_instruccion(char* instruccion){
 }
 void crear_proceso(int pid, int size){
 	t_tabla_paginas * tabla_paginas = inicializar_paginas(pid, size);
-	list_add(lista_tabla_paginas,tabla_paginas);
+	list_add(memoria->lista_tabla_paginas,tabla_paginas);
 }
 
 t_tabla_paginas *inicializar_paginas(int pid, int size){
@@ -450,12 +449,12 @@ t_list * crear_paginas(int paginas_necesarias){
 }
 
 void finalizar_proceso(int pid){
-	t_list_iterator* iterador = list_iterator_create(lista_tabla_paginas);
+	t_list_iterator* iterador = list_iterator_create(memoria->lista_tabla_paginas);
 	int j =0;
 	while(list_iterator_has_next(iterador)){
 		t_tabla_paginas* tabla_paginas = (t_tabla_paginas*)list_iterator_next(iterador);
 		if( pid == tabla_paginas->pid){
-			list_remove(lista_tabla_paginas,j);
+			list_remove(memoria->lista_tabla_paginas,j);
 			liberar_tabla_paginas(tabla_paginas);
 			log_info(logger, "Se elimino la tabla de paginas con el PID %i", pid);
 		}
@@ -475,6 +474,7 @@ void inicializar_memoria(){
 	memoria->tamanio_marcos = tam_pagina;
 	memoria->cantidad_marcos = tam_memoria/tam_pagina;
 	memoria->marcos = list_create();
+	memoria->lista_tabla_paginas = list_create();
 	iniciar_particionamiento_memoria();
 }
 void finalizar_memoria(){
@@ -535,7 +535,7 @@ int ejecutar_algoritmo(tabla){
 	}
 }
 void actualizar_tablas(int pid, int nro_marco, int nro_pagina){
-	t_list_iterator* iterador = list_iterator_create(lista_tabla_paginas);
+	t_list_iterator* iterador = list_iterator_create(memoria->lista_tabla_paginas);
 	int j =0;
 	while(list_iterator_has_next(iterador)){
 		t_tabla_paginas* tabla = (t_tabla_paginas*)list_iterator_next(iterador);
@@ -544,7 +544,7 @@ void actualizar_tablas(int pid, int nro_marco, int nro_pagina){
 			pagina->P = 1;
 			pagina->num_marco = nro_marco;
 			list_replace(tabla->paginas,nro_pagina,pagina);
-			list_replace(lista_tabla_paginas,j,tabla);
+			list_replace(memoria->lista_tabla_paginas,j,tabla);
 		}
 	j++;
 	}
