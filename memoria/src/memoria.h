@@ -8,11 +8,12 @@
 #include<commons/config.h>
 #include<readline/readline.h>
 #include <utils/conexion.h>
+#include <limits.h>
 
 t_log* logger;
 t_config* config;
 t_log * logger_consola_memoria;
-
+int contador_fifo;
 
 
 typedef enum{
@@ -31,6 +32,8 @@ typedef struct {
 	int num_marco;
     char * base;
     bool is_free;
+    int llegada_fifo;
+    int last_time_lru;
     int pid;
 } t_marco;
 
@@ -94,6 +97,7 @@ void enviar_registro_leido_mov_in(int  , op_code ,int );
 char* obtener_ruta(char* );
 t_list * crear_paginas(int );
 void enviar_marco(int  , op_code ,int );
-
+bool pagina_esta_en_memoria(int , int );
+t_pagina * obtener_pagina(int );
 #endif /* KERNEL_H_ */
 

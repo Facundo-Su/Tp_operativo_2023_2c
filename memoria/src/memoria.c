@@ -27,6 +27,7 @@ int main(int argc, char* argv[]) {
 
 void iniciar_recursos(){
 	lista_instrucciones = list_create();
+	contador_fifo =0;
 	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
 }
 
@@ -508,31 +509,116 @@ int encontrar_marco_libre() {
 
 void asignar_marco(t_tabla_paginas * tabla, int nro_pagina){
 	t_marco * marco;
-	int marcos_asignados = list_size(tabla->paginas);
-	int i = encontrar_marco_libre();
-	if(i!=-1){
-		marco = list_get(memoria->marcos,i);
-		marco->is_free = false;
-		marco->pid = tabla->pid;
-		list_replace(memoria->marcos,i,marco);
-		actualizar_tablas(tabla->pid,i,nro_pagina);
+	if(!pagina_esta_en_memoria(tabla->pid,nro_pagina)){
+		int i = encontrar_marco_libre();
+		if(i!=-1){
+			marco = list_get(memoria->marcos,i);
+			marco->is_free = false;
+			marco->pid = tabla->pid;
+			marco->llegada_fifo = contador_fifo;
+			marco->last_time_lru =0;
+			list_replace(memoria->marcos,i,marco);
+			contador_fifo++;
+			actualizar_marcos_lru();
+			actualizar_tablas(tabla->pid,i,nro_pagina);
+		}else{
+			int nro_marco_remplazado = ejecutar_algoritmo();
+			t_pagina * pagina = obtener_pagina(nro_marco_remplazado);
+			if(pagina->M = 1){
+				//hacerswappout
+			}
+			actualizar_tablas(tabla->pid,nro_marco_remplazado,nro_pagina);
+		}
 	}else{
-		int nro_marco_remplazado = ejecutar_algoritmo(tabla);
+		actualizar_marcos_lru();
+		t_pagina * pagina = list_get(tabla->paginas,nro_pagina);
+		marco = list_get(memoria->marcos,pagina->num_marco);
+		marco->last_time_lru =0;
+		list_replace(memoria->marcos,marco->num_marco,marco);
 	}
 }
-int ejecutar_algoritmo(tabla){
+bool pagina_esta_en_memoria(int pid, int nro_pagina){
+	t_list_iterator* iterador = list_iterator_create(memoria->marcos);
+	bool i = false;
+	while(list_iterator_has_next(iterador)){
+		t_marco * marco = (t_marco*)list_iterator_next(iterador);
+		t_pagina * pagina = list_get(memoria->lista_tabla_paginas,nro_pagina);
+		if(marco->pid == pid && marco->num_marco == pagina->num_marco){
+			i = true;
+		}
+	}
+	list_iterator_destroy(iterador);
+	return i;
+}
+void actualizar_marcos_lru(){
+	t_list_iterator* iterador = list_iterator_create(memoria->marcos);
+	int j =0;
+	while(list_iterator_has_next(iterador)){
+		t_marco * marco = (t_marco*)list_iterator_next(iterador);
+		if(!marco->is_free){
+			marco->last_time_lru++;
+			list_replace(memoria->marcos,j,marco);
+		}
+		j++;
+	}
+	list_iterator_destroy(iterador);
+}
+t_pagina * obtener_pagina(int num_marco){
+	t_list_iterator* iterador = list_iterator_create(memoria->lista_tabla_paginas);
+	int j =0;
+	t_pagina * pagina_encontrada = NULL;
+	while(list_iterator_has_next(iterador)){
+		t_pagina * pagina = (t_pagina*)list_iterator_next(iterador);
+		if(pagina->num_marco == num_marco){
+			pagina_encontrada = pagina;
+		}
+	}
+	list_iterator_destroy(iterador);
+	return pagina_encontrada;
+}
+
+int ejecutar_algoritmo(){
 	switch(algoritmo){
 	case FIFO:
-		return ejecutar_fifo(tabla);
+		return ejecutar_fifo();
 		break;
 	case LRU:
-		return ejecutar_lru(tabla);
+		return ejecutar_lru();
 		break;
 	default:
 		log_info(logger,"ERROR Planificador");
 		return -1;
 	break;
 	}
+}
+
+int ejecutar_fifo(){
+	t_list_iterator* iterador = list_iterator_create(memoria->marcos);
+	int llegada = INT_MAX;
+	int nro_marco;
+	while(list_iterator_has_next(iterador)){
+		t_marco * marco = (t_marco*)list_iterator_next(iterador);
+		if(!marco->is_free && (marco->llegada_fifo < llegada)){
+			llegada = marco->llegada_fifo;
+			nro_marco = marco->num_marco;
+		}
+	}
+	list_iterator_destroy(iterador);
+	return nro_marco;
+}
+int ejecutar_lru(){
+	t_list_iterator* iterador = list_iterator_create(memoria->marcos);
+	int tiempo = 0;
+	int nro_marco;
+	while(list_iterator_has_next(iterador)){
+		t_marco * marco = (t_marco*)list_iterator_next(iterador);
+		if(!marco->is_free && (marco->last_time_lru > tiempo)){
+			tiempo = marco->last_time_lru;
+			nro_marco = marco->num_marco;
+		}
+	}
+	list_iterator_destroy(iterador);
+	return nro_marco;
 }
 void actualizar_tablas(int pid, int nro_marco, int nro_pagina){
 	t_list_iterator* iterador = list_iterator_create(memoria->lista_tabla_paginas);
