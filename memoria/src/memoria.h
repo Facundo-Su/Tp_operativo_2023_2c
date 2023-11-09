@@ -13,8 +13,11 @@
 t_log* logger;
 t_config* config;
 t_log * logger_consola_memoria;
+
 int contador_fifo;
 
+sem_t contador_espera_cargar;
+void* datos_obtenidos;
 
 typedef enum{
 	FIFO,

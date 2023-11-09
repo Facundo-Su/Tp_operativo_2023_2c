@@ -46,7 +46,8 @@ typedef enum
 	ENVIO_MOV_OUT,
 	PAGE_FAULT,
 	RESERVAR_SWAP,
-	OBTENER_MARCO
+	OBTENER_MARCO,
+	DATOS_SWAP
 }op_code;
 
 typedef struct

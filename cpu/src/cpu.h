@@ -92,7 +92,7 @@ void enviar_f_read(char* archivo, int size, int conexion, op_code operacion);
 void enviar_f_write(char* archivo, int size, int conexion, op_code operacion);
 void enviar_f_truncate(char* archivo, int tamanio, int conexion, op_code operacion);
 void enviar_traduccion(t_traduccion* ,op_code );
-void enviar_traduccion_mov_out(t_traduccion* ,op_code ,int);
+void enviar_traduccion_mov_out(t_traduccion* ,op_code ,uint32_t );
 void enviar_recurso_a_kernel(char* ,op_code ,int );
 void enviar_pagina_a_kernel(t_traduccion*  ,op_code  , int );
 

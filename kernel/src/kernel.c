@@ -48,6 +48,7 @@ void procesar_conexion(void *conexion1){
 		int cod_op = recibir_operacion(cliente_fd);
 		t_pcb* pcb_aux;
 		t_list* paquete;
+		t_list*paquete2;
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
@@ -70,7 +71,6 @@ void procesar_conexion(void *conexion1){
 				agregar_a_cola_ready(pcb_aux);
 				sem_post(&contador_cola_ready);
 				break;
-				//TODO
 			case EJECUTAR_WAIT:
 				paquete = recibir_paquete(cliente_fd);
 				char *nombre_recurso =list_get(paquete,0);
@@ -173,7 +173,17 @@ void procesar_conexion(void *conexion1){
 			    sem_post(&contador_cola_ready);
 			    break;
 			case PAGE_FAULT:
-				//TODO enviar a cola bloqueado
+				log_info(logger, "recibi un page fault del cpu ");
+				list_add(list_bloqueado_page_fault,pcb_aux);
+				paquete2 = recibir_paquete(cliente_fd);
+				int *nro_pagina = list_get(paquete2,0);
+
+				envio_page_fault_a_memoria(*nro_pagina,pcb_aux->pid,PAGE_FAULT);
+
+				list_remove(pcb_en_ejecucion,0);
+			    sem_post(&contador_ejecutando_cpu);
+			    sem_post(&contador_cola_ready);
+
 				break;
 
 			default:
@@ -210,6 +220,7 @@ void procesar_conexion(void *conexion1){
 			sem_post(&contador_ejecutando_cpu);
 			sem_post(&contador_cola_ready);
 			break;
+
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
 			return;
@@ -219,6 +230,15 @@ void procesar_conexion(void *conexion1){
 		}
 	}
 	return;
+}
+
+void envio_page_fault_a_memoria(int nro_pagina,int pid,op_code operacion){
+	t_paquete* paquete = crear_paquete(operacion);
+	agregar_a_paquete(paquete, &(nro_pagina), sizeof(int));
+	agregar_a_paquete(paquete, &(pid), sizeof(int));
+	enviar_paquete(paquete, conexion_memoria);
+	eliminar_paquete(paquete);
+
 }
 
 void iniciar_consola(){
@@ -264,7 +284,7 @@ void iniciar_consola(){
 				modificar_grado_multiprogramacion();
 				break;
 			case '6':
-				listar_proceso_estado();
+				//listar_proceso_estado();
 				break;
 			case '7':
 				generar_conexion();
@@ -293,7 +313,7 @@ void iniciar_recurso(){
 	cola_ready = queue_create();
 	pcb_en_ejecucion = list_create();
     lista_recursos_pcb = list_create();
-    lista_bloqueados = list_create();
+    list_bloqueado_page_fault = list_create();
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, 10);
 	sem_init(&mutex_cola_new, 0, 1);
@@ -687,6 +707,7 @@ void obtener_configuracion(){
     ip_cpu = config_get_string_value(config, "IP_CPU");
     char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
     asignar_algoritmo(algoritmo);
+
     puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
     puerto_filesystem = config_get_string_value(config, "PUERTO_FILESYSTEM");
     puerto_cpu_dispatch = config_get_string_value(config, "PUERTO_CPU_DISPATCH");
@@ -804,8 +825,8 @@ void ejecutar_signal(char*nombre,t_pcb*pcb){
 				quitar_recurso_pcb(pcb->pid,nombre);
 				if(!queue_is_empty(recurso->cola_bloqueados)){
 					t_pcb* pcb_bloqueado = queue_pop(recurso->cola_bloqueados);
-					list_remove_element(lista_bloqueados,pcb_bloqueado);
 					agregar_a_cola_ready(pcb_bloqueado);
+					sem_post(&contador_cola_ready);
 				}
 			}else{
 				pcb->estado = TERMINATED;
@@ -919,8 +940,8 @@ void liberar_recursos(int pid){
 				while(instancias!=0){
 					if(!queue_is_empty(recurso->cola_bloqueados)){
 						t_pcb* pcb = queue_pop(recurso->cola_bloqueados);
-						list_remove_element(lista_bloqueados,pcb);
 						agregar_a_cola_ready(pcb);
+						sem_post(&contador_cola_ready);
 					}
 					recurso->instancias++;
 					list_replace(lista_recursos,j,recurso);

@@ -402,6 +402,8 @@ t_traduccion* mmu_traducir(int dir_logica){
 	traducido->marco= marco_obtenido;
 	traducido->desplazamiento= desplazamiento;
 	traducido->nro_pagina = nro_pagina;
+
+	log_info(logger,"el marco obtenido es %i",marco_obtenido);
 	return traducido;
 }
 
@@ -624,6 +626,7 @@ void enviar_traduccion(t_traduccion* traducido,op_code operacion){
 	t_paquete* paquete = crear_paquete(operacion);
 	agregar_a_paquete(paquete, &(traducido->marco), sizeof(int));
 	agregar_a_paquete(paquete, &(traducido->desplazamiento), sizeof(int));
+	agregar_a_paquete(paquete,&(traducido->nro_pagina), sizeof(int));
 	enviar_paquete(paquete, conexion_memoria);
 	eliminar_paquete(paquete);
 }
