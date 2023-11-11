@@ -937,7 +937,7 @@ void deadlock(){
 				int t = queue_size(recurso->cola_bloqueados);
 				for(int i =0; i < t; i++){
 					t_pcb* pcb = list_get(recurso->cola_bloqueados->elements, i);
-					log_info(logger,"Deadlock detectado: %i - Recursos en posesión: - Recurso requerido: ",pcb->pid);
+					log_info(logger,"Deadlock detectado: %i - Recursos en posesión: ",pcb->pid);
 					mostrar_recursos_pcb(pcb->pid);
 					log_info(logger, "- Recurso requerido:%s",recurso->nombre);
 				}
