@@ -110,6 +110,7 @@ t_config* iniciar_config();
 void iniciar_consola();
 void iniciar_proceso(char*,int,int,int);
 void finalizar_proceso(int);
+void terminar_proceso(t_pcb*);
 void iniciar_planificacion();
 void detener_planificacion();
 void modificar_grado_multiprogramacion();
@@ -159,6 +160,9 @@ bool can_allocate(int pid, int work[]);
 void detener_planificacion_corto_largo();
 void deadlock();
 void mostrar_recursos_pcb(int);
+t_pcb * buscar_pcb_colas(int,t_queue*);
+t_pcb*buscar_pcb_bloqueados(int );
+t_pcb * encontrar_pcb(int );
 #endif /* KERNEL_H_ */
 
 
