@@ -16,22 +16,70 @@
 #include<readline/readline.h>
 #include <utils/conexion.h>
 #include<readline/readline.h>
+#include<commons/txt.h>
+#define RESERV_BOOT -1;
 
-t_log* logger;
-t_config* config;
-t_log* logger_consola_filesystem;
-
+t_log* logger_file_system;
+t_config* config_file_system;
+//estructuras de FS
+typedef struct{
+	char* nombre_archivo;
+	uint32_t tamanio_archivo;
+	uint32_t bloq_inicial_archivo;
+	//procesos que tienen abierto el archivo
+	t_list* procesos_uso;
+}t_fcb;
+typedef struct{
+	int tamanio_fat;
+	uint32_t* entradas;
+}t_fat;
+typedef struct {
+	uint32_t * datos;
+}t_archivo_bloques;
+typedef struct {
+	uint32_t pid_proceso;
+	t_list* bloq_asignados;
+}t_bloq_asignados;
+typedef struct{
+	t_list* fcb_list;
+	t_fat *fat;
+	t_archivo_bloques *bloques;
+}t_FS;
+t_FS *fs;
+char* ruta_fcbs;
 int conexion_memoria;
 char *ip_memoria;
 char *puerto_memoria;
 char *puerto_escucha;
+char* ruta_fat;
+char* ruta_bloques;
+int tam_bloque;
+int cant_total_bloq;
+int cant_bloq_swap;
+int retardo_acceso_bloq;
+int retardo_acceso_fat;
+
+
+//metodos de FS
+void iniciaalizar_fat();
+void inicializar_boques();
+void inicializar_fcb();
+void inicializar_fs();
+
+void crear_archivo_fcb(char*nombre,t_fcb* fcb_creado);
+int abrir_archivo_fcb(char*);
+void truncar_archivo_fcb(t_fcb*);
+void* connection_handler(void* socket_conexion);
+void ampliar_tam_archivo(t_fcb* fcb_para_modif,int tamanio_nuevo);
+void guardar_tam_fcb(t_fcb* fcb);
+void reducir_tam_archivo(t_fcb *fcb_para_modif);
+t_list* iniciar_proceso(uint32_t cant_bloques);
 
 void obtener_configuracion();
 void terminar_programa();
 t_config* iniciar_config();
-void iterator(char*);
-int iniciar_servidor_file_system(char*);
+void iniciar_servidor_file_system(char*);
 void iniciar_consola();
-
+void iterator(char* value);
 
 #endif /* SRC_FILESYSTEM_H_ */
