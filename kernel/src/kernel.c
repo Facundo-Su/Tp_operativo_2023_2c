@@ -13,6 +13,7 @@ int main(int argc, char **argv){
     obtener_configuracion();
     iniciar_recurso();
     lista_recursos = list_create();
+	cola_ready = queue_create();
     int i =0;
     while(recursos_config[i]!=NULL){
     	t_recurso* recurso = malloc(sizeof(t_recurso));
@@ -61,15 +62,20 @@ void procesar_conexion(void *conexion1){
 			recv(cliente_fd,&cod_op,sizeof(op_code),0);
 			switch(cod_op){
 			case EJECUTAR_SLEEP:
-
+				pthread_t hilo_sleep;
+				t_datos_sleep *datos = malloc(sizeof(t_datos_sleep));
 				paquete = recibir_paquete(cliente_fd);
 				int *tiempo = list_get(paquete,0);
-				log_info(logger,"recibi el sleep %d",*tiempo);
 				list_remove(pcb_en_ejecucion,0);
 				sem_post(&contador_ejecutando_cpu);
-				//usleep(*tiempo*1000000);
-				agregar_a_cola_ready(pcb_aux);
-				sem_post(&contador_cola_ready);
+				log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb_aux->pid);
+				log_info(logger,"PID: %i - Bloqueado por: SLEEP",pcb_aux->pid);
+				pcb_aux->estado = WAITING;
+				list_add(lista_sleep,pcb_aux);
+				datos->pcb = pcb_aux;
+				datos->tiempo = *tiempo;
+				pthread_create(&hilo_sleep, NULL, ejecutar_sleep, datos);
+				pthread_detach(hilo_sleep);
 				break;
 			case EJECUTAR_WAIT:
 				paquete = recibir_paquete(cliente_fd);
@@ -205,8 +211,8 @@ void procesar_conexion(void *conexion1){
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
-			log_info(logger,"el pid del proceso finalizado es %i",pcb_aux->pid);
-			terminar_proceso(pcb_aux);;
+			terminar_proceso(pcb_aux);
+			log_info(logger, "Finaliza el proceso %i - Motivo: SUCCES",pcb_aux->pid);
 			break;
 
 		case -1:
@@ -295,14 +301,22 @@ void iniciar_consola(){
 	}
 
 }
-
+void *ejecutar_sleep(void *arg) {
+    t_datos_sleep *datos = (t_datos_sleep *)arg;
+    usleep(datos->tiempo * 1000000);
+    t_pcb * pcb = buscar_lista(datos->pcb->pid, lista_sleep);
+    agregar_a_cola_ready(pcb);
+    sem_post(&contador_cola_ready);
+    free(datos);
+    return NULL;
+}
 void iniciar_recurso(){
 	lista_pcb=list_create();
 	cola_new = queue_create();
-	cola_ready = queue_create();
 	pcb_en_ejecucion = list_create();
     lista_recursos_pcb = list_create();
     list_bloqueado_page_fault = list_create();
+    lista_sleep = list_create();
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, 10);
 	sem_init(&mutex_cola_new, 0, 1);
@@ -460,10 +474,11 @@ t_pcb* quitar_de_cola_new(){
 void agregar_a_cola_ready(t_pcb* pcb){
 	sem_wait(&mutex_cola_ready);
 	queue_push(cola_ready,pcb);
+	char* estado_anterior = estado_a_string(pcb->estado);
+	log_info(logger, "PID: %i - Estado Anterior: %s - Estado Actual: READY",pcb->pid,estado_anterior);
 	pcb->estado=READY;
 	sem_post(&mutex_cola_ready);
-	log_info(logger, "PID: %i - Estado Anterior: NEW> - Estado Actual: READY",pcb->pid);
-	mostrar_pid_cola_ready();
+	//mostrar_pid_cola_ready();
 }
 void mostrar_pid_cola_ready(){
 	int i = queue_size(cola_ready);
@@ -777,6 +792,7 @@ void ejecutar_wait(char*nombre,t_pcb*pcb){
 	}
 	if(encontro ==0){
 		terminar_proceso(pcb);
+		log_info(logger, "Finaliza el proceso %i - Motivo: INVALID_RESOURCE",pcb->pid);
 	}
 	list_iterator_destroy(iterador);
 }
@@ -806,12 +822,14 @@ void ejecutar_signal(char*nombre,t_pcb*pcb){
 				}
 			}else{
 				terminar_proceso(pcb);
+				log_info(logger, "Finaliza el proceso %i - Motivo: INVALID_RESOURCE",pcb->pid);
 			}
 		}
 		j++;
 	}
 	if(encontro ==0){
 		terminar_proceso(pcb);
+		log_info(logger, "Finaliza el proceso %i - Motivo: INVALID_RESOURCE",pcb->pid);
 	}
 	list_iterator_destroy(iterador);
 }
@@ -848,7 +866,6 @@ void agregar_recurso_pcb(int pid, char*nombre){
 	if(encontro ==0){
 		t_recurso_pcb* recurso = crear_recurso_pcb(nombre, pid);
 		list_add(lista_recursos_pcb, recurso);
-		log_info(logger,"SE AGREGO RECURSO_PCB A LA LISTA");
 	}
 	list_iterator_destroy(iterador);
 }
@@ -868,13 +885,11 @@ void quitar_recurso_pcb(int pid, char*nombre){
 		t_recurso_pcb* recurso = (t_recurso_pcb*)list_iterator_next(iterador);
 		if((strcmp(nombre,recurso->nombre) == 0) && pid == recurso->pid){
 			if(recurso->instancias > 1){
-			log_info(logger,"ENCONTRO EL RECURSO PARA QUITAR");
 				recurso->instancias--;
 				list_replace(lista_recursos_pcb, j, recurso);
 			}else{
 				list_remove(lista_recursos_pcb,j);
 				free(recurso);
-				log_info(logger,"ELIMINE EL RECURSO");
 			}
 		}
 		j++;
@@ -915,16 +930,16 @@ void deadlock(){
 	if(list_is_empty(pcb_en_ejecucion) && list_is_empty(cola_ready) && !list_is_empty(lista_recursos_pcb)){
 		t_list_iterator* iterador = list_iterator_create(lista_recursos);
 		int j=0;
+		log_info(logger,"ANÁLISIS DE DETECCIÓN DE DEADLOCK");
 		while(list_iterator_has_next(iterador)){
 			t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
 			if(!queue_is_empty(recurso->cola_bloqueados)){
 				int t = queue_size(recurso->cola_bloqueados);
 				for(int i =0; i < t; i++){
 					t_pcb* pcb = list_get(recurso->cola_bloqueados->elements, i);
-					log_info(logger,"El pcb bloqueado con pid %d",pcb->pid);
-					log_info(logger,"Necesita el recurso %s", recurso->nombre);
-					log_info(logger,"Tiene los siguientes recursos almacenados");
+					log_info(logger,"Deadlock detectado: %i - Recursos en posesión: - Recurso requerido: ",pcb->pid);
 					mostrar_recursos_pcb(pcb->pid);
+					log_info(logger, "- Recurso requerido:%s",recurso->nombre);
 				}
 			}
 		}
@@ -937,14 +952,15 @@ void mostrar_recursos_pcb(int pid){
 		while(list_iterator_has_next(iterador)){
 			t_recurso_pcb* recurso = (t_recurso_pcb*)list_iterator_next(iterador);
 			if(recurso->pid == pid){
-				log_info(logger,"Recurso %s con %d instancias", recurso->nombre, recurso->instancias);
+				log_info(logger,"%s ,", recurso->nombre);
 			}
 		}
 		list_iterator_destroy(iterador);
 }
 void terminar_proceso(t_pcb * pcb){
+	char* estado_anterior = estado_a_string(pcb->estado);
 	pcb->estado = TERMINATED;
-	log_info(logger,"PID: %i - Estado Anterior: %s - Estado Actual: TERMINATED",pcb->pid,pcb->estado);
+	log_info(logger,"PID: %i - Estado Anterior: %s - Estado Actual: TERMINATED",pcb->pid,estado_anterior);
 	liberar_recursos(pcb->pid);
 	enviar_pcb(pcb,conexion_memoria,FINALIZAR);
 	if(!list_is_empty(pcb_en_ejecucion)){
@@ -968,11 +984,11 @@ t_pcb * encontrar_pcb(int pid){
 	if(running!=NULL){
 		return running;
 	}
-	t_pcb * sleep = buscar_pcb_colas(pid, cola_sleep);
+	t_pcb * sleep = buscar_lista(pid, lista_sleep);
 	if(sleep != NULL){
 		return sleep;
 	}
-	t_pcb * page_fault = buscar_pcb_colas(pid,list_bloqueado_page_fault);
+	t_pcb * page_fault = buscar_lista(pid,list_bloqueado_page_fault);
 	if(page_fault != NULL){
 		return page_fault;
 	}
@@ -1013,4 +1029,37 @@ t_pcb*buscar_pcb_bloqueados(int pid){
 	}
 	list_iterator_destroy(iterador);
 	return NULL;
+}
+t_pcb * buscar_lista(int pid,t_list *lista){
+	t_list_iterator* iterador = list_iterator_create(lista);
+	int d =0;
+	while(list_iterator_has_next(iterador)){
+		t_pcb* pcb = (t_pcb*)list_iterator_next(iterador);
+		if(pcb->pid == pid){
+			list_iterator_destroy(iterador);
+			list_remove(lista,d);
+			return pcb;
+		}
+		d++;
+	}
+	list_iterator_destroy(iterador);
+	return NULL;
+}
+
+
+char* estado_a_string(t_estado estado) {
+    switch (estado) {
+        case NEW:
+            return "NEW";
+        case READY:
+            return "READY";
+        case RUNNING:
+            return "RUNNING";
+        case WAITING:
+            return "WAITING";
+        case TERMINATED:
+            return "TERMINATED";
+        default:
+            return "Estado desconocido";
+    }
 }

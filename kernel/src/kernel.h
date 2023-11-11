@@ -29,7 +29,10 @@ typedef enum{
 	PRIORIDADES
 }t_planificador;
 
-
+typedef struct{
+	t_pcb * pcb;
+	int tiempo;
+}t_datos_sleep;
 
 //ruta de archivo test
 //variable global
@@ -62,7 +65,7 @@ t_log *logger_consola;
 t_list* lista_pcb;
 t_queue* cola_new;
 t_queue* cola_ready;
-t_queue* cola_sleep;
+t_list* lista_sleep;
 t_queue* cola_ejecucion;
 t_list *lista_recursos;
 
@@ -117,12 +120,13 @@ void modificar_grado_multiprogramacion();
 void listar_proceso_por_estado();
 void generar_conexion();
 void enviar_mensaje();
+void * ejecutar_sleep(void *);
 
 bool controlador_multiprogramacion();
 
 time_t start_time, end_time;
 double elapsed_time;
-
+t_pcb * buscar_lista(int ,t_list *);
 
 t_contexto_ejecucion* obtener_contexto(char*);
 void mandar_a_memoria(char* , int , int );
@@ -163,6 +167,7 @@ void mostrar_recursos_pcb(int);
 t_pcb * buscar_pcb_colas(int,t_queue*);
 t_pcb*buscar_pcb_bloqueados(int );
 t_pcb * encontrar_pcb(int );
+char* estado_a_string(t_estado );
 #endif /* KERNEL_H_ */
 
 
