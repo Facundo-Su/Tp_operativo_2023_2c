@@ -54,10 +54,9 @@ void iniciar_consola(){
 				break;
 			case '3':
 				log_info(logger_consola_memoria, "se inicio el servidor\n");
-				//TODO
-				//pthread_t atendiendo;
-				//pthread_create(&atendiendo,NULL,(void*)iniciar_servidor_memoria,(void *) puerto_escucha);
-				iniciar_servidor_memoria(puerto_escucha);
+				pthread_t hilo_aux;
+				pthread_create(&hilo_aux,NULL,(void*) iniciar_servidor_memoria,(void*)puerto_escucha);
+
 				break;
 			case '4':
 
@@ -116,10 +115,12 @@ void iniciar_servidor_memoria(char *puerto) {
     int memoria_fd = iniciar_servidor(puerto);
     log_info(logger, "Servidor listo para recibir al cliente");
 
+    generar_conexion_fs();
+
     while (1) {
         int cliente_fd = esperar_cliente(memoria_fd);
 		pthread_t atendiendo;
-		pthread_create(&atendiendo,NULL,(void*)procesar_conexion,(void *) cliente_fd);
+		pthread_create(&atendiendo,NULL,(void*)procesar_conexion,(void *) &cliente_fd);
 		if (setsockopt(cliente_fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
 			    error("setsockopt(SO_REUSEADDR) failed");
 		pthread_detach(atendiendo);
@@ -127,8 +128,41 @@ void iniciar_servidor_memoria(char *puerto) {
     }
 }
 
-void procesar_conexion(int cliente_fd){
+void generar_conexion_fs(){
+	log_info(logger, "generar conexion con fs\n");
+	pthread_t conexion_memoria_hilo_cpu;
+	conexion_filesystem = crear_conexion(ip_file_system, puerto_filesystem);
+	pthread_create(&conexion_memoria_hilo_cpu,NULL,(void*) procesar_conexion,(void *)&conexion_filesystem);
+}
 
+/*
+void procesar_conexion(void *conexion1){
+	int *conexion = (int*)conexion1;
+	int cliente_fd = *conexion;
+	while (1) {
+		int cod_op = recibir_operacion(cliente_fd);
+		t_pcb* pcb_aux;
+		t_list* paquete;
+		t_list*paquete2;
+		switch (cod_op) {
+		case MENSAJE:
+			recibir_mensaje(cliente_fd);
+			break;
+
+		case -1:
+			log_error(logger, "el cliente se desconecto. Terminando servidor");
+			return;
+		default:
+			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
+			break;
+		}
+	}
+	return;
+}*/
+
+void procesar_conexion(void* socket){
+	int *conexion = (int*)socket;
+	int cliente_fd = *conexion;
 	while (1) {
 	            int cod_op = recibir_operacion(cliente_fd);
 	            t_list * lista;

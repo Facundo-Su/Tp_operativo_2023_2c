@@ -8,6 +8,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		perror(" error con ruta leida de config");
 	}
+    logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
 
 	ruta_config = "./filesystem.config"; //argv[0] es el nom del programa en si mismo
 	logger_file_system = log_create("./filesystem.log", "FILESYSTEM", true,LOG_LEVEL_INFO);
@@ -16,11 +17,10 @@ int main(int argc, char *argv[]) {
 	obtener_configuracion();
 	log_info(logger_file_system, "se cargo la configuracion");
 
-
 	//inicializo las estructuras del file sytem
 	inicializar_fs();
 	log_info(logger_file_system,"se inicializo las estructuras de file system");
-	// iniciar_servidor_file_system(puerto_escucha);
+
 
 	//-----------------------------------peticiones de kernel
 	//TODO quitar cuando termine  de hacer pruebas
@@ -44,6 +44,7 @@ for(int i=0;i<fs->fat->tamanio_fat;i++){
 	//crear_archivo_bloque();
 
 	//liberar_recursos_fs();
+	iniciar_servidor_fs(puerto_escucha);
 
 	return EXIT_SUCCESS;
 }
@@ -128,14 +129,15 @@ void obtener_configuracion() {
 }
 
 // cada hilo creado ejecuta connection_handler
-void* connection_handler(void *socket_conexion) {
-	int cliente_fd = (int) socket_conexion;
+void* procesar_conexion(int cliente_fd) {
 	t_list *lista;
+
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
+			log_info(logger,"hola");
 			enviar_mensaje("saludo desde file system", cliente_fd);
 			break;
 		case PAQUETE:
@@ -146,10 +148,10 @@ void* connection_handler(void *socket_conexion) {
 		case ABRIR_ARCHIVO:
 
 			break;
-//		case CREAR_ARCHIVO:
-//			break;
-//		case LEER_ARCHIVO:
-//		break;
+		case CREAR_ARCHIVO:
+			break;
+		case LEER_ARCHIVO:
+		break;
 		case TRUNCAR_ARCHIVO:
 			break;
 		case ESCRIBIR_ARCHIVO:
@@ -160,9 +162,6 @@ void* connection_handler(void *socket_conexion) {
 			break;
 		case FINALIZAR_PROCESO:
 			break;
-		case -1:
-			log_error(logger, "el cliente se desconecto. Terminando servidor");
-			break;
 		default:
 			log_warning(logger,
 					"Operacion desconocida. No quieras meter la pata");
@@ -171,48 +170,24 @@ void* connection_handler(void *socket_conexion) {
 	}
 }
 
-int iniciar_servidor_file_system(char *puerto) {
-	log_info(logger_file_system, "esperando conexiones");
-	int servidor_fd = iniciar_servidor(puerto);
 
-	//creo un hilo por cada conexion
-	while (1) {
-	int socket_cliente_conectado = esperar_cliente(servidor_fd);
-		pthread_t hilo;
-		if (socket_cliente_conectado != -1) {
-			pthread_create(&hilo, NULL, (void*) connection_handler,(void*) socket_cliente_conectado);
-			pthread_detach(hilo);
+void iniciar_servidor_fs(char *puerto) {
 
-			return 1;
-		} else {
-			perror("error conectando cliente");
-		}
-	}
-	return 0;
+    int fs_fd = iniciar_servidor(puerto);
+    log_info(logger_file_system, "Servidor listo para recibir al cliente");
 
-//	while (1) {
-//		struct sockaddr_in client_addr;
-//	    socklen_t client_addr_len=sizeof(client_addr);
-//	    int client_socket=accept(servidor_fd,(struct sockaddr*)&client_addr,&client_addr_len);
-//	    if(client_socket<0){
-//	    	perror("error al aceptar la conexion");
-//	    	continue;//continua ejecutando el sig ciclo del while a pesar del fallo
-//	    }
-//	    pthread_t thread;
-//	        int *socket_desc = malloc(sizeof(int));
-//
-//	        *socket_desc = client_socket;
-//
-//	        if (pthread_create(&thread, NULL, connection_handler, (void *)socket_desc) < 0) {
-//	            perror("No se pudo crear el hilo de la conexion");
-//	            free(socket_desc);
-//	            close(client_socket);
-//	            continue;
-//	        }
-//	        pthread_detach(thread); // Liberar recursos cuando el hilo termine
-//	    }
-//	close(servidor_fd);
+    while (1) {
+        int cliente_fd = esperar_cliente(fs_fd);
+		pthread_t atendiendo;
+		pthread_create(&atendiendo,NULL,(void*)procesar_conexion,(void *) cliente_fd);
+		if (setsockopt(cliente_fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
+			    error("setsockopt(SO_REUSEADDR) failed");
+		pthread_detach(atendiendo);
+
+    }
 }
+
+
 void iterator(char *value) {
 	log_info(logger, "%s", value);
 }

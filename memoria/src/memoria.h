@@ -84,7 +84,7 @@ void obtener_configuraciones();
 void iniciar_servidor_memoria(char*);
 void iniciar_consola();
 void recibir_estructura_inicial(int);
-void procesar_conexion(int);
+void procesar_conexion(void*);
 void iniciar_recursos();
 void cargar_lista_instruccion(char*,int ,int,int);
 t_list* leer_pseudocodigo(FILE*);
@@ -102,5 +102,8 @@ t_list * crear_paginas(int );
 void enviar_marco(int  , op_code ,int );
 bool pagina_esta_en_memoria(int , int );
 t_pagina * obtener_pagina(int );
+void generar_conexion_fs();
+void procesar_conexion_prueba(void *);
+
 #endif /* KERNEL_H_ */
 

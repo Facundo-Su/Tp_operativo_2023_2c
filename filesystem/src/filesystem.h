@@ -21,15 +21,7 @@
 #define RESERV_BOOT UINT32_MAX;
 #define MARCA_ASIG UINT32_MAX;
 #define EOFF UINT32_MAX;
-typedef enum{
-	CREAR_ARCHIVO,
-	LEER_ARCHIVO,
-	ABRIR_ARCHIVO,
-	ESCRIBIR_ARCHIVO,
-	FINALIZAR_PROCESO,
-	TRUNCAR_ARCHIVO,
 
-}cod_fs;
 
 t_log* logger_file_system;
 t_config* config_file_system;
@@ -99,5 +91,6 @@ t_config* iniciar_config();
 int iniciar_servidor_file_system(char*);
 void iniciar_consola();
 void iterator(char* value);
+void * procesar_conexion(int);
 
 #endif /* SRC_FILESYSTEM_H_ */
