@@ -18,11 +18,13 @@
 #include <utils/conexion.h>
 #include<readline/readline.h>
 #include<commons/txt.h>
+#include<fcntl.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+
 #define RESERV_BOOT UINT32_MAX;
 #define MARCA_ASIG UINT32_MAX;
 #define EOFF UINT32_MAX;
-
-
 t_log* logger_file_system;
 t_config* config_file_system;
 //estructuras de FS
@@ -75,6 +77,7 @@ t_archivo_bloques* inicializar_boques();
 void inicializar_fcb();
 void inicializar_fs();
 
+char* recibir_nombre_archivo(int socket_cliente);
 void crear_archivo_bloque();
 void crear_archivo_fcb(char*nombre,t_fcb* fcb_creado);
 int abrir_archivo_fcb(char*);

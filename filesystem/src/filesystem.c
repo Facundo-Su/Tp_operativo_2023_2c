@@ -142,13 +142,31 @@ void* procesar_conexion(int cliente_fd) {
 			break;
 		case PAQUETE:
 			lista = recibir_paquete(cliente_fd);
-			log_info(logger, "Me llegaron los siguientes valores:\n");
-			list_iterate(lista, (void*) iterator);
+			log_info(logger, "Me un paquete");
+
 			break;
 		case ABRIR_ARCHIVO:
+			char *nombre_archivo=recibir_nombre_archivo(cliente_fd);
+			int tamanio_archivo=abrir_archivo_fcb(nombre_archivo);
+
+			if(tamanio_archivo!=-1){
+				//se envia el tamanio como char* o int?
+				log_info(logger_file_system, "Abrir Archivo: < %s >",nombre_archivo);
+				//TODO implementar
+
+				enviar_tamanio_archivo(tamanio_archivo,cliente_fd);
+			}else{
+				enviar_error_apertura("ERROR_APERTURA_ARCHIVO",cliente_fd);
+
+			}
+			free(nombre_archivo);
 
 			break;
 		case CREAR_ARCHIVO:
+			char* nombre_a_crear=recibir_nombre_archivo(cliente_fd);
+			t_fcb * fcb_creado;
+			crear_archivo_fcb(nombre_a_crear,fcb_creado);
+
 			break;
 		case LEER_ARCHIVO:
 		break;
@@ -169,7 +187,12 @@ void* procesar_conexion(int cliente_fd) {
 		}
 	}
 }
+void enviar_tamanio_archivo(int tamanio,int cliente_fd){
 
+}
+void enviar_error_apertura(char* err,int cliente_fd){
+
+}
 
 void iniciar_servidor_fs(char *puerto) {
 
@@ -188,9 +211,6 @@ void iniciar_servidor_fs(char *puerto) {
 }
 
 
-void iterator(char *value) {
-	log_info(logger, "%s", value);
-}
 
 //--------------------funciones de file system
 
@@ -214,6 +234,7 @@ t_fcb* buscar_fcb(char *nombre_a_buscar) {
 		return fcb;
 }
 char* intAString(int numero) {
+
     // Determina el tamaño del buffer necesario para la cadena
     int tamano_buffer = snprintf(NULL, 0, "%d", numero);
 
@@ -225,6 +246,13 @@ char* intAString(int numero) {
 
     return cadena;
 }
+char* recibir_nombre_archivo(int socket_cliente){
+	int size;
+	char* nombre = recibir_buffer(&size, socket_cliente);
+	log_info(logger, "Me llego el mensaje %s", nombre);
+	//free(nombre);
+	return nombre;
+}
 // abrir archivo; si el archivo existe se devuelve el tam, sino -1 y se informa que no existe
 int abrir_archivo_fcb(char *nombre_fcb) {
 	//preparo la ruta del archivo fcb
@@ -233,11 +261,7 @@ int abrir_archivo_fcb(char *nombre_fcb) {
 	log_info(logger_file_system, "ruta copia %s",nueva_ruta);
 	//creo el config del archivo fcb
 	t_config  *config_fcb=config_create(nueva_ruta);
-	if (config_fcb == NULL) {
-		//no se encuentra el fcb
-		log_info(logger_file_system, "no se pudo encontrar el fcb de  %s",nombre_fcb);
 
-	} else {
 		t_fcb* fcb_abierto=malloc(sizeof(t_fcb));
 		fcb_abierto->nombre_archivo=nombre_fcb;
 		fcb_abierto->bloq_inicial_archivo=config_get_int_value(config_fcb,"BLOQUE_INICIAL");
@@ -256,7 +280,7 @@ int abrir_archivo_fcb(char *nombre_fcb) {
 		config_destroy(config_fcb);
 		free(inicial_a_guardar);
 		free(nueva_ruta);
-	}
+
 	return tamanio_archivo;
 }
 
@@ -337,22 +361,37 @@ void actualizar_tam_fcb(t_fcb *fcb, int tamanio_nuevo) {
 	fcb->tamanio_archivo = fcb->tamanio_archivo + tamanio_nuevo;
 }
 //recibe el nuevo tamanio del archivo y modif el mismo
-void truncar_archivo(t_fcb *fcb_para_modif, int nuevo_tamanio) {
+void truncar_archivo(t_fcb *fcb_para_modif, int nuevo_tamanio_bytes) {
 	//TODO hacer reasignacion de bloques con tamanio nuevo
-	if (fcb_para_modif->tamanio_archivo < nuevo_tamanio) {
-		reducir_tam_archivo(fcb_para_modif, nuevo_tamanio);
+	if (fcb_para_modif->tamanio_archivo < nuevo_tamanio_bytes) {
+		reducir_tam_archivo(fcb_para_modif, nuevo_tamanio_bytes);
 
 	} else {
 		//siempre se puede ampliar el archivo
-		ampliar_tam_archivo(fcb_para_modif, nuevo_tamanio);
-
+		ampliar_tam_archivo(fcb_para_modif, nuevo_tamanio_bytes);
 	}
 }
-//TODO investigar como hacer la asignacion de bloques
-//ampliar_tam_archivo: actualiza tam en archivo fcb y asigna bloques neces para direccionar el nuevo tam
-void ampliar_tam_archivo(t_fcb *fcb_para_modif, int tamanio_nuevo) {
-	//modifico el tam del archivo
-	fcb_para_modif->tamanio_archivo = tamanio_nuevo;
+
+//ampliar_tam_archivo:se reservan nuevos bloques y se "concatenan" a los ya asignados
+void ampliar_tam_archivo(t_fcb *fcb_para_modif, int tamanio_nuevo_bytes) {
+
+	//calculo cant bloques adicionales
+	int tam_bytes_adicionales=tamanio_nuevo_bytes-fcb_para_modif->tamanio_archivo;
+
+	int cant_bloq_adicionales=calcular_bloq_necesarios_fcb(tam_bytes_adicionales);
+	//guardo el bloque inicial y el ultimo asignado
+	int bloq_inicial_original=fcb_para_modif->bloq_inicial_archivo;
+	int ultimo_bloq_asignado=obtener_ultimo_bloq_fcb(fcb_para_modif);
+
+	//modifico el fcb con el tam adicionl a asignar
+	fcb_para_modif->tamanio_archivo = tamanio_nuevo_bytes;
+	asignar_entradas_fat(fcb_para_modif);
+
+	//reestablezco el puntero al bloque inicial y uno los bloque asignados a partir del ultimo
+	fs->fat->entradas[ultimo_bloq_asignado]=fcb_para_modif->bloq_inicial_archivo;
+	fcb_para_modif->bloq_inicial_archivo=bloq_inicial_original;
+
+
 }
 //TODO Poner semaforo. modif_tam: se abre el config, se modif el fcb  y luego se lo cierrra.
 void guardar_tam_fcb(t_fcb *fcb) {
@@ -368,12 +407,76 @@ void guardar_tam_fcb(t_fcb *fcb) {
 				"no se pudo modificar el tamanio del archivo");
 	}
 }
-//TODO implementar
-void reducir_tam_archivo(t_fcb *fcb_para_modif, int tamanio) {
+//reducir_tamanio: se asume que los bloq a liberar no contienen datos. Se liberan desde el ultimo bloque del nuevo tamanio
+void reducir_tam_archivo(t_fcb *fcb_para_modif, int tamanio_nuevo_bytes) {
 
+	uint32_t cant_bloq_nuevos=calcular_bloq_necesarios_fcb(tamanio_nuevo_bytes);
+
+	//guardo el bloq desde donde inicio a eliminar y luego pongo el nuevo EOFF
+	int ultimo_bloq=obtener_bloque_por_indice(fcb_para_modif, cant_bloq_nuevos);
+	int inicio_para_eliminar=fs->fat->entradas[ultimo_bloq];
+	fs->fat->entradas[ultimo_bloq]=EOFF;
+	//calculo cant bloques a eliminar
+	int bytes_liberar=tamanio_nuevo_bytes-fcb_para_modif->tamanio_archivo;
+	int bloq_liberar=calcular_bloq_necesarios_fcb(bytes_liberar);
+	int indice=0;
+	while(indice<bloq_liberar){
+		int siguiente_bloque=fs->fat->entradas[inicio_para_eliminar];
+		fs->fat->entradas[inicio_para_eliminar]=0;
+		inicio_para_eliminar=siguiente_bloque;
+		indice++;
+	}
 }
-//leer archivo: lee la info de un bloque a partir del puntero y la envia a memoria
-void leer_archivo() {
+int obtener_bloque_por_indice(t_fcb* fcb,int indice_bloque){
+	int bloque=fcb->bloq_inicial_archivo;
+	while(bloque<=indice_bloque){
+		bloque=fs->fat->entradas[bloque];
+	}
+	return bloque;
+}
+//devuelve el indice del ultimo bloque asignado a un fcb;
+int obtener_ultimo_bloq_fcb(t_fcb* fcb){
+	int cant_bloques=calcular_bloq_necesarios_fcb(fcb->tamanio_archivo);
+	uint32_t bloque_inicial=fcb->bloq_inicial_archivo;
+	uint32_t index_bloques=bloque_inicial;
+	int indice=0;
+	while(indice<cant_bloques){
+		index_bloques=fs->fat->entradas[index_bloques];
+		indice++;
+	}
+	return index_bloques;
+}
+//leer archivo: lee la info de un bloque a partir del bloque inicial  y la envia a memoria
+void leer_archivo_bloques() {
+    int blfd = open(ruta_bloques, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if (blfd == -1) {
+        perror("Error al abrir/crear el archivo de bloques");
+        exit(EXIT_FAILURE);
+    }
+
+    // Obtiene el tamaño del archivo para mapear toda la región
+    struct stat stat_buf;
+    if (fstat(blfd, &stat_buf) == -1) {
+        perror("Error al obtener el tamaño del archivo");
+        close(blfd);
+        exit(EXIT_FAILURE);
+    }
+
+    // Utiliza mmap para mapear el archivo en memoria
+    void *bloquesMapeado = mmap(NULL, stat_buf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, blfd, 0);
+    if (bloquesMapeado == MAP_FAILED) {
+        perror("Error al mapear el archivo de bloques");
+        close(blfd);
+        exit(EXIT_FAILURE);
+    }
+
+    // Ahora bloquesMapeado apunta a la memoria mapeada del archivo de bloques
+
+    // ... Hacer operaciones con la memoria mapeada ...
+
+    // Importante: Cuando hayas terminado, no olvides liberar la memoria mapeada y cerrar el archivo
+    munmap(bloquesMapeado, stat_buf.st_size);
+    close(blfd);
 }
 //se crear el archivo que contendra los bloques fat y swap
 //archivo_lboque=swap + fat, tam_total esta en config y donde debe ubicarse tambien
@@ -402,7 +505,7 @@ void crear_archivo_bloque() {
 
 int recibir_cantidad_req_bloq(int socket_cliente) {
 	int cantidad_bloq;
-	if (recv(socket_cliente, &cantidad_bloq, sizeof(int), MSG_WAITALL) > 0)
+	if(recv(socket_cliente, &cantidad_bloq, sizeof(int), MSG_WAITALL) > 0)
 		return cantidad_bloq;
 	else {
 		close(socket_cliente);

@@ -54,6 +54,7 @@ typedef enum
 	ESCRIBIR_ARCHIVO,
 	FINALIZAR_PROCESO,
 	TRUNCAR_ARCHIVO
+
 }op_code;
 
 typedef struct
