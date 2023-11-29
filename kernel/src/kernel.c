@@ -174,9 +174,12 @@ void procesar_conexion(void *conexion1){
 			    break;
 			case PAGE_FAULT:
 				log_error(logger, "recibi un page fault del cpu ");
-				list_add(list_bloqueado_page_fault,pcb_aux);
+				queue_push(list_bloqueado_page_fault,pcb_aux);
 				paquete2 = recibir_paquete(cliente_fd);
 				int *nro_pagina = list_get(paquete2,0);
+
+				log_warning(logger, "e; valor de nro _ pag es %i",*nro_pagina);
+
 
 				envio_page_fault_a_memoria(*nro_pagina,pcb_aux->pid,PAGE_FAULT);
 
@@ -202,7 +205,12 @@ void procesar_conexion(void *conexion1){
 			sem_post(&contador_ejecutando_cpu);
 			sem_post(&proceso_desalojo);
 			break;
-
+		case OK_PAG_CARGADA:
+			t_pcb * pcb_2 = queue_pop(list_bloqueado_page_fault);
+			agregar_a_cola_ready(pcb_2);
+			log_warning(logger, "saque un elemento de page fault %i",pcb_2->pid);
+			sem_post(&contador_cola_ready);
+			break;
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
@@ -313,7 +321,7 @@ void iniciar_recurso(){
 	cola_ready = queue_create();
 	pcb_en_ejecucion = list_create();
     lista_recursos_pcb = list_create();
-    list_bloqueado_page_fault = list_create();
+    list_bloqueado_page_fault = queue_create();
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, 10);
 	sem_init(&mutex_cola_new, 0, 1);

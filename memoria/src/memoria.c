@@ -297,6 +297,7 @@ void procesar_conexion(void* socket){
 	    			log_info(logger, "Me llegaron los siguientes valores de nro_pagina : %i",*nro_pagina);
 					log_info(logger, "Me llegaron los siguientes valores de pid_page_fault: %i",*pid_page_fault);
 	    			asignar_marco(*pid, *nro_pagina);
+	    			enviar_mensaje_instrucciones("ok capo",cliente_fd,OK_PAG_CARGADA);
 	    			//int posicion_swap= obtener_posicion_swap(*pid,*nro_pagina);
 	    			//cargar_en_espacio_memoria(3);
 
@@ -382,14 +383,17 @@ int obtener_marco(int pid, int pagina){
 
     if (tabla_pagina != NULL) {
             // Se encontró un elemento que cumple con la condición
-            log_info(logger, "Se encontraron la talba de pagina para el PID %i", tabla_pagina->pid);
+
+
+
             t_pagina* pagina_encontrado = list_get(tabla_pagina->paginas,pagina);
-            if(pagina_encontrado->p !=0){
+            if(pagina_encontrado->p ==1){
+                log_warning(logger, "Se encontraron la en el marco PID %i........marco %i", tabla_pagina->pid,pagina_encontrado->num_marco);
             	return pagina_encontrado->num_marco;
+
             }else{
             	return -1;
             }
-            // Luego puedes realizar las operaciones que necesites con 'instrucciones'
         } else {
             // No se encontraron instrucciones que cumplan con la condición
             log_info(logger, "No se encontraron la pagina para el PID %i", pid);
@@ -668,7 +672,10 @@ void asignar_marco(int pid, int nro_pagina){
 			list_replace(memoria->marcos,i,marco);
 			contador_fifo++;
 			actualizar_marcos_lru();
-			actualizar_tablas(pid,i,nro_pagina);
+			t_pagina * pagina = obtener_pagina(i);
+			pagina->p =1;
+			//TODO
+			//actualizar_tablas(pid,i,nro_pagina);
 		}else{
 			int nro_marco_remplazado = ejecutar_algoritmo();
 			log_info(logger,"se remplazo el marco %i",nro_marco_remplazado);
@@ -678,6 +685,7 @@ void asignar_marco(int pid, int nro_pagina){
 			}
 			actualizar_tablas(pid,nro_marco_remplazado,nro_pagina);
 		}
+
 	}else{
 
 	    bool encontrar_tabla_pagina(void * tabla_pagina){
@@ -695,6 +703,10 @@ void asignar_marco(int pid, int nro_pagina){
 		marco->last_time_lru =0;
 		list_replace(memoria->marcos,marco->num_marco,marco);
 	}
+
+
+
+
 }
 bool pagina_esta_en_memoria(int pid, int nro_pagina){
 	t_list_iterator* iterador = list_iterator_create(memoria->marcos);
@@ -707,6 +719,10 @@ bool pagina_esta_en_memoria(int pid, int nro_pagina){
           return valor_comparar == pid;
     }
     t_tabla_paginas* tabla_pagina = list_find(memoria->lista_tabla_paginas, encontrar_tabla_pagina);
+
+    log_warning(logger, "el valor de la talba es pid %i,tabla",nro_pagina);
+
+
 	t_pagina * pagina = list_get(tabla_pagina->paginas,nro_pagina);
 
 	bool i = false;

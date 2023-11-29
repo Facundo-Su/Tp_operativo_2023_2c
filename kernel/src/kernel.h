@@ -60,7 +60,7 @@ char *ip_memoria;
 char *ip_filesystem;
 char *ip_cpu;
 char *puerto_fileSystem;
-t_list * list_bloqueado_page_fault;
+t_queue * list_bloqueado_page_fault;
 t_log *logger_consola;
 t_list* lista_pcb;
 t_queue* cola_new;

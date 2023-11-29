@@ -396,6 +396,9 @@ t_traduccion* mmu_traducir(int dir_logica){
 
 	t_traduccion* traducido= malloc(sizeof(t_traduccion));
 	int nro_pagina =  floor(dir_logica / tamanio_pagina);
+
+
+
 	obtener_el_marco(nro_pagina,OBTENER_MARCO);
 	sem_wait(&contador_marco_obtenido);
 	int desplazamiento = dir_logica - nro_pagina * tamanio_pagina;
@@ -404,7 +407,7 @@ t_traduccion* mmu_traducir(int dir_logica){
 	traducido->desplazamiento= desplazamiento;
 	traducido->nro_pagina = nro_pagina;
 
-	log_info(logger,"el marco obtenido es %i",traducido->marco);
+
 	return traducido;
 }
 
@@ -507,6 +510,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger_consola_cpu,"entendi el mensaje MOV_IN");
 		break;
 	case MOV_OUT:
+		log_warning(logger, "ejecutando mov_ouyt");
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 		valor_int = atoi(parametro);
@@ -515,10 +519,12 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		valor_uint1 = obtener_valor(registro_aux);
 
 		t_traduccion* traducido2 = mmu_traducir(valor_int);
-		if(traducido->marco ==-1){
+
+		if(traducido2->marco ==-1){
+
 			pcb->contexto->pc-=1;
-			enviar_pcb(pcb,cliente_fd,PAGE_FAULT);
-			enviar_pagina_a_kernel(traducido,PAGE_FAULT, cliente_fd);
+			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
+			enviar_pagina_a_kernel(traducido2,PAGE_FAULT, cliente_fd);
 			hayInterrupcion=true;
 		}else{
 			enviar_traduccion_mov_out(traducido2, ENVIO_MOV_OUT, valor_uint1);
@@ -607,8 +613,12 @@ void enviar_recurso_a_kernel(char* recurso,op_code operacion,int cliente_fd){
 }
 
 void enviar_pagina_a_kernel(t_traduccion* traducido ,op_code operacion , int cliente_fd){
+
+
+	int nro_pag = traducido->nro_pagina;
+	log_warning(logger, "el nro de pag que envio a kernel es %i",nro_pag);
 	t_paquete* paquete = crear_paquete(operacion);
-	agregar_a_paquete(paquete, &(traducido->nro_pagina),sizeof(int));
+	agregar_a_paquete(paquete, &(nro_pag),sizeof(int));
 	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);
 }
