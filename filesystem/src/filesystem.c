@@ -89,8 +89,8 @@ t_fat* inicializar_fat() {
 }
 
 t_archivo_bloques* inicializar_bloques() {
-t_archivo_bloques *bloques = malloc(tam_bloque*cant_total_bloq);
-	return bloques;
+	t_archivo_bloques *bloques = malloc(tam_bloque*cant_total_bloq);
+		return bloques;
 }
 void inicializar_fs() {
 	fs=malloc(sizeof(t_FS));

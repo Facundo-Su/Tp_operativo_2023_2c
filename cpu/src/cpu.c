@@ -143,6 +143,7 @@ void procesar_conexion(void *conexion1){
 			auxiliar2 = list_get(paquete1,0);
 			log_info(logger, "el valor del marco es %i",*auxiliar2);
 			marco_obtenido = *auxiliar2;
+			log_info(logger, "el valor del marco es %i",marco_obtenido);
 			sem_post(&contador_marco_obtenido);
 
 			break;
@@ -403,7 +404,7 @@ t_traduccion* mmu_traducir(int dir_logica){
 	traducido->desplazamiento= desplazamiento;
 	traducido->nro_pagina = nro_pagina;
 
-	log_info(logger,"el marco obtenido es %i",marco_obtenido);
+	log_info(logger,"el marco obtenido es %i",traducido->marco);
 	return traducido;
 }
 
@@ -492,6 +493,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		valor_int = atoi(parametro2);
 		t_traduccion* traducido = mmu_traducir(valor_int);
 		if(traducido->marco ==-1){
+			log_error(logger, "HAY PAGE FAULT,ENVIO MENSAJE A KERNEL");
 			pcb->contexto->pc-=1;
 			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 			enviar_pagina_a_kernel(traducido,PAGE_FAULT, cliente_fd);

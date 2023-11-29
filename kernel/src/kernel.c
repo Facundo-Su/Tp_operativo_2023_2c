@@ -173,7 +173,7 @@ void procesar_conexion(void *conexion1){
 			    sem_post(&contador_cola_ready);
 			    break;
 			case PAGE_FAULT:
-				log_info(logger, "recibi un page fault del cpu ");
+				log_error(logger, "recibi un page fault del cpu ");
 				list_add(list_bloqueado_page_fault,pcb_aux);
 				paquete2 = recibir_paquete(cliente_fd);
 				int *nro_pagina = list_get(paquete2,0);

@@ -189,8 +189,8 @@ void procesar_conexion(void* socket){
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
-					//char *ruta = "./prueba.txt";
-					char *ruta =	obtener_ruta(aux);
+					char *ruta = "./prueba.txt";
+					//char *ruta =	obtener_ruta(aux);
 	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
 	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
@@ -217,7 +217,7 @@ void procesar_conexion(void* socket){
 	            	asignar_marco(pid, *nro_pag_mov_in);
 
 	            	uint32_t *valor_leido =malloc(sizeof(uint32_t));
-	            	memcpy(valor_leido, memoria->espacio_usuario + (*marco *tam_pagina), sizeof(uint32_t));
+	            	memcpy(valor_leido, memoria->espacio_usuario + (*marco *tam_pagina) + *desplazamiento, sizeof(uint32_t));
 	            	enviar_registro_leido_mov_in(valor_leido,ENVIO_MOV_IN,cliente_fd);
 	            	break;
 	            case ENVIO_MOV_OUT:
@@ -231,13 +231,14 @@ void procesar_conexion(void* socket){
 	            	log_info(logger, "Me llegaron los siguientes valores de desplazamiento: %i",*desplazamiento_out);
 	            	log_info(logger, "Me llegaron los siguientes valores de escritura: %i",*valor_remplazar);
 	            	//TODO realizar operacion;
-	            	memcpy(memoria->espacio_usuario + (*marco * tam_pagina), &valor_remplazar, sizeof(uint32_t));
-
+	            	memcpy(memoria->espacio_usuario + (1* tam_pagina) + *desplazamiento_out, valor_remplazar, sizeof(uint32_t));
+	            	uint32_t *valor_leido2 =malloc(sizeof(uint32_t));
+	            	memcpy(valor_leido2, memoria->espacio_usuario + (1 *tam_pagina)+ *desplazamiento_out , sizeof(uint32_t));
+	            	log_info(logger,"%u",*valor_leido2);
 	            	modificar_tabla_pagina(*pid_out,*pagina_out);
 
 	            	break;
 	            case FINALIZAR:
-
 	            	t_list * paquete = recibir_paquete(cliente_fd);
 	            	t_pcb* pcb_recibido = desempaquetar_pcb(paquete);
 	            	//valor_pid= recibir_pcb(cliente_fd);
@@ -292,6 +293,7 @@ void procesar_conexion(void* socket){
 	    			lista = recibir_paquete(cliente_fd);
 	    			int* nro_pagina = list_get(lista,0);
 	    			int* pid_page_fault = list_get(lista,1);
+	    			log_error(logger,"HAY PAGE FAULT");
 	    			log_info(logger, "Me llegaron los siguientes valores de nro_pagina : %i",*nro_pagina);
 					log_info(logger, "Me llegaron los siguientes valores de pid_page_fault: %i",*pid_page_fault);
 	    			asignar_marco(*pid, *nro_pagina);
@@ -344,7 +346,7 @@ int obtener_posicion_swap(int pid,int nro_pagina){
 
 }
 
-void modificar_tabla_pagina(int pid , int pagina){
+void modificar_tabla_pagina(int pid , int nro_pagina){
 
     bool encontrar_tabla_pagina(void * tabla_pagina){
           t_tabla_paginas* un_tabla_pagina = (t_tabla_paginas*)tabla_pagina;
@@ -358,7 +360,7 @@ void modificar_tabla_pagina(int pid , int pagina){
 	    if (tabla_pagina != NULL) {
 	            // Se encontró un elemento que cumple con la condición
 	            log_info(logger, "Se encontraron la talba de pagina para el PID %i", pid);
-	            t_pagina* pagina = list_get(tabla_pagina->paginas,pagina);
+	            t_pagina* pagina = list_get(tabla_pagina->paginas,nro_pagina);
 	            pagina->m=1;
 	        } else {
 	            // No se encontraron instrucciones que cumplan con la condición
