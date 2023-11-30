@@ -190,8 +190,8 @@ void procesar_conexion(void* socket){
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
-					char *ruta = "./prueba.txt";
-					//char *ruta =	obtener_ruta(aux);
+					//char *ruta = "./prueba.txt";
+					char *ruta =	obtener_ruta(aux);
 	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
 	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
@@ -301,9 +301,6 @@ void procesar_conexion(void* socket){
 	    			lista = recibir_paquete(cliente_fd);
 	    			int* nro_pagina = list_get(lista,0);
 	    			int* pid_page_fault = list_get(lista,1);
-	    			log_error(logger,"HAY PAGE FAULT");
-	    			log_info(logger, "Me llegaron los siguientes valores de nro_pagina : %i",*nro_pagina);
-					log_info(logger, "Me llegaron los siguientes valores de pid_page_fault: %i",*pid_page_fault);
 	    			asignar_marco(*pid_page_fault, *nro_pagina);
 	    			enviar_mensaje_instrucciones("ok capo",cliente_fd,OK_PAG_CARGADA);
 	    			//int posicion_swap= obtener_posicion_swap(*pid,*nro_pagina);
@@ -641,7 +638,7 @@ void iniciar_particionamiento_memoria(){
     int i, desplazamiento = 0;
     for(i=0; i<memoria->cantidad_marcos; i++) {
         t_marco *marco = malloc(sizeof(t_marco));
-        marco->base = memoria->espacio_usuario + desplazamiento;
+        marco->base = desplazamiento;
         marco->is_free = true;
         marco->num_marco = i;
         list_add(memoria->marcos, marco);
@@ -664,8 +661,6 @@ int encontrar_marco_libre() {
 void asignar_marco(int pid, int nro_pagina){
 	t_marco * marco;
 	t_pagina * pagina = obtener_pagina(pid, nro_pagina);
-	log_warning(logger, "EL NUMERO DE PAGINA ES : %i",nro_pagina);
-	log_warning(logger, "EL Proceso ES : %i",pid);
 	if(!pagina_esta_en_memoria(pid,nro_pagina)){
 		int i = encontrar_marco_libre();
 		if(i!=-1){

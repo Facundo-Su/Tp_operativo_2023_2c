@@ -95,7 +95,6 @@ void enviar_mensaje(char* mensaje, int socket_cliente)
 	send(socket_cliente, a_enviar, bytes, 0);
 
 	free(a_enviar);
-	log_info(logger,"se envio_correctamente");
 	eliminar_paquete(paquete);
 }
 
@@ -340,7 +339,7 @@ void enviar_pcb(t_pcb* pcb, int conexion,op_code operacion){
 t_pcb* recibir_pcb(int socket_cliente){
 	t_list * paquete = recibir_paquete(socket_cliente);
 	t_pcb* pcb_recibido = desempaquetar_pcb(paquete);
-	log_pcb_info(pcb_recibido);
+	//log_pcb_info(pcb_recibido);
 	list_destroy(paquete);
 	return pcb_recibido;
 }

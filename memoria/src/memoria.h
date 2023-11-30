@@ -33,7 +33,7 @@ typedef struct {
 
 typedef struct {
 	int num_marco;
-    char * base;
+    int base;
     bool is_free;
     int llegada_fifo;
     int last_time_lru;

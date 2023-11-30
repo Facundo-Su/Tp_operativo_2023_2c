@@ -361,7 +361,6 @@ void ejecutar_ciclo_de_instruccion(int cliente_fd){
 	while(!hayInterrupcion){
 		if(hay_desalojo){
 			enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
-			log_info(logger, "LLEGO A DESALOJAR");
 			return;
 		}
 		fetch(cliente_fd);
@@ -374,7 +373,7 @@ void ejecutar_ciclo_de_instruccion(int cliente_fd){
 void fetch(int cliente_fd){
 	int pc = pcb->contexto->pc;
 	int pid = pcb->pid;
-	log_info(logger, "estoy en fetch con pid %i ",pid);
+	log_info(logger, "PID: %i - FETCH - Program Counter: %i.",pid,pc);
 	solicitar_instruccion_ejecutar_segun_pc(pc, pid);
 	sem_wait(&contador_instruccion);
 	pcb->contexto->pc+=1;
@@ -429,16 +428,17 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 
 		parametro2= list_get(instrucciones->parametros,1);
 		parametro= list_get(instrucciones->parametros,0);
-
+		logger(logger,"PID: %i - Ejecutando SET: %s - %s",pcb->pid,parametro,parametro2);
 		valor_uint1 = strtoul(parametro2, NULL, 10);
 		registro_aux = devolver_registro(parametro);
 		setear(registro_aux,valor_uint1);
 		//ADormir(x segundo);
-		log_info(logger,"entendi el mensaje SET setie al registro %s , el valor [%u]",parametro,valor_uint1);
 		break;
 	case SUB:
+
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
+		logger(logger,"PID: %i - Ejecutando SUB: %s - %s",pcb->pid,parametro,parametro2);
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
 		restar(pcb, registro_aux, registro_aux2);
@@ -446,7 +446,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 	case SUM:
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
-
+		logger(logger,"PID: %i - Ejecutando SUM: %s - %s",pcb->pid,parametro,parametro2);
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
 		sumar(registro_aux, registro_aux2);
@@ -454,6 +454,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 	case JNZ:
 		parametro = list_get(instrucciones->parametros,0);
 		parametro2 =list_get(instrucciones->parametros,1);
+		logger(logger,"PID: %i - Ejecutando JNZ: %s - %s",pcb->pid,parametro,parametro2);
 		registro_aux = devolver_registro(parametro);
 		valor_uint1 = obtener_valor(registro_aux);
 		if(valor_uint1 ==0){
@@ -463,8 +464,8 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		break;
 	case SLEEP:
 		hayInterrupcion= true;
-		log_info(logger_consola_cpu, "entendi sleep");
 		parametro=  list_get(instrucciones->parametros,0);
+		logger(logger,"PID: %i - Ejecutando SLEEP: %s",pcb->pid,parametro);
 		int tiempo = atoi(parametro);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_sleep(tiempo,cliente_fd,EJECUTAR_SLEEP);
@@ -472,40 +473,43 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
    case WAIT:
 	    hayInterrupcion =true;
 		recurso= list_get(instrucciones->parametros,0);
+		logger(logger,"PID: %i - Ejecutando WAIT: %s",pcb->pid,recurso);
 		recurso = strtok(recurso, "\n");
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_recurso_a_kernel(recurso,EJECUTAR_WAIT,cliente_fd);
-		log_info(logger,"entendi el mensaje WAIT el recurso es %s",recurso);
 		break;
 	case SIGNAL:
 	    hayInterrupcion =true;
 		recurso = list_get(instrucciones->parametros,0);
+		logger(logger,"PID: %i - Ejecutando SIGNAL: %s",pcb->pid,recurso);
 		recurso = strtok(recurso, "\n");
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_recurso_a_kernel(recurso,EJECUTAR_SIGNAL,cliente_fd);
-		log_info(logger,"entendi el mensaje SIGNAL el recurso es  %s",recurso);
 		break;
 	case MOV_IN:
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 		valor_int = atoi(parametro2);
 		t_traduccion* traducido = mmu_traducir(valor_int);
+		logger(logger,"PID: %i - Ejecutando MOV_IN: %s-%s",pcb->pid,parametro,parametro2);
+
 		if(traducido->marco ==-1){
-			log_error(logger, "HAY PAGE FAULT,ENVIO MENSAJE A KERNEL");
 			pcb->contexto->pc-=1;
+			log_info(logger, "Page Fault PID: %i - Página: %i",pcb->pid,traducido->nro_pagina);
 			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 			enviar_pagina_a_kernel(traducido,PAGE_FAULT, cliente_fd);
 			hayInterrupcion=true;
 		}else{
+			log_info(logger,"PID: %i - OBTENER MARCO - Página: %i - Marco: %i.",pcb->pid,traducido->nro_pagina,traducido->marco);
 			valor_uint1 = obtener_el_valor_de_memoria(traducido);
 			registro_aux = devolver_registro(parametro);
 			valor_uint1 = (uint32_t) registro_por_mov;
 			setear(registro_aux, valor_uint1);
+			int dir_fisica = traducido->marco* tamanio_pagina + traducido->desplazamiento;
+			log_info(logger, "PID: %i - Acción: LEER - Dirección Física: %i - Valor: %u",pcb->pid,dir_fisica,valor_uint1);
 		}
-		log_info(logger_consola_cpu,"entendi el mensaje MOV_IN");
 		break;
 	case MOV_OUT:
-		log_warning(logger, "ejecutando mov_ouyt");
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 		valor_int = atoi(parametro);
@@ -514,13 +518,17 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		valor_uint1 = obtener_valor(registro_aux);
 
 		t_traduccion* traducido2 = mmu_traducir(valor_int);
-
+		logger(logger,"PID: %i - Ejecutando MOV_OUT: %s-%s",pcb->pid,parametro,parametro2);
 		if(traducido2->marco ==-1){
+			log_info(logger, "Page Fault PID: %i - Página: %i",pcb->pid,traducido2->nro_pagina);
 			pcb->contexto->pc-=1;
 			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 			enviar_pagina_a_kernel(traducido2,PAGE_FAULT, cliente_fd);
 			hayInterrupcion=true;
 		}else{
+			log_info(logger,"PID: %i - OBTENER MARCO - Página: %i - Marco: %i.",pcb->pid,traducido2->nro_pagina,traducido2->marco);
+			int dir_fisica2 = traducido2->marco* tamanio_pagina + traducido2->desplazamiento;
+			log_info(logger, "PID: %i - Acción: ESCRIBIR - Dirección Física: %i - Valor: %u",pcb->pid,dir_fisica2,valor_uint1);
 			enviar_traduccion_mov_out(traducido2, ENVIO_MOV_OUT, valor_uint1);
 		}
 		break;
@@ -529,41 +537,42 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger_consola_cpu,"entendi el mensaje F_OPEN");
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
+		logger(logger,"PID: %i - Ejecutando F_OPEN: %s-%s",pcb->pid,parametro,parametro2);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_f_open(parametro,parametro2,cliente_fd,EJECUTAR_F_OPEN);
 		break;
 	case F_CLOSE:
 
 		hayInterrupcion = true;
-		log_info(logger_consola_cpu,"entendi el mensaje F_CLOSE");
 		parametro= list_get(instrucciones->parametros,0);
+		logger(logger,"PID: %i - Ejecutando F_CLOSE: %s",pcb->pid,parametro);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_f_close(parametro,cliente_fd,EJECUTAR_F_CLOSE);
 		break;
 
 	case F_SEEK:
 		hayInterrupcion = true;
-		log_info(logger_consola_cpu,"entendi el mensaje F_SEEK");
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
+		logger(logger,"PID: %i - Ejecutando F_SEEK: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_f_seek(parametro,valor_int,cliente_fd,EJECUTAR_F_SEEK);
 		break;
 	case F_READ:
 		hayInterrupcion = true;
-		log_info(logger_consola_cpu,"entendi el mensaje F_READ");
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
+		logger(logger,"PID: %i - Ejecutando F_READ: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_f_read(parametro,valor_int,cliente_fd,EJECUTAR_F_READ);
 		break;
 	case F_WRITE:
 		//hayInterrupcion = true;
-		log_info(logger_consola_cpu,"entendi el mensaje F_WRITE");
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
+		logger(logger,"PID: %i - Ejecutando F_WRITE: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_f_write(parametro,valor_int,cliente_fd,EJECUTAR_F_WRITE);
@@ -571,19 +580,18 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 	case F_TRUNCATE:
 
 		hayInterrupcion = true;
-		log_info(logger_consola_cpu,"entendi el mensaje F_TRUNCATE");
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
+		logger(logger,"PID: %i - Ejecutando F_TRUNCATE: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_f_truncate(parametro,valor_int,cliente_fd,EJECUTAR_F_WRITE);
 		break;
 	case EXIT:
-		log_info(logger_consola_cpu, "llego hasta aca sssssss");
 		hayInterrupcion = true;
-		imprimir_valores_registros(pcb->contexto->registros_cpu);
+		logger(logger,"PID: %i - Ejecutando EXIT:",pcb->pid);
+		//imprimir_valores_registros(pcb->contexto->registros_cpu);
 		enviar_pcb(pcb,cliente_fd,FINALIZAR);
-		log_info(logger_consola_cpu,"entendi el mensaje EXIT");
 		hay_desalojo = false;
 		break;
 	}
@@ -609,7 +617,6 @@ void enviar_pagina_a_kernel(t_traduccion* traducido ,op_code operacion , int cli
 
 
 	int nro_pag = traducido->nro_pagina;
-	log_warning(logger, "el nro de pag que envio a kernel es %i",nro_pag);
 	t_paquete* paquete = crear_paquete(operacion);
 	agregar_a_paquete(paquete, &(nro_pag),sizeof(int));
 	enviar_paquete(paquete, cliente_fd);
@@ -728,8 +735,6 @@ void sumar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
 
 
     uint32_t valor_origen = obtener_valor(origen);
-    log_info(logger_consola_cpu,"el valor a sumar es %u",valor_destino);
-    log_info(logger_consola_cpu,"el valor a sumar es %u",valor_origen);
     uint32_t resultado = valor_destino + valor_origen;
     setear(destino, resultado);
 }
