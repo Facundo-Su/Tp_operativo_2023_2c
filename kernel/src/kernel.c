@@ -185,10 +185,17 @@ void procesar_conexion(void *conexion1){
 				paquete2 = recibir_paquete(cliente_fd);
 				int *nro_pagina = list_get(paquete2,0);
 
+				t_page_fault * page_aux = malloc(sizeof(page_aux));
+				page_aux->nro_pag= *nro_pagina;
+				page_aux->pid_enviar = pcb_aux->pid;
+				page_aux->operacion=PAGE_FAULT;
+				page_aux->cliente_fd = cliente_fd;
+				page_aux->pcb_remplazo=pcb_aux;
+
 				log_warning(logger, "e; valor de nro _ pag es %i",*nro_pagina);
-
-
-				envio_page_fault_a_memoria(*nro_pagina,pcb_aux->pid,PAGE_FAULT);
+				pthread_t atendiendo_page_fault;
+				pthread_create(&atendiendo_page_fault,NULL,(void*)envio_page_fault_a_memoria,(void *) &page_aux);
+				pthread_detach(atendiendo_page_fault);
 
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
@@ -257,13 +264,27 @@ void *ejecutar_sleep(void *arg) {
     return NULL;
 }
 
-void envio_page_fault_a_memoria(int nro_pagina,int pid,op_code operacion){
-	t_paquete* paquete = crear_paquete(operacion);
-	agregar_a_paquete(paquete, &(nro_pagina), sizeof(int));
-	agregar_a_paquete(paquete, &(pid), sizeof(int));
+void envio_page_fault_a_memoria(t_page_fault* page_fault){
+	t_paquete* paquete = crear_paquete(page_fault->operacion);
+	agregar_a_paquete(paquete, &(page_fault->nro_pag), sizeof(int));
+	agregar_a_paquete(paquete, &(page_fault->pid_enviar), sizeof(int));
 	enviar_paquete(paquete, conexion_memoria);
 	eliminar_paquete(paquete);
 
+	op_code cod_op;
+
+	recv(page_fault->cliente_fd,&cod_op,sizeof(op_code),0);
+	switch(cod_op){
+		case OK_PAG_CARGADA:
+				t_pcb * pcb_2 =page_fault->pcb_remplazo;
+				agregar_a_cola_ready(pcb_2);
+				log_warning(logger, "saque un elemento de page fault %i",pcb_2->pid);
+				sem_post(&contador_cola_ready);
+				break;
+		default:
+				log_error(logger, "che no se que me mandaste");
+					break;
+				}
 }
 
 void iniciar_consola(){

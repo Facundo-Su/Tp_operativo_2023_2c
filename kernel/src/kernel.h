@@ -53,6 +53,14 @@ typedef struct{
     int pid;
 }t_recurso_pcb;
 
+typedef struct{
+	int nro_pag;
+	int pid_enviar;
+	op_code operacion;
+	int cliente_fd;
+	t_pcb *pcb_remplazo;
+}t_page_fault;
+
 t_list *lista_recursos_pcb;
 //configuraciones del archibo kernel.config
 
@@ -167,6 +175,7 @@ void mostrar_recursos_pcb(int);
 t_pcb * buscar_pcb_colas(int,t_queue*);
 t_pcb*buscar_pcb_bloqueados(int );
 t_pcb * encontrar_pcb(int );
+void envio_page_fault_a_memoria(t_page_fault* );
 char* estado_a_string(t_estado );
 #endif /* KERNEL_H_ */
 
