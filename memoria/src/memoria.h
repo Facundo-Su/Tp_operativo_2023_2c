@@ -13,7 +13,7 @@
 t_log* logger;
 t_config* config;
 t_log * logger_consola_memoria;
-
+sem_t envio_marco;
 int contador_fifo;
 
 sem_t contador_espera_cargar;
@@ -101,7 +101,7 @@ char* obtener_ruta(char* );
 t_list * crear_paginas(int );
 void enviar_marco(int  , op_code ,int );
 bool pagina_esta_en_memoria(int , int );
-t_pagina * obtener_pagina(int );
+t_pagina * obtener_pagina(int,int );
 void generar_conexion_fs();
 void procesar_conexion_prueba(void *);
 

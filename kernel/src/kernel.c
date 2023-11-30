@@ -61,15 +61,21 @@ void procesar_conexion(void *conexion1){
 			recv(cliente_fd,&cod_op,sizeof(op_code),0);
 			switch(cod_op){
 			case EJECUTAR_SLEEP:
-
 				paquete = recibir_paquete(cliente_fd);
 				int *tiempo = list_get(paquete,0);
-				log_info(logger,"recibi el sleep %d",*tiempo);
 				list_remove(pcb_en_ejecucion,0);
 				sem_post(&contador_ejecutando_cpu);
-				usleep(*tiempo*1000000);
-				agregar_a_cola_ready(pcb_aux);
 				sem_post(&contador_cola_ready);
+				pthread_t hilo_sleep;
+				t_datos_sleep *datos = malloc(sizeof(t_datos_sleep));
+				log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb_aux->pid);
+				log_info(logger,"PID: %i - Bloqueado por: SLEEP",pcb_aux->pid);
+				pcb_aux->estado = WAITING;
+				list_add(lista_sleep,pcb_aux);
+				datos->pcb = pcb_aux;
+				datos->tiempo = *tiempo;
+				pthread_create(&hilo_sleep, NULL, ejecutar_sleep, datos);
+				pthread_detach(hilo_sleep);
 				break;
 			case EJECUTAR_WAIT:
 				paquete = recibir_paquete(cliente_fd);
@@ -174,6 +180,7 @@ void procesar_conexion(void *conexion1){
 			    break;
 			case PAGE_FAULT:
 				log_error(logger, "recibi un page fault del cpu ");
+				log_info(logger, "se bloquea el pcb %i",pcb_aux->pid);
 				queue_push(list_bloqueado_page_fault,pcb_aux);
 				paquete2 = recibir_paquete(cliente_fd);
 				int *nro_pagina = list_get(paquete2,0);
@@ -214,7 +221,7 @@ void procesar_conexion(void *conexion1){
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
-			log_info(logger,"el pid del proceso finalizado es %i",pcb_aux->pid);
+			log_error(logger,"el pid del proceso finalizado es %i",pcb_aux->pid);
 			//TODO VER SI NECESITA UNA LISTA PARA LAMACENAR LOS PROCESOS TERMINADO
 			enviar_mensaje("hola se finalizo el proceso ", conexion);
 			pcb_aux->estado = TERMINATED;
@@ -238,6 +245,16 @@ void procesar_conexion(void *conexion1){
 		}
 	}
 	return;
+}
+
+void *ejecutar_sleep(void *arg) {
+    t_datos_sleep *datos = (t_datos_sleep *)arg;
+    usleep(datos->tiempo * 1000000);
+    t_pcb * pcb = buscar_lista(datos->pcb->pid, lista_sleep);
+    agregar_a_cola_ready(pcb);
+    sem_post(&contador_cola_ready);
+    free(datos);
+    return NULL;
 }
 
 void envio_page_fault_a_memoria(int nro_pagina,int pid,op_code operacion){
@@ -280,7 +297,13 @@ void iniciar_consola(){
 				log_info(logger_consola, "ingrese pid");
 				char* valor = readline(">");
 				int valorNumero = atoi(valor);
-				finalizar_proceso(valorNumero);
+				t_pcb * pcb_finalizar = encontrar_pcb(valorNumero);
+				liberar_recursos(pcb_finalizar->pid);
+				enviar_pcb(pcb_finalizar,conexion_memoria,FINALIZAR);
+				sem_post(&grado_multiprogramacion);
+				sem_post(&contador_ejecutando_cpu);
+				sem_post(&contador_cola_ready);
+				log_error(logger, "se finalizo el proceso %i", pcb_finalizar->pid);
 				break;
 			case '3':
 				iniciar_planificacion();
@@ -322,6 +345,7 @@ void iniciar_recurso(){
 	pcb_en_ejecucion = list_create();
     lista_recursos_pcb = list_create();
     list_bloqueado_page_fault = queue_create();
+    lista_sleep = list_create();
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, 10);
 	sem_init(&mutex_cola_new, 0, 1);
@@ -838,33 +862,13 @@ void ejecutar_signal(char*nombre,t_pcb*pcb){
 					sem_post(&contador_cola_ready);
 				}
 			}else{
-				pcb->estado = TERMINATED;
-				log_pcb_info(pcb);
-				liberar_recursos(pcb->pid);
-				enviar_pcb(pcb,conexion_memoria,FINALIZAR);
-				if(!list_is_empty(pcb_en_ejecucion)){
-					list_remove(pcb_en_ejecucion,0);
-				}
-				sem_post(&grado_multiprogramacion);
-				sem_post(&contador_ejecutando_cpu);
-				sem_post(&contador_cola_ready);
-				log_info(logger,"recurso no tomado");
+				terminar_proceso(pcb);
 			}
 		}
 		j++;
 	}
 	if(encontro ==0){
-		pcb->estado = TERMINATED;
-		log_pcb_info(pcb);
-		liberar_recursos(pcb->pid);
-		enviar_pcb(pcb,conexion_memoria,FINALIZAR);
-		if(!list_is_empty(pcb_en_ejecucion)){
-			list_remove(pcb_en_ejecucion,0);
-		}
-		sem_post(&grado_multiprogramacion);
-		sem_post(&contador_ejecutando_cpu);
-		sem_post(&contador_cola_ready);
-		log_info(logger,"recurso inexistente");
+		terminar_proceso(pcb);
 	}
 	list_iterator_destroy(iterador);
 }
@@ -921,13 +925,11 @@ void quitar_recurso_pcb(int pid, char*nombre){
 		t_recurso_pcb* recurso = (t_recurso_pcb*)list_iterator_next(iterador);
 		if((strcmp(nombre,recurso->nombre) == 0) && pid == recurso->pid){
 			if(recurso->instancias > 1){
-			log_info(logger,"ENCONTRO EL RECURSO PARA QUITAR");
 				recurso->instancias--;
 				list_replace(lista_recursos_pcb, j, recurso);
 			}else{
 				list_remove(lista_recursos_pcb,j);
 				free(recurso);
-				log_info(logger,"ELIMINE EL RECURSO");
 			}
 		}
 		j++;
@@ -995,4 +997,112 @@ void mostrar_recursos_pcb(int pid){
 		}
 		list_iterator_destroy(iterador);
 }
+
+void terminar_proceso(t_pcb * pcb){
+	char* estado_anterior = estado_a_string(pcb->estado);
+	pcb->estado = TERMINATED;
+	log_info(logger,"PID: %i - Estado Anterior: %s - Estado Actual: TERMINATED",pcb->pid,estado_anterior);
+	liberar_recursos(pcb->pid);
+	enviar_pcb(pcb,conexion_memoria,FINALIZAR);
+	if(!list_is_empty(pcb_en_ejecucion)){
+		list_remove(pcb_en_ejecucion,0);
+	}
+	sem_post(&grado_multiprogramacion);
+	sem_post(&contador_ejecutando_cpu);
+	sem_post(&contador_cola_ready);
+}
+
+t_pcb * encontrar_pcb(int pid){
+	t_pcb *bloqueado = buscar_pcb_bloqueados(pid);
+	if(bloqueado!=NULL){
+		return bloqueado;
+	}
+	t_pcb * ready = buscar_pcb_colas(pid, cola_ready);
+	if(ready!=NULL){
+		return ready;
+	}
+	t_pcb * running = buscar_pcb_colas(pid, cola_ejecucion);
+	if(running!=NULL){
+		return running;
+	}
+	t_pcb * sleep = buscar_lista(pid, lista_sleep);
+	if(sleep != NULL){
+		return sleep;
+	}
+	t_pcb * page_fault = buscar_pcb_colas(pid,list_bloqueado_page_fault);
+	if(page_fault != NULL){
+		return page_fault;
+	}
+	return NULL;
+}
+t_pcb * buscar_pcb_colas(int pid, t_queue * cola){
+	int d = queue_size(cola);
+	if(d>0){
+		for(int c = 0; c<d;c++){
+			t_pcb * pcb = list_get(cola->elements,c);
+			if(pid == pcb->pid){
+				list_remove(cola->elements,c);
+				return pcb;
+			}
+		}
+	}
+	return NULL;
+}
+
+t_pcb*buscar_pcb_bloqueados(int pid){
+	t_list_iterator* iterador = list_iterator_create(lista_recursos);
+	int d =0;
+	while(list_iterator_has_next(iterador)){
+		t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
+		int i = queue_size(recurso->cola_bloqueados);
+		if(i>0){
+			for(int c = 0; c<i;c++){
+				t_pcb * pcb = list_get(recurso->cola_bloqueados->elements,c);
+				if(pid == pcb->pid){
+					list_iterator_destroy(iterador);
+					list_remove(recurso->cola_bloqueados->elements,c);
+					list_replace(lista_recursos,d,recurso);
+					return pcb;
+				}
+			}
+		}
+		d++;
+	}
+	list_iterator_destroy(iterador);
+	return NULL;
+}
+t_pcb * buscar_lista(int pid,t_list *lista){
+	t_list_iterator* iterador = list_iterator_create(lista);
+	int d =0;
+	while(list_iterator_has_next(iterador)){
+		t_pcb* pcb = (t_pcb*)list_iterator_next(iterador);
+		if(pcb->pid == pid){
+			list_iterator_destroy(iterador);
+			list_remove(lista,d);
+			return pcb;
+		}
+		d++;
+	}
+	list_iterator_destroy(iterador);
+	return NULL;
+}
+
+
+char* estado_a_string(t_estado estado) {
+    switch (estado) {
+        case NEW:
+            return "NEW";
+        case READY:
+            return "READY";
+        case RUNNING:
+            return "RUNNING";
+        case WAITING:
+            return "WAITING";
+        case TERMINATED:
+            return "TERMINATED";
+        default:
+            return "Estado desconocido";
+    }
+}
+
 

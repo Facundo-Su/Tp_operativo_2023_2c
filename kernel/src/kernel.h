@@ -121,7 +121,7 @@ void listar_proceso_por_estado();
 void generar_conexion();
 void enviar_mensaje();
 void * ejecutar_sleep(void *);
-
+void terminar_proceso(t_pcb * );
 bool controlador_multiprogramacion();
 
 time_t start_time, end_time;

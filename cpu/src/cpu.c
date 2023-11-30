@@ -138,10 +138,8 @@ void procesar_conexion(void *conexion1){
 
 			break;
 		case OBTENER_MARCO:
-
 			paquete1 = recibir_paquete(cliente_fd);
 			auxiliar2 = list_get(paquete1,0);
-			log_info(logger, "el valor del marco es %i",*auxiliar2);
 			marco_obtenido = *auxiliar2;
 			log_info(logger, "el valor del marco es %i",marco_obtenido);
 			sem_post(&contador_marco_obtenido);
@@ -396,9 +394,6 @@ t_traduccion* mmu_traducir(int dir_logica){
 
 	t_traduccion* traducido= malloc(sizeof(t_traduccion));
 	int nro_pagina =  floor(dir_logica / tamanio_pagina);
-
-
-
 	obtener_el_marco(nro_pagina,OBTENER_MARCO);
 	sem_wait(&contador_marco_obtenido);
 	int desplazamiento = dir_logica - nro_pagina * tamanio_pagina;
@@ -521,7 +516,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		t_traduccion* traducido2 = mmu_traducir(valor_int);
 
 		if(traducido2->marco ==-1){
-
 			pcb->contexto->pc-=1;
 			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 			enviar_pagina_a_kernel(traducido2,PAGE_FAULT, cliente_fd);
@@ -529,7 +523,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		}else{
 			enviar_traduccion_mov_out(traducido2, ENVIO_MOV_OUT, valor_uint1);
 		}
-		log_info(logger_consola_cpu,"entendi el mensaje MOV_OUT");
 		break;
 	case F_OPEN:
 		hayInterrupcion = true;
