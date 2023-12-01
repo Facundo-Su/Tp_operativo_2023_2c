@@ -21,12 +21,13 @@
 #include<fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-
+#include <dirent.h>
 #define RESERV_BOOT UINT32_MAX;
 #define MARCA_ASIG UINT32_MAX;
 #define EOFF UINT32_MAX;
 t_log* logger_file_system;
 t_config* config_file_system;
+
 //estructuras de FS
 typedef struct{
 	char* nombre_archivo;
@@ -39,9 +40,7 @@ typedef struct{
 	int tamanio_fat;
 	uint32_t* entradas;
 }t_fat;
-typedef struct {
-	uint32_t * datos;
-}t_archivo_bloques;
+
 typedef struct {
 	uint32_t pid_proceso;
 	t_list* bloq_asignados;
@@ -55,7 +54,7 @@ typedef struct{
 typedef struct{
 	t_list* fcb_list;
 	t_fat *fat;
-	t_archivo_bloques *bloques;
+	void *bloques;
 	t_swap* array_swap;
 }t_FS;
 t_FS *fs;
@@ -75,10 +74,10 @@ int retardo_acceso_fat;
 
 //metodos de FS
 t_fat* inicializar_fat();
-t_archivo_bloques* inicializar_boques();
+void inicializar_boques();
 void inicializar_fcb();
 void inicializar_fs();
-
+t_fcb* devolver_fcb(char*);
 char* recibir_nombre_archivo(int socket_cliente);
 void crear_archivo_bloque();
 void crear_archivo_fcb(char*nombre,t_fcb* fcb_creado);
