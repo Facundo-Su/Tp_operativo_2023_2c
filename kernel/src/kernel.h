@@ -113,7 +113,8 @@ void asignar_algoritmo(char *algoritmo);
 int* string_to_int_array(char** array_de_strings);
 void paquete(int);
 void mostrar_paquete(t_paquete*);
-
+char * listar_procesos(t_queue *);
+char * listar_procesos_bloqueados();
 void deteccion_automatica();
 void iterator(char*);
 void interactuar_con_modulo();
