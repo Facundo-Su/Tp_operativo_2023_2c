@@ -49,7 +49,9 @@ typedef struct {
 typedef struct{
 	bool libre;
 	uint32_t valor;
+
 }t_swap;
+
 typedef struct{
 	t_list* fcb_list;
 	t_fat *fat;
@@ -81,14 +83,24 @@ char* recibir_nombre_archivo(int socket_cliente);
 void crear_archivo_bloque();
 void crear_archivo_fcb(char*nombre,t_fcb* fcb_creado);
 int abrir_archivo_fcb(char*);
-void truncar_archivo_fcb(t_fcb*);
+void truncar_archivo(t_fcb*,int nuevo_tam);
 void* connection_handler(void* socket_conexion);
 void ampliar_tam_archivo(t_fcb* fcb_para_modif,int tamanio_nuevo);
 void guardar_tam_fcb(t_fcb* fcb);
 void reducir_tam_archivo(t_fcb *fcb_para_modif,int nuevo_tamanio);
 t_list* iniciar_proceso(uint32_t cant_bloques);
-
+int obtener_ultimo_bloq_fcb(t_fcb* fcb);
+int obtener_bloque_por_indice(t_fcb*,int);
+void reducir_tam_archivo(t_fcb* fcb_para_modif,int nuevo_tam);
+void ampliar_tam_archivo(t_fcb* fb_para_modif,int nuevo_tam);
+void asignar_entradas_fat(t_fcb *fcb_a_guardar);
 void obtener_configuracion();
+int calcular_bloq_necesarios_fcb(int tam_bytes);
+int buscar_entrada_libre_fat();
+int buscar_bloq_libre_swap();
+t_list* iniciar_proceso();
+
+
 void terminar_programa();
 t_config* iniciar_config();
 int iniciar_servidor_file_system(char*);
