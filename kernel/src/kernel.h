@@ -63,10 +63,11 @@ typedef struct{
 
 typedef struct{
 	char* nombre_archivo;
-	int puntero;
 	bool bloqueado;
+	bool peticion_escritura;
 	int contador;
 	t_queue* cola_bloqueado;
+	int indice;
 }t_archivo;
 
 
@@ -190,6 +191,10 @@ t_pcb*buscar_pcb_bloqueados(int );
 t_pcb * encontrar_pcb(int );
 void envio_page_fault_a_memoria(t_page_fault* );
 char* estado_a_string(t_estado );
+
+void buscar_en_tabla_archivo_general(char*,t_pcb* ,char*);
+
+
 #endif /* KERNEL_H_ */
 
 

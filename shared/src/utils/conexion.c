@@ -376,7 +376,7 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 	agregar_a_paquete(paquete, &(pcb->prioridad), sizeof(int));
 	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
 	//empaquetar_recursos(paquete,pcb->recursos);
-	empaquetar_tabla_archivo_abierto(paquete,pcb->tabla_archivo_abierto);
+	//empaquetar_tabla_archivo_abierto(paquete,pcb->tabla_archivo_abierto);
 
 }
 
@@ -450,12 +450,12 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	int * prioridad = list_get(paquete, (*puntero_posicion)++);
 	pcb->prioridad = *prioridad;
 
-	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, *puntero_posicion);
+	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, puntero_posicion);
 	pcb->contexto = contexto;
 	//t_list *recursos =desempaquetar_recursos(paquete,puntero_posicion);
 
-	t_list* lista_archivo_aux = desempaquetar_archivos_abiertos(paquete, *puntero_posicion);
-	pcb->tabla_archivo_abierto = lista_archivo_aux;
+	//t_list* lista_archivo_aux = desempaquetar_archivos_abiertos(paquete, *puntero_posicion);
+	//pcb->tabla_archivo_abierto = lista_archivo_aux;
 	return pcb;
 }
 
@@ -496,23 +496,25 @@ t_instruccion * desempaquetar_instrucciones(t_list* paquete){
 }
 
 
-t_list* desempaquetar_parametros(t_list* paquete,int *posicion){
+t_list* desempaquetar_parametros(t_list* paquete,int posicion){
 	t_list*parametros = list_create();
-	int cantidad_parametro = list_get(paquete,(*posicion)++));
+	int cantidad_parametro = list_get(paquete,posicion);
+	posicion++;
 	for(int i=0;i<cantidad_parametro;i++){
-		char* parametro = list_get(paquete,(*posicion)++));
+		char* parametro = list_get(paquete,posicion);
+		posicion++;
 		list_add(parametros,parametro);
 	}
 	return parametros;
 
 }
-
+/*
 t_list* desempaquetar_archivos_abiertos(t_list* paquete, int posicion){
-	log_warning(logger, "el valor de de la posicion es es = %i",posicion);
+
 	t_list* archivo_abiertos = list_create();
-	int *cantidad_archivo_abierto = list_get(paquete,posicion);
+	int cantidad_archivo_abierto = *((int*)list_get(paquete, posicion));
 	posicion++;
-	log_warning(logger, "el valor de nombre es = %i",*cantidad_archivo_abierto);
+
 	for(int i=0;i<*cantidad_archivo_abierto;i++){
 		t_archivo_pcb* archivo_aux = malloc(sizeof(t_archivo_pcb));
 		char* nombre = list_get(paquete,posicion);
@@ -527,7 +529,7 @@ t_list* desempaquetar_archivos_abiertos(t_list* paquete, int posicion){
 
 
 
-}
+}*/
 
 /*t_list* desempaquetar_recursos(t_list* paquete,int* posicion){
 	t_list*recursos = list_create();

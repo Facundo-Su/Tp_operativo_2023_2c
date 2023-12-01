@@ -112,10 +112,6 @@ void procesar_conexion(void *conexion1){
 			log_info(logger, "Estoy por recibir un PCB");
 			t_list * paquete = recibir_paquete(cliente_fd);
 			pcb = desempaquetar_pcb(paquete);
-			t_archivo_pcb* aux = list_get(pcb->tabla_archivo_abierto,0);
-
-			log_warning(logger,"el nombre del primer libro es %s",aux->nombre);
-
 			//recibir_pcb(cliente_fd);
 			hayInterrupcion = false;
 			hay_desalojo= false;

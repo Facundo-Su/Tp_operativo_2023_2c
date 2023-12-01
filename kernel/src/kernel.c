@@ -56,6 +56,9 @@ void procesar_conexion(void *conexion1){
 		case RECIBIR_PCB:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
+			t_pcb* pcb_aux2=list_get(pcb_en_ejecucion,0);
+			pcb_aux->tabla_archivo_abierto =pcb_aux2->tabla_archivo_abierto;
+
 			log_info(logger,"recibi el pcb");
 			log_pcb_info(pcb_aux);
 			recv(cliente_fd,&cod_op,sizeof(op_code),0);
@@ -111,6 +114,11 @@ void procesar_conexion(void *conexion1){
 			    char* modo_apertura = list_get(paquete,1);
 			    log_info(logger, "el archivo es %s",nombre_archivo);
 			    log_info(logger, "el modo del archivo es %s",modo_apertura);
+
+			    buscar_en_tabla_archivo_general(nombre_archivo,pcb_aux,modo_apertura);
+
+
+
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
 			    agregar_a_cola_ready(pcb_aux);
@@ -191,9 +199,11 @@ void procesar_conexion(void *conexion1){
 				page_aux->operacion=PAGE_FAULT;
 				page_aux->cliente_fd = cliente_fd;
 				page_aux->pcb_remplazo=pcb_aux;
-				pthread_t atendiendo_page_fault;
-				pthread_create(&atendiendo_page_fault,NULL,(void*)envio_page_fault_a_memoria,(void *) &page_aux);
-				pthread_detach(atendiendo_page_fault);
+
+				envio_page_fault_a_memoria(page_aux);
+				//pthread_t atendiendo_page_fault;
+				//pthread_create(&atendiendo_page_fault,NULL,(void*)envio_page_fault_a_memoria,(void *) &page_aux);
+				//pthread_detach(atendiendo_page_fault);
 
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
@@ -239,6 +249,57 @@ void procesar_conexion(void *conexion1){
 	return;
 }
 
+
+void buscar_en_tabla_archivo_general(char* nombre,t_pcb* pcb,char* modo_apertura){
+	t_list_iterator* iterador = list_iterator_create(tabla_archivo_general);
+		int j=0;
+		while(list_iterator_has_next(iterador)){
+			t_archivo* archivo = (t_archivo*)list_iterator_next(iterador);
+			if(strcmp(nombre,archivo->nombre_archivo) == 0){
+				//archivo->contador++;
+			    if(archivo->bloqueado){
+			    	queue_push(archivo->cola_bloqueado,pcb);
+			    }else{
+			    	if(archivo->peticion_escritura){
+			    	    queue_push(archivo->cola_bloqueado,pcb);
+			    	}else{
+			    	   if(strcmp(modo_apertura,"R")){
+			    		   archivo->contador++;
+			    	   }else{
+			    	   archivo->peticion_escritura = true;
+			    	   }
+			    	}
+			    }
+
+
+				return;
+		}
+		list_iterator_destroy(iterador);
+		t_archivo* archivo = malloc(sizeof(t_archivo));
+		archivo->nombre_archivo =nombre;
+		archivo->cola_bloqueado =queue_create();
+		archivo->contador=1;
+		if(strcmp(modo_apertura,"W")){
+			archivo->bloqueado= true;
+		}else{
+			archivo->bloqueado=false;
+		}
+		archivo->indice=0;
+
+		list_add(tabla_archivo_general,archivo);
+
+		return;
+		}
+}
+
+
+
+
+
+
+
+
+
 void *ejecutar_sleep(void *arg) {
     t_datos_sleep *datos = (t_datos_sleep *)arg;
     usleep(datos->tiempo * 1000000);
@@ -249,27 +310,13 @@ void *ejecutar_sleep(void *arg) {
     return NULL;
 }
 
+//TODO
 void envio_page_fault_a_memoria(t_page_fault* page_fault){
 	t_paquete* paquete = crear_paquete(page_fault->operacion);
 	agregar_a_paquete(paquete, &(page_fault->nro_pag), sizeof(int));
 	agregar_a_paquete(paquete, &(page_fault->pid_enviar), sizeof(int));
 	enviar_paquete(paquete, conexion_memoria);
 	eliminar_paquete(paquete);
-
-	op_code cod_op;
-
-	recv(page_fault->cliente_fd,&cod_op,sizeof(op_code),0);
-	switch(cod_op){
-		case OK_PAG_CARGADA:
-				t_pcb * pcb_2 =page_fault->pcb_remplazo;
-				agregar_a_cola_ready(pcb_2);
-
-				sem_post(&contador_cola_ready);
-				break;
-		default:
-				log_error(logger, "che no se que me mandaste");
-					break;
-				}
 }
 
 void iniciar_consola(){
@@ -635,8 +682,11 @@ void agregar_a_cola_ready(t_pcb* pcb){
 	sem_wait(&mutex_cola_ready);
 	queue_push(cola_ready,pcb);
 	pcb->estado=READY;
+	log_warning(logger, "AGREGO UN ELEMENTO %i",pcb->pid);
 	sem_post(&mutex_cola_ready);
 }
+
+
 
 t_pcb* quitar_de_cola_ready(){
 	sem_wait(&mutex_cola_ready);
