@@ -466,6 +466,7 @@ void iniciar_recurso(){
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
     sem_init(&cont_detener_planificacion,0,0);
     detener = false;
+    tabla_archivo_general = list_create();
 }
 
 void enviar_mensaje_kernel() {
@@ -571,7 +572,18 @@ void crear_pcb(int prioridad){
 	pcb->prioridad = prioridad;
 	t_contexto_ejecucion* contexto = crear_contexto();
 	pcb->contexto =contexto;
-	//pcb->tabla_archivo_abierto;
+	pcb->tabla_archivo_abierto = list_create();
+
+	t_archivo_pcb* aux =malloc(sizeof(t_archivo_pcb));
+	aux->nombre="robins";
+	aux->puntero = 0;
+
+	t_archivo_pcb* aux2 =malloc(sizeof(t_archivo_pcb));
+	aux2->nombre="libroam2";
+	aux2->puntero = 2;
+	list_add(pcb->tabla_archivo_abierto,aux);
+	list_add(pcb->tabla_archivo_abierto,aux2);
+
 	contador_pid++;
 	//log_pcb_info(pcb);
 	log_info(logger_consola,"Se crea el proceso %i en NEW",pcb->pid);

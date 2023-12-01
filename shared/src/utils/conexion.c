@@ -376,7 +376,19 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 	agregar_a_paquete(paquete, &(pcb->prioridad), sizeof(int));
 	empaquetar_contexto_ejecucion(paquete, pcb->contexto);
 	//empaquetar_recursos(paquete,pcb->recursos);
+	empaquetar_tabla_archivo_abierto(paquete,pcb->tabla_archivo_abierto);
 
+}
+
+void empaquetar_tabla_archivo_abierto(t_paquete * paquete ,t_list * lista_archivo){
+	int cantidad_archivo = list_size(lista_archivo);
+	agregar_a_paquete(paquete, &(cantidad_archivo), sizeof(int));
+	for(int i=0;i<cantidad_archivo;i++){
+		t_archivo_pcb* archivo_aux = list_get(lista_archivo,i);
+		char* valor = archivo_aux->nombre;
+		agregar_a_paquete(paquete,valor, strlen(valor)+1);
+		agregar_a_paquete(paquete, &(archivo_aux->puntero), sizeof(int));
+	}
 }
 
 /*void empaquetar_recursos(t_paquete* paquete,t_list *recursos){
@@ -438,10 +450,12 @@ t_pcb* desempaquetar_pcb(t_list* paquete){
 	int * prioridad = list_get(paquete, (*puntero_posicion)++);
 	pcb->prioridad = *prioridad;
 
-	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, puntero_posicion);
+	t_contexto_ejecucion* contexto = desempaquetar_contexto(paquete, *puntero_posicion);
 	pcb->contexto = contexto;
 	//t_list *recursos =desempaquetar_recursos(paquete,puntero_posicion);
 
+	t_list* lista_archivo_aux = desempaquetar_archivos_abiertos(paquete, *puntero_posicion);
+	pcb->tabla_archivo_abierto = lista_archivo_aux;
 	return pcb;
 }
 
@@ -482,18 +496,39 @@ t_instruccion * desempaquetar_instrucciones(t_list* paquete){
 }
 
 
-t_list* desempaquetar_parametros(t_list* paquete,int posicion){
+t_list* desempaquetar_parametros(t_list* paquete,int *posicion){
 	t_list*parametros = list_create();
-	int cantidad_parametro = list_get(paquete,posicion);
-	posicion++;
+	int cantidad_parametro = list_get(paquete,(*posicion)++));
 	for(int i=0;i<cantidad_parametro;i++){
-		char* parametro = list_get(paquete,posicion);
-		posicion++;
+		char* parametro = list_get(paquete,(*posicion)++));
 		list_add(parametros,parametro);
 	}
 	return parametros;
 
 }
+
+t_list* desempaquetar_archivos_abiertos(t_list* paquete, int posicion){
+	log_warning(logger, "el valor de de la posicion es es = %i",posicion);
+	t_list* archivo_abiertos = list_create();
+	int *cantidad_archivo_abierto = list_get(paquete,posicion);
+	posicion++;
+	log_warning(logger, "el valor de nombre es = %i",*cantidad_archivo_abierto);
+	for(int i=0;i<*cantidad_archivo_abierto;i++){
+		t_archivo_pcb* archivo_aux = malloc(sizeof(t_archivo_pcb));
+		char* nombre = list_get(paquete,posicion);
+		archivo_aux->nombre = nombre;
+		posicion++;
+		int* puntero_aux = list_get(paquete,posicion);
+		archivo_aux->puntero = puntero_aux;
+		posicion++;
+		list_add(archivo_abiertos,archivo_aux);
+	}
+	return archivo_abiertos;
+
+
+
+}
+
 /*t_list* desempaquetar_recursos(t_list* paquete,int* posicion){
 	t_list*recursos = list_create();
 	t_recurso_pcb* recurso_pcb = malloc(sizeof(t_recurso_pcb));

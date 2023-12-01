@@ -61,6 +61,18 @@ typedef struct{
 	t_pcb *pcb_remplazo;
 }t_page_fault;
 
+typedef struct{
+	char* nombre_archivo;
+	int puntero;
+	bool bloqueado;
+	int contador;
+	t_queue* cola_bloqueado;
+}t_archivo;
+
+
+
+t_list * tabla_archivo_general;
+
 t_list *lista_recursos_pcb;
 //configuraciones del archibo kernel.config
 

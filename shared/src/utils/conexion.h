@@ -103,9 +103,14 @@ typedef struct{
 	int pid;
 	int prioridad;
 	t_contexto_ejecucion* contexto;
-	//t_list* tabla_archivo_abierto;
+	t_list* tabla_archivo_abierto;
 	t_estado estado;
 }t_pcb;
+
+typedef struct{
+	char*nombre;
+	int puntero;
+}t_archivo_pcb;
 
 time_t tiempo_inicial, tiempo_final;
 double tiempo_transcurrido;
@@ -173,6 +178,8 @@ t_list* desempaquetar_recursos(t_list* ,int* );
 void empaquetar_recursos(t_paquete* ,t_list *);
 //enviar pcb
 void enviar_pcb(t_pcb* , int conexion, op_code);
+void empaquetar_tabla_archivo_abierto(t_paquete *  ,t_list * );
+t_list* desempaquetar_archivos_abiertos(t_list* , int );
 
 
 //desempaquetar
