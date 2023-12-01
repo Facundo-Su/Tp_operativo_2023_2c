@@ -380,7 +380,7 @@ void empaquetar_pcb(t_paquete* paquete, t_pcb* pcb){
 
 }
 
-void empaquetar_tabla_archivo_abierto(t_paquete * paquete ,t_list * lista_archivo){
+/*void empaquetar_tabla_archivo_abierto(t_paquete * paquete ,t_list * lista_archivo){
 	int cantidad_archivo = list_size(lista_archivo);
 	agregar_a_paquete(paquete, &(cantidad_archivo), sizeof(int));
 	for(int i=0;i<cantidad_archivo;i++){
@@ -389,7 +389,7 @@ void empaquetar_tabla_archivo_abierto(t_paquete * paquete ,t_list * lista_archiv
 		agregar_a_paquete(paquete,valor, strlen(valor)+1);
 		agregar_a_paquete(paquete, &(archivo_aux->puntero), sizeof(int));
 	}
-}
+}*/
 
 /*void empaquetar_recursos(t_paquete* paquete,t_list *recursos){
 	int* cantidad_recursos = list_size(recursos);

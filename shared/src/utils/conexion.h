@@ -54,8 +54,10 @@ typedef enum
 	ESCRIBIR_ARCHIVO,
 	FINALIZAR_PROCESO,
 	TRUNCAR_ARCHIVO,
-	OK_PAG_CARGADA
-
+	OK_PAG_CARGADA,
+	TRUCATE_FS,
+	OK_ARCHIVO_TRUNCADO,
+	REMPLAZAR_PAGINA
 }op_code;
 
 typedef struct
@@ -107,10 +109,6 @@ typedef struct{
 	t_estado estado;
 }t_pcb;
 
-typedef struct{
-	char*nombre;
-	int puntero;
-}t_archivo_pcb;
 
 time_t tiempo_inicial, tiempo_final;
 double tiempo_transcurrido;

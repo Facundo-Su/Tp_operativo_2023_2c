@@ -63,14 +63,17 @@ typedef struct{
 
 typedef struct{
 	char* nombre_archivo;
-	bool bloqueado;
-	bool peticion_escritura;
-	int contador;
-	t_queue* cola_bloqueado;
-	int indice;
+	bool lock_escritura_activo;
+	int contador_lectura;
+	pthread_rwlock_t lock;
+	t_queue* cola_bloqueados;
 }t_archivo;
 
-
+typedef struct{
+	char*nombre;
+	int puntero;
+	char * modo;
+}t_archivo_pcb;
 
 t_list * tabla_archivo_general;
 
@@ -89,7 +92,7 @@ t_queue* cola_ready;
 t_list* lista_sleep;
 t_queue* cola_ejecucion;
 t_list *lista_recursos;
-
+t_queue * cola_bloqueado_fs;
 t_list * pcb_en_ejecucion;
 
 
@@ -149,7 +152,11 @@ bool controlador_multiprogramacion();
 time_t start_time, end_time;
 double elapsed_time;
 t_pcb * buscar_lista(int ,t_list *);
-
+void ejecutar_fclose(char* , t_pcb* );
+bool archivo_abierto_para_escritura(t_archivo* , t_pcb* );
+void eliminar_entrada_pcb (t_pcb * , char * );
+bool archivo_abierto_para_lectura(t_archivo* , t_pcb* );
+void eliminar_entrada_pcb (t_pcb * , char * );
 t_contexto_ejecucion* obtener_contexto(char*);
 void mandar_a_memoria(char* , int , int );
 void liberar_memoria_pcb(t_pcb*);
@@ -192,7 +199,7 @@ t_pcb * encontrar_pcb(int );
 void envio_page_fault_a_memoria(t_page_fault* );
 char* estado_a_string(t_estado );
 
-void buscar_en_tabla_archivo_general(char*,t_pcb* ,char*);
+t_archivo * buscar_en_tabla_archivo_general(char*);
 
 
 #endif /* KERNEL_H_ */

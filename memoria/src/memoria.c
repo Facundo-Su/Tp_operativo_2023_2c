@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
 void iniciar_recursos(){
 	lista_instrucciones = list_create();
 	contador_fifo =0;
-	//sem_init(&enviar_marco,0,0);
+	sem_init(&sem_memoria_pf,0,1);
 	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
 }
 
@@ -324,9 +324,8 @@ void procesar_conexion(void* socket){
 	        }
 }
 
-void cargar_en_espacio_memoria(int posicion_swap,int marco){
+void cargar_en_espacio_memoria(int marco){
 
-	//enviar_fs_cargar(posicion_swap,DATOS_SWAP);
 	sem_wait(&contador_espera_cargar);
 	memcpy(memoria->espacio_usuario + (marco * tam_pagina), &datos_obtenidos, sizeof(datos_obtenidos));
 	log_info(logger,"datos cargados");
@@ -657,33 +656,58 @@ int encontrar_marco_libre() {
 	}
     return -1;
 }
-
+void envio_pagina_fs(int pid, int nro_pagina){
+	t_paquete* paquete = crear_paquete(DATOS_SWAP);
+	agregar_a_paquete(paquete, &(pid), sizeof(int));
+	agregar_a_paquete(paquete, &(nro_pagina), sizeof(int));
+	enviar_paquete(paquete, conexion_filesystem);
+	eliminar_paquete(paquete);
+}
+void envio_pagina_modificada_fs(int pid, int nro_pagina ,void * pagina){
+	t_paquete* paquete = crear_paquete(REMPLAZAR_PAGINA);
+	agregar_a_paquete(paquete, &(pid), sizeof(int));
+	agregar_a_paquete(paquete, &(nro_pagina), sizeof(int));
+	agregar_a_paquete(paquete, pagina, memoria->tamanio_marcos);
+	enviar_paquete(paquete, conexion_filesystem);
+	eliminar_paquete(paquete);
+}
 void asignar_marco(int pid, int nro_pagina){
 	t_marco * marco;
 	t_pagina * pagina = obtener_pagina(pid, nro_pagina);
 	if(!pagina_esta_en_memoria(pid,nro_pagina)){
 		int i = encontrar_marco_libre();
 		if(i!=-1){
+			actualizar_marcos_lru();
 			marco = list_get(memoria->marcos,i);
 			marco->is_free = false;
 			marco->pid = pid;
 			marco->llegada_fifo = contador_fifo;
 			marco->last_time_lru =0;
+			envio_pagina_fs(pid,nro_pagina);
+			cargar_en_espacio_memoria(i);
 			pagina->num_marco = i;
 			log_info(logger,"se lleno el marco %i",marco->num_marco);
 			list_replace(memoria->marcos,i,marco);
 			contador_fifo++;
-			actualizar_marcos_lru();
 			t_marco * marco2 = list_get(memoria->marcos,i);
 			log_info(logger,"SE ASIGNO EL MARCO %i CON PID %i",marco2->num_marco,marco2->pid);
 			//actualizar_tablas(pid,i,nro_pagina);
 		}else{
 			int nro_marco_remplazado = ejecutar_algoritmo();
+			marco = list_get(memoria->marcos,nro_marco_remplazado);
 			log_info(logger,"se remplazo el marco %i",nro_marco_remplazado);
-			//t_pagina * pagina = obtener_pagina(nro_marco_remplazado);
-			if(pagina->m = 1){
-				//hacerswappout
+			t_pagina * pagina2 = obtener_pagina_en_marco(marco->num_marco, marco->pid);
+			if(pagina2->m == 1){
+				void * pagina_modificada;
+				memcpy(pagina_modificada,memoria->espacio_usuario + marco->base,memoria->tamanio_marcos);
+				envio_pagina_modificada_fs(pid,nro_pagina, pagina_modificada);
 			}
+			marco->pid = pid;
+			marco->llegada_fifo =contador_fifo;
+			marco->last_time_lru =0;
+			envio_pagina_fs(pid,nro_pagina);
+			cargar_en_espacio_memoria(nro_marco_remplazado);
+			contador_fifo++;
 			//actualizar_tablas(pid,nro_marco_remplazado,nro_pagina);
 		}
 		pagina->p = 1;
@@ -696,14 +720,31 @@ void asignar_marco(int pid, int nro_pagina){
 	          return valor_comparar == pid;
 	    }
 	    t_tabla_paginas* tabla_pagina = list_find(memoria->lista_tabla_paginas, encontrar_tabla_pagina);
-
 		actualizar_marcos_lru();
-		t_pagina * pagina = list_get(tabla_pagina->paginas,nro_pagina);
-		marco = list_get(memoria->marcos,pagina->num_marco);
+		t_pagina * pagina3 = list_get(tabla_pagina->paginas,nro_pagina);
+		marco = list_get(memoria->marcos,pagina3->num_marco);
 		marco->last_time_lru =0;
 		list_replace(memoria->marcos,marco->num_marco,marco);
 	}
 	//sem_post(&enviar_marco);
+}
+t_pagina * obtener_pagina_en_marco(int nro_marco,int pid){
+    bool encontrar_tabla_pagina(void * tabla_pagina){
+          t_tabla_paginas* un_tabla_pagina = (t_tabla_paginas*)tabla_pagina;
+          int valor_comparar =un_tabla_pagina->pid;
+          return valor_comparar == pid;
+    }
+    t_tabla_paginas* tabla_pagina = list_find(memoria->lista_tabla_paginas, encontrar_tabla_pagina);
+
+	t_list_iterator* iterador = list_iterator_create(tabla_pagina->paginas);
+		while(list_iterator_has_next(iterador)){
+			t_pagina * pagina = (t_pagina*)list_iterator_next(iterador);
+			if(pagina->p == 1 && pagina->num_marco == nro_marco){
+				return pagina;
+			}
+		}
+		list_iterator_destroy(iterador);
+		return NULL;
 }
 bool pagina_esta_en_memoria(int pid, int nro_pagina){
     bool encontrar_tabla_pagina(void * tabla_pagina){

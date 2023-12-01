@@ -14,8 +14,9 @@ t_log* logger;
 t_config* config;
 t_log * logger_consola_memoria;
 sem_t envio_marco;
+sem_t sem_memoria_pf;
 int contador_fifo;
-
+void * bloque;
 sem_t contador_espera_cargar;
 void* datos_obtenidos;
 
@@ -104,6 +105,6 @@ bool pagina_esta_en_memoria(int , int );
 t_pagina * obtener_pagina(int,int );
 void generar_conexion_fs();
 void procesar_conexion_prueba(void *);
-
+t_pagina * obtener_pagina_en_marco(int ,int );
 #endif /* KERNEL_H_ */
 
