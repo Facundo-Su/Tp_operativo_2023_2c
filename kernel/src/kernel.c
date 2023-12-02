@@ -100,7 +100,7 @@ void procesar_conexion(void *conexion1){
 			    int* tamanio = list_get(paquete,1);
 			    log_info(logger, "el archivo es %s",nombre_archivo_truncate);
 			    log_info(logger, "el tamanio es  %",*tamanio);
-			    enviar_truncate_fs(*nombre_archivo_truncate,*tamanio);
+			    enviar_truncate_fs(nombre_archivo_truncate,*tamanio);
 			    pcb_aux->estado = WAITING;
 			    queue_push(cola_bloqueado_fs,pcb_aux);
 				list_remove(pcb_en_ejecucion,0);
@@ -115,7 +115,7 @@ void procesar_conexion(void *conexion1){
 			    char* modo_apertura = list_get(paquete,1);
 			    log_info(logger, "el archivo es %s",nombre_archivo);
 			    log_info(logger, "el modo del archivo es %s",modo_apertura);
-			    ejecutar_fopen(*nombre_archivo, *modo_apertura, pcb_aux);
+			    ejecutar_fopen(nombre_archivo, modo_apertura, pcb_aux);
 			    break;
 
 			case EJECUTAR_F_CLOSE:
@@ -123,7 +123,7 @@ void procesar_conexion(void *conexion1){
 			    paquete = recibir_paquete(cliente_fd);
 			    char* nombre_archivo_close = list_get(paquete,0);
 			    log_info(logger, "el archivo a cerrar es %s",nombre_archivo_close);
-			    ejecutar_fclose(*nombre_archivo_close, pcb_aux);
+			    ejecutar_fclose(nombre_archivo_close, pcb_aux);
 			    break;
 
 			case EJECUTAR_F_SEEK:
@@ -135,7 +135,7 @@ void procesar_conexion(void *conexion1){
 			    int* posicion = list_get(paquete,1);
 			    log_info(logger, "el archivo f_seek es %s",nombre_archivo_feseek);
 			    log_info(logger, "el posicion del archivo es %i",*posicion);
-			    ejecutar_fseek(*nombre_archivo_feseek , *posicion, pcb_aux);
+			    ejecutar_fseek(nombre_archivo_feseek , *posicion, pcb_aux);
 			    break;
 
 			case EJECUTAR_F_READ:
@@ -144,14 +144,8 @@ void procesar_conexion(void *conexion1){
 			    paquete = recibir_paquete(cliente_fd);
 
 			    char* nombre_archivo_f_read = list_get(paquete,0);
-			    int* direccion_logica_read= list_get(paquete,1);
-			    log_info(logger, "el archivo es %s",nombre_archivo_f_read);
-			    log_info(logger, "el direccion logica es %i",*direccion_logica_read);
-
-				list_remove(pcb_en_ejecucion,0);
-			    sem_post(&contador_ejecutando_cpu);
-			    agregar_a_cola_ready(pcb_aux);
-			    sem_post(&contador_cola_ready);
+			    int* dir_fisica= list_get(paquete,1);
+			    ejecutar_fread(nombre_archivo,*dir_fisica,pcb_aux);
 			    break;
 
 			case EJECUTAR_F_WRITE:
@@ -219,6 +213,16 @@ void procesar_conexion(void *conexion1){
 			agregar_a_cola_ready(pcb_3);
 			sem_post(&contador_cola_ready);
 			break;
+		case OK_FREAD:
+			t_pcb * pcb_4 = queue_pop(cola_bloqueado_fs);
+			agregar_a_cola_ready(pcb_4);
+			sem_post(&contador_cola_ready);
+			break;
+		case OK_FWRITE:
+			t_pcb * pcb_5 = queue_pop(cola_bloqueado_fs);
+			agregar_a_cola_ready(pcb_5);
+			sem_post(&contador_cola_ready);
+			break;
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
@@ -235,6 +239,59 @@ void procesar_conexion(void *conexion1){
 		}
 	}
 	return;
+}
+t_archivo_pcb* buscar_archivo_pcb(char *nombre, t_pcb *pcb){
+	t_list_iterator* iterador = list_iterator_create(pcb->tabla_archivo_abierto);
+		while(list_iterator_has_next(iterador)){
+			t_archivo_pcb* archivo = (t_archivo_pcb*)list_iterator_next(iterador);
+			if(strcmp(nombre,archivo->nombre) == 0){
+					return archivo;
+			}
+		}
+		list_iterator_destroy(iterador);
+		return NULL;
+}
+void ejecutar_fwrite(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
+	t_archivo_pcb * archivo = buscar_archivo_pcb(nombre_archivo, pcb);
+	if(strcmp(archivo->modo == "R")){
+		(pcb->pid);
+		terminar_proceso(pcb);
+		//TODO falta log;
+	}
+	pcb->estado = WAITING;
+	queue_push(cola_bloqueado_fs,pcb);
+	enviar_fwrite_fs(nombre_archivo, dir_fisica, pcb->pid);
+	list_remove(pcb_en_ejecucion,0);
+	sem_post(&contador_ejecutando_cpu);
+	sem_post(&contador_cola_ready);
+
+}
+void enviar_fwrite_fs(char *nombre,int dir_fisica,int pid){
+	t_paquete* paquete = crear_paquete(ESCRIBIR_ARCHIVO);
+	agregar_a_paquete(paquete, nombre, strlen(nombre) + 1);
+	agregar_a_paquete(paquete, &dir_fisica, sizeof(int));
+	agregar_a_paquete(paquete, &pid, sizeof(int));
+	enviar_paquete(paquete, conexion_file_system);
+	eliminar_paquete(paquete);
+}
+void ejecutar_fread(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
+	t_archivo_pcb * archivo = buscar_archivo_pcb(nombre_archivo, pcb);
+	pcb->estado = WAITING;
+	queue_push(cola_bloqueado_fs,pcb);
+	enviar_fread_fs(nombre_archivo, dir_fisica, archivo->puntero, pcb->pid);
+	list_remove(pcb_en_ejecucion,0);
+	sem_post(&contador_ejecutando_cpu);
+	sem_post(&contador_cola_ready);
+
+}
+void enviar_fread_fs(char *nombre,int dir_fisica,int puntero,int pid){
+	t_paquete* paquete = crear_paquete(LEER_ARCHIVO);
+	agregar_a_paquete(paquete, nombre, strlen(nombre) + 1);
+	agregar_a_paquete(paquete, &dir_fisica, sizeof(int));
+	agregar_a_paquete(paquete, &puntero, sizeof(int));
+	agregar_a_paquete(paquete, &pid, sizeof(int));
+	enviar_paquete(paquete, conexion_file_system);
+	eliminar_paquete(paquete);
 }
 void enviar_fopen_fs(char *nombre){
 	t_paquete* paquete = crear_paquete(CREAR_ARCHIVO);
@@ -273,13 +330,13 @@ void crear_entrada_archivo_pcb(char * nombre,char * modo_apertura,t_pcb * pcb){
 	t_archivo_pcb * archivo = malloc(sizeof(t_archivo));
 	archivo->nombre = nombre;
 	archivo->modo= modo_apertura;
+	archivo->puntero = 0;
 	list_add(pcb->tabla_archivo_abierto, archivo);
 }
 
 
 void ejecutar_fopen(char* nombre_archivo, char* modo_apertura, t_pcb* pcb) {
     t_archivo* archivo = buscar_en_tabla_archivo_general(nombre_archivo);
-
     if (strcmp(modo_apertura, "R") == 0) {
         if (archivo->lock_escritura_activo) {
         	pcb->estado = WAITING;
@@ -402,6 +459,7 @@ void ejecutar_fseek(char * nombre ,int posicion,t_pcb * pcb){
 		t_archivo_pcb* archivo = (t_archivo_pcb*)list_iterator_next(iterador);
 		if(strcmp(nombre,archivo->nombre) == 0){
 			archivo->puntero = posicion;
+			log_error(logger, "%i", archivo->puntero);
 		}
 	}
 	list_iterator_destroy(iterador);

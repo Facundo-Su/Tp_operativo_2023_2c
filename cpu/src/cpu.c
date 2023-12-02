@@ -537,6 +537,8 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger_consola_cpu,"entendi el mensaje F_OPEN");
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
+		parametro = strtok(parametro, "\n");
+		parametro2 = strtok(parametro2, "\n");
 		log_info(logger,"PID: %i - Ejecutando F_OPEN: %s-%s",pcb->pid,parametro,parametro2);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_f_open(parametro,parametro2,cliente_fd,EJECUTAR_F_OPEN);
@@ -545,6 +547,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 
 		hayInterrupcion = true;
 		parametro= list_get(instrucciones->parametros,0);
+		parametro = strtok(parametro, "\n");
 		log_info(logger,"PID: %i - Ejecutando F_CLOSE: %s",pcb->pid,parametro);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
 		enviar_f_close(parametro,cliente_fd,EJECUTAR_F_CLOSE);
@@ -553,6 +556,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 	case F_SEEK:
 		hayInterrupcion = true;
 		parametro= list_get(instrucciones->parametros,0);
+		parametro = strtok(parametro, "\n");
 		parametro2= list_get(instrucciones->parametros,1);
 		log_info(logger,"PID: %i - Ejecutando F_SEEK: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);
@@ -563,24 +567,50 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		hayInterrupcion = true;
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
+		parametro = strtok(parametro, "\n");
+		t_traduccion* traducido3 = mmu_traducir(valor_int);
 		log_info(logger,"PID: %i - Ejecutando F_READ: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);
-		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
-		enviar_f_read(parametro,valor_int,cliente_fd,EJECUTAR_F_READ);
+		if(traducido3->marco ==-1){
+			pcb->contexto->pc-=1;
+			log_info(logger, "Page Fault PID: %i - Página: %i",pcb->pid,traducido3->nro_pagina);
+			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
+			enviar_pagina_a_kernel(traducido3,PAGE_FAULT, cliente_fd);
+			hayInterrupcion=true;
+		}else{
+			log_info(logger,"PID: %i - OBTENER MARCO - Página: %i - Marco: %i.",pcb->pid,traducido3->nro_pagina,traducido3->marco);
+			int dir_fisica = traducido3->marco* tamanio_pagina;
+			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
+			enviar_f_read(parametro,dir_fisica,cliente_fd,EJECUTAR_F_READ);
+		}
 		break;
 	case F_WRITE:
 		//hayInterrupcion = true;
 		parametro= list_get(instrucciones->parametros,0);
+		parametro = strtok(parametro, "\n");
 		parametro2= list_get(instrucciones->parametros,1);
 		log_info(logger,"PID: %i - Ejecutando F_WRITE: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);
-		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
-		enviar_f_write(parametro,valor_int,cliente_fd,EJECUTAR_F_WRITE);
+		t_traduccion* traducido4 = mmu_traducir(valor_int);
+		valor_int = atoi(parametro2);
+		if(traducido4->marco ==-1){
+			pcb->contexto->pc-=1;
+			log_info(logger, "Page Fault PID: %i - Página: %i",pcb->pid,traducido4->nro_pagina);
+			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
+			enviar_pagina_a_kernel(traducido4,PAGE_FAULT, cliente_fd);
+			hayInterrupcion=true;
+		}else{
+			log_info(logger,"PID: %i - OBTENER MARCO - Página: %i - Marco: %i.",pcb->pid,traducido4->nro_pagina,traducido4->marco);
+			int dir_fisica = traducido4->marco* tamanio_pagina;
+			enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
+			enviar_f_read(parametro,dir_fisica,cliente_fd,EJECUTAR_F_WRITE);
+		}
 		break;
 	case F_TRUNCATE:
 
 		hayInterrupcion = true;
 		parametro= list_get(instrucciones->parametros,0);
+		parametro = strtok(parametro, "\n");
 		parametro2= list_get(instrucciones->parametros,1);
 		log_info(logger,"PID: %i - Ejecutando F_TRUNCATE: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);

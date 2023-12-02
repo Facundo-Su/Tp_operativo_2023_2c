@@ -684,7 +684,7 @@ void asignar_marco(int pid, int nro_pagina){
 			marco->llegada_fifo = contador_fifo;
 			marco->last_time_lru =0;
 			envio_pagina_fs(pid,nro_pagina);
-			cargar_en_espacio_memoria(i);
+			//cargar_en_espacio_memoria(i);
 			pagina->num_marco = i;
 			log_info(logger,"se lleno el marco %i",marco->num_marco);
 			list_replace(memoria->marcos,i,marco);

@@ -57,7 +57,9 @@ typedef enum
 	OK_PAG_CARGADA,
 	TRUCATE_FS,
 	OK_ARCHIVO_TRUNCADO,
-	REMPLAZAR_PAGINA
+	REMPLAZAR_PAGINA,
+	OK_FREAD,
+	OK_FWRITE
 }op_code;
 
 typedef struct

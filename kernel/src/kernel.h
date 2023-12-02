@@ -198,7 +198,8 @@ t_pcb*buscar_pcb_bloqueados(int );
 t_pcb * encontrar_pcb(int );
 void envio_page_fault_a_memoria(t_page_fault* );
 char* estado_a_string(t_estado );
-
+void ejecutar_fopen(char*, char*, t_pcb *);
+void enviar_truncate_fs(char * , int );
 t_archivo * buscar_en_tabla_archivo_general(char*);
 
 
