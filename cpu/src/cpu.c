@@ -406,6 +406,7 @@ t_traduccion* mmu_traducir(int dir_logica){
 }
 
 void obtener_el_marco(int nro_pagina,op_code operacion){
+	log_error(logger, "%i", nro_pagina,pcb->pid);
 	t_paquete* paquete = crear_paquete(operacion);
 	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
 	agregar_a_paquete(paquete, &nro_pagina, sizeof(int));

@@ -214,9 +214,7 @@ void procesar_conexion(void* socket){
 	            	log_info(logger, "Me llegaron los siguientes valores de marco: %i",*marco);
 	            	log_info(logger, "Me llegaron los siguientes valores de desplazamiento: %i",*desplazamiento);
 	            	log_info(logger, "Me llegaron los siguientes valores de nro_pag: %i",*nro_pag_mov_in);
-
 	            	//asignar_marco(pid, *nro_pag_mov_in);
-
 	            	uint32_t *valor_leido =malloc(sizeof(uint32_t));
 	            	memcpy(valor_leido, memoria->espacio_usuario + (*marco *tam_pagina) + *desplazamiento, sizeof(uint32_t));
 	            	enviar_registro_leido_mov_in(valor_leido,ENVIO_MOV_IN,cliente_fd);
@@ -249,17 +247,10 @@ void procesar_conexion(void* socket){
 	            	//realizar_proceso_finalizar(valor_pid->pid);
 	            	break;
 	            case OBTENER_MARCO:
-
 	            	lista = recibir_paquete(cliente_fd);
 	            	int * pid_proceso = list_get(lista,0);
 	            	int * pagina_proceso = list_get(lista,1);
 	            	int marco_encontrado= obtener_marco(*pid_proceso,*pagina_proceso);
-	            	/*if(marco_encontrado==-1){
-	            		sem_wait(&enviar_marco);
-	            		enviar_marco(marco_encontrado, OBTENER_MARCO,cliente_fd);
-	            	}else{
-	            		enviar_marco(marco_encontrado, OBTENER_MARCO,cliente_fd);
-	            	}*/
 	            	enviar_marco(marco_encontrado, OBTENER_MARCO,cliente_fd);
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
@@ -332,9 +323,6 @@ void cargar_en_espacio_memoria(int marco){
 
 
 }
-
-
-
 
 int obtener_posicion_swap(int pid,int nro_pagina){
     bool encontrar_tabla_pagina(void * tabla_pagina){
@@ -656,6 +644,7 @@ int encontrar_marco_libre() {
 	}
     return -1;
 }
+//rompe
 void envio_pagina_fs(int pid, int nro_pagina){
 	t_paquete* paquete = crear_paquete(DATOS_SWAP);
 	agregar_a_paquete(paquete, &(pid), sizeof(int));
@@ -683,7 +672,7 @@ void asignar_marco(int pid, int nro_pagina){
 			marco->pid = pid;
 			marco->llegada_fifo = contador_fifo;
 			marco->last_time_lru =0;
-			envio_pagina_fs(pid,nro_pagina);
+			//envio_pagina_fs(pid,nro_pagina);
 			//cargar_en_espacio_memoria(i);
 			pagina->num_marco = i;
 			log_info(logger,"se lleno el marco %i",marco->num_marco);
