@@ -30,6 +30,7 @@ typedef struct {
     int p;
     int m;
     int pos_en_swap;
+    int num_pagina;
 } t_pagina;
 
 typedef struct {

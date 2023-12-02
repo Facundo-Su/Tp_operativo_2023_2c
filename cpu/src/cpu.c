@@ -53,13 +53,13 @@ void iniciar_servidor_interrupt(char * puerto){
 				break;
 			case PAQUETE:
 				lista = recibir_paquete(cliente_fd);
-				log_info(logger, "Me llegaron los siguientes valores:\n");
-				list_iterate(lista, (void*) iterator);
+				//log_info(logger, "Me llegaron los siguientes valores:\n");
+				//list_iterate(lista, (void*) iterator);
 				break;
 			case ENVIAR_DESALOJAR:
 				recibir_mensaje(cliente_fd);
 				hay_desalojo = true;
-				log_info(logger, "Instruccion DESALOJAR");
+				//log_info(logger, "Instruccion DESALOJAR");
 				break;
 			case -1:
 				log_error(logger, "el cliente se desconecto. Terminando servidor");
@@ -90,7 +90,7 @@ void procesar_conexion(void *conexion1){
 			break;
 		case INSTRUCCIONES_A_MEMORIA:
 			char* auxiliar =recibir_instruccion(cliente_fd);
-			log_info(logger_consola_cpu,"me llego la siguiente instruccion %s",auxiliar);
+			//log_info(logger_consola_cpu,"me llego la siguiente instruccion %s",auxiliar);
 			transformar_en_instrucciones(auxiliar);
 //			hayInterrupcion = false;
 			recibi_archivo=true;
@@ -98,24 +98,24 @@ void procesar_conexion(void *conexion1){
 			break;
 		case PAQUETE:
 			lista = recibir_paquete(cliente_fd);
-			log_info(logger, "Me llegaron los siguientes valores:\n");
-			list_iterate(lista, (void*) iterator);
+			//log_info(logger, "Me llegaron los siguientes valores:\n");
+			//list_iterate(lista, (void*) iterator);
 			break;
 		case ENVIARREGISTROCPU:
 			t_list* valores_cpu = list_create();
 			valores_cpu= recibir_paquete(cliente_fd);
-			log_info(logger, "ME LLEGARON");
+			//log_info(logger, "ME LLEGARON");
 			break;
 			//TODO
 			//preguntar porque si lo meto dentro de una funcion no me reconoce
 		case RECIBIR_PCB:
-			log_info(logger, "Estoy por recibir un PCB");
+			//log_info(logger, "Estoy por recibir un PCB");
 			t_list * paquete = recibir_paquete(cliente_fd);
 			pcb = desempaquetar_pcb(paquete);
 			//recibir_pcb(cliente_fd);
 			hayInterrupcion = false;
 			hay_desalojo= false;
-			log_pcb_info(pcb);
+			//log_pcb_info(pcb);
 			ejecutar_ciclo_de_instruccion(cliente_fd);
 
 			break;
@@ -126,13 +126,13 @@ void procesar_conexion(void *conexion1){
 			paquete1= recibir_paquete(cliente_fd);
 			auxiliar2= list_get(paquete1,0);
 			tamanio_pagina= *auxiliar2;
-			log_info(logger, "me llego el tamanio %i",tamanio_pagina);
+			//log_info(logger, "me llego el tamanio %i",tamanio_pagina);
 			break;
 		case ENVIO_MOV_IN:
 			paquete1= recibir_paquete(cliente_fd);
 			auxiliar2 = list_get(paquete1,0);
 
-			log_info(logger, "el valor registro %i",*auxiliar2);
+			//log_info(logger, "el valor registro %i",auxiliar2);
 			registro_por_mov = *auxiliar2;
 			sem_post(&contador_esperando_mov);
 
@@ -141,7 +141,7 @@ void procesar_conexion(void *conexion1){
 			paquete1 = recibir_paquete(cliente_fd);
 			auxiliar2 = list_get(paquete1,0);
 			marco_obtenido = *auxiliar2;
-			log_info(logger, "el valor del marco es %i",marco_obtenido);
+			//log_info(logger, "el valor del marco es %i",marco_obtenido);
 			sem_post(&contador_marco_obtenido);
 
 			break;
@@ -150,7 +150,7 @@ void procesar_conexion(void *conexion1){
 			close(cliente_fd);
 			return;
 		default:
-			log_info(logger,"hola pepe");
+			//log_info(logger,"hola pepe");
 			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
@@ -406,7 +406,7 @@ t_traduccion* mmu_traducir(int dir_logica){
 }
 
 void obtener_el_marco(int nro_pagina,op_code operacion){
-	log_error(logger, "%i", nro_pagina,pcb->pid);
+	//log_error(logger, "%i", nro_pagina,pcb->pid);
 	t_paquete* paquete = crear_paquete(operacion);
 	agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
 	agregar_a_paquete(paquete, &nro_pagina, sizeof(int));
@@ -660,7 +660,7 @@ void setear(t_estrucutra_cpu pos, uint32_t valor) {
         case BX: pcb->contexto->registros_cpu->bx = valor; break;
         case CX: pcb->contexto->registros_cpu->cx = valor; break;
         case DX: pcb->contexto->registros_cpu->dx = valor; break;
-        default: log_info(logger, "Registro de destino no válido");
+        //default: log_info(logger, "Registro de destino no válido");
     }
 }
 
@@ -755,7 +755,7 @@ t_estrucutra_cpu devolver_registro(char* registro){
     } else if(strcmp(registro,"DX")==0|| strcmp(registro,"DX\n")==0){
         v = DX;
     } else {
-        log_error(logger,"CUIDADO,CODIGO INVALIDO");
+        //log_error(logger,"CUIDADO,CODIGO INVALIDO");
     }
     return v;
 }
@@ -787,7 +787,8 @@ uint32_t obtener_valor(t_estrucutra_cpu pos) {
         case BX: return  pcb->contexto->registros_cpu->bx;
         case CX: return  pcb->contexto->registros_cpu->cx;
         case DX: return  pcb->contexto->registros_cpu->dx;
-        default: log_info(logger, "Registro no reconocido"); return 0;
+        default: //log_info(logger, "Registro no reconocido");
+        	return 0;
     }
 }
 

@@ -8,7 +8,7 @@ int main(int argc, char **argv){
 	config = cargar_config(rutaConfig);
 
     logger = log_create("./kernel.log", "KERNEL", true, LOG_LEVEL_INFO);
-    log_info(logger, "Soy el Kernel!");
+    //log_info(logger, "Soy el Kernel!");
 
     obtener_configuracion();
     iniciar_recurso();
@@ -59,8 +59,8 @@ void procesar_conexion(void *conexion1){
 			t_pcb* pcb_aux2=list_get(pcb_en_ejecucion,0);
 			pcb_aux->tabla_archivo_abierto =pcb_aux2->tabla_archivo_abierto;
 
-			log_info(logger,"recibi el pcb");
-			log_pcb_info(pcb_aux);
+			//log_info(logger,"recibi el pcb");
+			//log_pcb_info(pcb_aux);
 			recv(cliente_fd,&cod_op,sizeof(op_code),0);
 			switch(cod_op){
 			case EJECUTAR_SLEEP:
@@ -92,15 +92,15 @@ void procesar_conexion(void *conexion1){
 				ejecutar_signal(nombre_recurso2,pcb_aux);
 				break;
 			case EJECUTAR_F_TRUNCATE:
-			    log_info(logger, "me llegó la instrucción ejecutar ftruncate del CPU");
+			   // log_info(logger, "me llegó la instrucción ejecutar ftruncate del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_TRUCATE
 			    paquete = recibir_paquete(cliente_fd);
 
 			    char* nombre_archivo_truncate = list_get(paquete,0);
 			    int* tamanio = list_get(paquete,1);
-			    log_info(logger, "el archivo es %s",nombre_archivo_truncate);
-			    log_info(logger, "el tamanio es  %",*tamanio);
 			    enviar_truncate_fs(nombre_archivo_truncate,*tamanio);
+			    log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb_aux->pid);
+			    log_info(logger ,"PID: %i - Bloqueado por: %s",pcb_aux->pid,nombre_archivo_truncate);
 			    pcb_aux->estado = WAITING;
 			    queue_push(cola_bloqueado_fs,pcb_aux);
 				list_remove(pcb_en_ejecucion,0);
@@ -109,37 +109,37 @@ void procesar_conexion(void *conexion1){
 			    break;
 
 			case EJECUTAR_F_OPEN:
-			    log_info(logger, "me llegó la instrucción ejecutar fopen del CPU");
+			   // log_info(logger, "me llegó la instrucción ejecutar fopen del CPU");
 			    paquete = recibir_paquete(cliente_fd);
 			    char* nombre_archivo = list_get(paquete,0);
 			    char* modo_apertura = list_get(paquete,1);
-			    log_info(logger, "el archivo es %s",nombre_archivo);
-			    log_info(logger, "el modo del archivo es %s",modo_apertura);
+			    //log_info(logger, "el archivo es %s",nombre_archivo);
+			   // log_info(logger, "el modo del archivo es %s",modo_apertura);
 			    ejecutar_fopen(nombre_archivo, modo_apertura, pcb_aux);
 			    break;
 
 			case EJECUTAR_F_CLOSE:
-			    log_info(logger, "me llegó la instrucción ejecutar fclose del CPU");
+			    //log_info(logger, "me llegó la instrucción ejecutar fclose del CPU");
 			    paquete = recibir_paquete(cliente_fd);
 			    char* nombre_archivo_close = list_get(paquete,0);
-			    log_info(logger, "el archivo a cerrar es %s",nombre_archivo_close);
+			   // log_info(logger, "el archivo a cerrar es %s",nombre_archivo_close);
 			    ejecutar_fclose(nombre_archivo_close, pcb_aux);
 			    break;
 
 			case EJECUTAR_F_SEEK:
-			    log_info(logger, "me llegó la instrucción ejecutar fseek del CPU");
+			    //log_info(logger, "me llegó la instrucción ejecutar fseek del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_SEEK
 			    paquete = recibir_paquete(cliente_fd);
 
 			    char* nombre_archivo_feseek = list_get(paquete,0);
 			    int* posicion = list_get(paquete,1);
-			    log_info(logger, "el archivo f_seek es %s",nombre_archivo_feseek);
-			    log_info(logger, "el posicion del archivo es %i",*posicion);
+			   // log_info(logger, "el archivo f_seek es %s",nombre_archivo_feseek);
+			    //log_info(logger, "el posicion del archivo es %i",*posicion);
 			    ejecutar_fseek(nombre_archivo_feseek , *posicion, pcb_aux);
 			    break;
 
 			case EJECUTAR_F_READ:
-			    log_info(logger, "me llegó la instrucción ejecutar fread del CPU");
+			    //log_info(logger, "me llegó la instrucción ejecutar fread del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_READ
 			    paquete = recibir_paquete(cliente_fd);
 
@@ -149,14 +149,14 @@ void procesar_conexion(void *conexion1){
 			    break;
 
 			case EJECUTAR_F_WRITE:
-			    log_info(logger, "me llegó la instrucción ejecutar fwrite del CPU");
+			    //log_info(logger, "me llegó la instrucción ejecutar fwrite del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_WRITE
 			    paquete = recibir_paquete(cliente_fd);
 
 			    char* nombre_archivo_write = list_get(paquete,0);
 			    char* direccion_logica_write= list_get(paquete,1);
-			    log_info(logger, "el archivo es %s",nombre_archivo_write);
-			    log_info(logger, "el direccion logica es %i",direccion_logica_write);
+			    //log_info(logger, "el archivo es %s",nombre_archivo_write);
+			    //log_info(logger, "el direccion logica es %i",direccion_logica_write);
 
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
@@ -189,7 +189,7 @@ void procesar_conexion(void *conexion1){
 				break;
 
 			default:
-				log_error(logger, "che no se que me mandaste");
+				//log_error(logger, "che no se que me mandaste");
 				break;
 			}
 			break;
@@ -234,7 +234,7 @@ void procesar_conexion(void *conexion1){
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
 			return;
 		default:
-			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
+			//log_warning(logger,"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
 	}
@@ -256,8 +256,10 @@ void ejecutar_fwrite(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
 	if(strcmp(archivo->modo,"R")==0){
 		(pcb->pid);
 		terminar_proceso(pcb);
-		//TODO falta log;
+		log_info(logger, "Finaliza el proceso %i - Motivo: INVALID_RESOURCE",pcb->pid);
 	}
+	log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb->pid);
+	log_info(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
 	pcb->estado = WAITING;
 	queue_push(cola_bloqueado_fs,pcb);
 	enviar_fwrite_fs(nombre_archivo, dir_fisica, pcb->pid);
@@ -276,8 +278,10 @@ void enviar_fwrite_fs(char *nombre,int dir_fisica,int pid){
 }
 void ejecutar_fread(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
 	t_archivo_pcb * archivo = buscar_archivo_pcb(nombre_archivo, pcb);
-	pcb->estado = WAITING;
+	log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb->pid);
+	log_info(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
 	queue_push(cola_bloqueado_fs,pcb);
+	pcb->estado = WAITING;
 	enviar_fread_fs(nombre_archivo, dir_fisica, archivo->puntero, pcb->pid);
 	list_remove(pcb_en_ejecucion,0);
 	sem_post(&contador_ejecutando_cpu);
@@ -459,7 +463,7 @@ void ejecutar_fseek(char * nombre ,int posicion,t_pcb * pcb){
 		t_archivo_pcb* archivo = (t_archivo_pcb*)list_iterator_next(iterador);
 		if(strcmp(nombre,archivo->nombre) == 0){
 			archivo->puntero = posicion;
-			log_error(logger, "%i", archivo->puntero);
+			//log_error(logger, "%i", archivo->puntero);
 		}
 	}
 	list_iterator_destroy(iterador);
@@ -554,13 +558,15 @@ void listar_proceso_estado(){
 	log_info(logger, "Estado: NEW - Procesos: %s",procesos_new);
 	char * procesos_ready =listar_procesos(cola_ready);
 	log_info(logger, "Estado: READY - Procesos: %s",procesos_ready);
-	char * procesos_bloqueados = listar_procesos_bloqueados();
-	log_info(logger, "Estado: WAITING - Procesos: %s",procesos_bloqueados);
+	char * procesos_bloqueados_recursos = listar_procesos_bloqueados();
+	char * procesos_bloqueados_archivos = listar_procesos_bloqueados_archivos();
+
+	log_info(logger, "Estado: WAITING - Procesos: %s");
 	if(!list_is_empty(pcb_en_ejecucion)){
 			t_pcb * pcb =list_get(pcb_en_ejecucion,0);
 			log_info(logger, "Estado: RUNNING - Procesos: %i",pcb->pid);
 	}else{
-	log_info(logger, "Estado: RUNNING - Procesos:");
+		log_info(logger, "Estado: RUNNING - Procesos:");
 	}
 }
 
@@ -646,7 +652,35 @@ char * listar_procesos_bloqueados(){
     list_iterator_destroy(iterador);
     return procesos;
 }
+char * listar_procesos_bloqueados_archivos(){
+    t_list_iterator* iterador = list_iterator_create(tabla_archivo_general);
+    char *procesos = malloc(1); // Asignar memoria inicial para el caracter nulo
+    if (procesos == NULL) {
+        // Manejo de error si malloc falla
+        exit(1);
+    }
+    *procesos = '\0'; // Inicializar con una cadena vacía
 
+    while(list_iterator_has_next(iterador)){
+        t_archivo* archivo = (t_archivo*)list_iterator_next(iterador);
+        int t = queue_size(archivo->cola_bloqueados);
+        if(t > 0){
+            char *pcbs = listar_procesos(archivo->cola_bloqueados);
+            char *temp = realloc(procesos, strlen(procesos) + strlen(pcbs) + 2);
+            if (temp == NULL) {
+                free(procesos);
+                free(pcbs);
+                exit(1);
+            }
+            procesos = temp;
+            strcat(procesos, ",");
+            strcat(procesos, pcbs);
+            free(pcbs);
+        }
+    }
+    list_iterator_destroy(iterador);
+    return procesos;
+}
 
 void iniciar_recurso(){
 	lista_pcb=list_create();
@@ -815,19 +849,11 @@ t_registro_cpu* crear_registro(){
 void agregar_a_cola_new(t_pcb* pcb){
 	sem_wait(&mutex_cola_new);
 	queue_push(cola_new,pcb);
-	char* estado_anterior = estado_a_string(pcb->estado);
-	log_info(logger, "PID: %i - Estado Anterior: %s - Estado Actual: READY",pcb->pid,estado_anterior);
+	//char* estado_anterior = estado_a_string(pcb->estado);
+	log_info(logger, "PID: %i - Estado Anterior:  - Estado Actual: NEW",pcb->pid);
 	sem_post(&mutex_cola_new);
-	mostrar_pid_cola_ready();
 }
-void mostrar_pid_cola_ready(){
-	log_info(logger,"Cola Ready %s:",planificador);
-	int i = queue_size(cola_ready);
-	for(int c=0;c<i;c++){
-		t_pcb * pcb = list_get(cola_ready->elements,c);
-		log_info("%i",pcb->pid);
-	}
-}
+
 t_pcb* quitar_de_cola_new(){
 	sem_wait(&mutex_cola_new);
 	t_pcb* pcb=queue_pop(cola_new);
@@ -837,9 +863,12 @@ t_pcb* quitar_de_cola_new(){
 void agregar_a_cola_ready(t_pcb* pcb){
 	sem_wait(&mutex_cola_ready);
 	queue_push(cola_ready,pcb);
+	char* estado_anterior = estado_a_string(pcb->estado);
+	log_info(logger, "PID: %i - Estado Anterior: %s - Estado Actual: NEW",pcb->pid,estado_anterior);
 	pcb->estado=READY;
-	log_warning(logger, "AGREGO UN ELEMENTO %i",pcb->pid);
 	sem_post(&mutex_cola_ready);
+	char * procesos = listar_procesos(cola_ready);
+	log_info(logger, "Cola Ready %s: %s",planificador,procesos);
 }
 
 
@@ -969,8 +998,9 @@ bool controlador_multi_programacion(){
 }
 
 void enviar_por_dispatch(t_pcb* pcb) {
+	char * estado_anterior = estado_a_string(pcb->estado);
+	log_info(logger, "PID: %i - Estado Anterior: %s - Estado Actual: RUNNING",pcb->pid,estado_anterior);
     pcb->estado=RUNNING;
-
     pthread_mutex_lock(&mutex_lista_ejecucion);
     list_add(pcb_en_ejecucion, pcb);
     pthread_mutex_unlock(&mutex_lista_ejecucion);
@@ -1075,7 +1105,7 @@ void asignar_algoritmo(char *algoritmo){
 	}else if(strcmp(algoritmo, "PRIORIDADES")==0){
 		planificador = PRIORIDADES;
 	}else{
-		log_error(logger, "El algoritmo no es valido");
+		//log_error(logger, "El algoritmo no es valido");
 	}
 }
 

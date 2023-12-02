@@ -201,6 +201,7 @@ char* estado_a_string(t_estado );
 void ejecutar_fopen(char*, char*, t_pcb *);
 void enviar_truncate_fs(char * , int );
 t_archivo * buscar_en_tabla_archivo_general(char*);
+char * listar_procesos_bloqueados_archivos();
 
 
 #endif /* KERNEL_H_ */
