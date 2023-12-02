@@ -97,9 +97,11 @@ int calcular_bloq_necesarios_fcb(int tam_bytes);
 int buscar_entrada_libre_fat();
 int buscar_bloq_libre_swap();
 t_list* iniciar_proceso();
-
-
+uint32_t* levantar_fat() ;
+void levantar_archivo_bloques();
 void terminar_programa();
+void* leer_archivo_bloques(int puntero,char* nombre);
+void* leer_datos_bloques(uint32_t indice);
 t_config* iniciar_config();
 int iniciar_servidor_file_system(char*);
 void iniciar_consola();

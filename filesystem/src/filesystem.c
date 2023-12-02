@@ -3,10 +3,10 @@
 int main(int argc, char *argv[]) {
 
 	char *ruta_config = string_new();
-	//if (argc == 2) {
-	//} else {
-	//	perror(" error con ruta leida de config");
-	//}
+	if (argc == 2) {
+	} else {
+		perror(" error con ruta leida de config");
+	}
 	logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
 
 	ruta_config = "./filesystem.config"; //argv[0] es el nom del programa en si mismo
@@ -23,9 +23,19 @@ int main(int argc, char *argv[]) {
 
 	//TODO quitar cuando termine  de hacer pruebas
 
+	t_fcb* fcb_abrir2=malloc(sizeof(t_fcb));
+	crear_archivo_fcb("abrir2", fcb_abrir2);
+	fcb_abrir2->nombre_archivo="abrir2";
+	fcb_abrir2->tamanio_archivo=4096;
+	fcb_abrir2->bloq_inicial_archivo=2;
 
-	leer_archivo_bloques();
-	levantar_fat();
+	asignar_entradas_fat(fcb_abrir2);
+	for(int i=0;i<12;i++){
+		log_info(logger_file_system, " =%u",fs->fat->entradas[i]);
+	}
+	int puntero=4096;
+	leer_archivo_bloques(puntero,"abrir2");
+
 	//iniciar_servidor_fs(puerto_escucha);
 	//liberar_recursos_fs();
 
@@ -38,6 +48,7 @@ void liberar_recursos_fs() {
 
 		if (fs->fcb_list != NULL) {
 			//TODO
+			list_destroy_and_destroy_elements(fs->fcb_list, free	);
 		}
 		if (fs->fat != NULL) {
 			if (fs->fat->entradas != NULL) {
@@ -62,14 +73,13 @@ t_swap* inicializar_array_swap() {
 t_fat* inicializar_fat() {
 	t_fat *fat = malloc(sizeof(t_fat));
 	fat->tamanio_fat = cant_total_bloq - cant_bloq_swap;
-	fat->entradas=levantar_fat();
+	//fat->entradas=levantar_fat();
 
 	if (fat->entradas == NULL) {
 
 		fat->entradas = malloc(fat->tamanio_fat * sizeof(uint32_t));
 		//reservo entrada inicial para boot
-		fat->entradas[0] = RESERV_BOOT
-		;
+		fat->entradas[0] = RESERV_BOOT		;
 		//inicializo las entradas en 0=libre
 		for (int i = 1; i < fat->tamanio_fat; i++) {
 			fat->entradas[i] = 0;
@@ -159,8 +169,10 @@ void* procesar_conexion(int cliente_fd) {
 			break;
 		case LEER_ARCHIVO:
 			//recibe punteto desde el cual leer
+			char* nombre_arc=recibir_nombre_archivo(cliente_fd);
 			int puntero = recibir_entero(cliente_fd);
-			leer_archivo_bloques();
+
+			leer_archivo_bloques(puntero,nombre_arc);
 			break;
 		case TRUNCAR_ARCHIVO:
 			char *nombre = recibir_nombre_archivo(cliente_fd);
@@ -190,12 +202,16 @@ void* procesar_conexion(int cliente_fd) {
 
 t_fcb* devolver_fcb(char *nombre) {
 
+
 	for (int i = 0; i < list_size(fs->fcb_list); i++) {
 		t_fcb *fcb_buscado = list_get(fs->fcb_list, i);
+
 		if (strcmp(fcb_buscado->nombre_archivo, nombre) == 0) {
+			log_info(logger_file_system, "se encontro el fcb");
 			return fcb_buscado;
 		}
 	}
+	log_info(logger_file_system, "El archivo no se encuentra en la lista.");
 	return NULL;
 }
 int recibir_entero(int socket_cliente) {
@@ -211,13 +227,13 @@ int recibir_entero(int socket_cliente) {
 //1=se creo correctamente
 void enviar_respuesta_crear_archivo() {
 	//TODO RESPUESTA_CREAR_ARCHIVO cambiar por MENSAJE
-	t_paquete *paquete = crear_paquete(MENSAJE);
+	t_paquete *paquete = crear_paquete(RESPUESTA_CREAR_ARCHIVO);
 	agregar_a_paquete(paquete, 1, sizeof(int));
 	eliminar_paquete(paquete);
 }
 void enviar_tamanio_archivo(int tamanio, int cliente_fd) {
 	//TODO RESPUESTA_ABRIR_ARCHIVO cambiar por MENSAJE
-	t_paquete *paquete = crear_paquete(MENSAJE);
+	t_paquete *paquete = crear_paquete(RESPUESTA_ABRIR_ARCHIVO);
 
 	agregar_a_paquete(paquete, &tamanio, sizeof(int));
 	enviar_paquete(paquete, cliente_fd);
@@ -225,7 +241,7 @@ void enviar_tamanio_archivo(int tamanio, int cliente_fd) {
 }
 void enviar_bloques_asignados_swap(t_list *lista_asignados, int socket_cliente) {
 	//TODO RESPUESTA_SOLICITUD_BLOQUES cambiar por MENSAJE
-	t_paquete *paquete = crear_paquete(MENSAJE);
+	t_paquete *paquete = crear_paquete(RESPUESTA_SOLICITUD_BLOQUES);
 	for (uint32_t i = 0; i < list_size(lista_asignados); i++) {
 		agregar_a_paquete(paquete, list_get(lista_asignados, i),
 				sizeof(uint32_t));
@@ -235,7 +251,6 @@ void enviar_bloques_asignados_swap(t_list *lista_asignados, int socket_cliente) 
 }
 
 void iniciar_servidor_fs(char *puerto) {
-
 	int fs_fd = iniciar_servidor(puerto);
 	log_info(logger_file_system, "Servidor listo para recibir al cliente");
 
@@ -361,10 +376,9 @@ void asignar_entradas_fat(t_fcb *fcb_guardar) {
 	int entrada_libre = buscar_entrada_libre_fat();
 	fcb_guardar->bloq_inicial_archivo = entrada_libre;
 	//marco la entrada asignada
-	fs->fat->entradas[entrada_libre] = MARCA_ASIG
-	;
-	for (int i = 1; i < cant_bloq_necesarios; i++) {
-		int siguiente_entrada_libre = buscar_entrada_libre_fat();
+	fs->fat->entradas[entrada_libre] = MARCA_ASIG;
+	for (uint32_t i = 1; i < cant_bloq_necesarios; i++) {
+		uint32_t siguiente_entrada_libre = buscar_entrada_libre_fat();
 		//hago que la entrada libre anterior apunte a la nueva, marco la nueva entrada
 		fs->fat->entradas[entrada_libre] = siguiente_entrada_libre;
 		fs->fat->entradas[siguiente_entrada_libre] = MARCA_ASIG
@@ -512,37 +526,49 @@ int obtener_ultimo_bloq_fcb(t_fcb *fcb) {
 
 
 //leer archivo: lee la info de un bloque a partir del puntero y la envia a memori
-void leer_archivo_bloques() {
+void* leer_archivo_bloques(int puntero,char* nombre) {
+		uint32_t base_bloque=puntero/tam_bloque;
+		log_info(logger_file_system, "se encontro el fcb %s",nombre);
+		t_fcb *fcb=devolver_fcb(nombre);
+		log_info(logger_file_system, "num bloq %s",fcb->nombre_archivo);
 
-	int blfd = open(ruta_bloques, O_CREAT | O_RDWR);
+		uint32_t indice=fcb->bloq_inicial_archivo;
+		   void* datos_bloques = NULL;
 
-	if (blfd == -1) {
-		perror("Error al abrir/crear el archivo de bloques");
-		exit(EXIT_FAILURE);
-	}
+		    while (indice != UINT32_MAX) {
+		        if (indice == base_bloque) {
+		            log_info(logger_file_system, "num bloq %u", indice);
+		            datos_bloques = leer_datos_bloques(indice);
+		            break;  // Termina el bucle después de encontrar el bloque
+		        }
+		        indice = fs->fat->entradas[indice];
+		    }
+		return datos_bloques;
+}
+void escribir_bloque(int puntero,char*nombre,void* a_escribir){
+	uint32_t num_bloque=puntero/tam_bloque;
+	t_fcb *fcb=devolver_fcb(nombre);
+	uint32_t indice=fcb->bloq_inicial_archivo;
 
+    while (indice != UINT32_MAX) {
+	        if (indice == num_bloque) {
+	        	void* aux=fs->bloques;
+	        	int destino=(char*)aux+cant_bloq_swap+num_bloque;
+	        	memcpy(destino,a_escribir,tam_bloque);
 
-	int tam =cant_total_bloq - cant_bloq_swap;
+	            break;  // Termina el bucle después de encontrar el bloque
+	        }
+	        indice = fs->fat->entradas[indice];
+	    }
 
-	int offset_a_fat=cant_bloq_swap*tam_bloque;
-
-	void *bloquesMapeado = mmap(NULL, offset_a_fat, PROT_READ | PROT_WRITE,MAP_SHARED, blfd, 0);
-	log_info(logger_file_system, "datos: %s",(char*)bloquesMapeado);
-
-
-
-
-	if (bloquesMapeado == MAP_FAILED) {
-		perror("Error al mapear el archivo de bloques");
-		close(blfd);
-		exit(EXIT_FAILURE);
-	}
-
-	// Ahora bloquesMapeado apunta a la memoria mapeada del archivo de bloques
-
-	// ... Hacer operaciones con la memoria mapeada ...
-	close(blfd);
-
+}
+void* leer_datos_bloques(uint32_t indice){
+	uint32_t base_fat=cant_bloq_swap+1;
+	void* puntero=fs->bloques;
+	void* datos = malloc(tam_bloque);
+	void* origen=(char*)puntero+ base_fat+indice;
+	memcpy(datos,origen,tam_bloque);
+	return datos;
 }
 //se crear el archivo que contendra los bloques fat y swap
 //archivo_lboque=swap + fat, tam_total esta en config y donde debe ubicarse tambien
@@ -624,17 +650,8 @@ void finalizar_proceso(t_list *lista_liberar) {
 	}
 }
 
-void levantar_archivo_bloques() {
-	int file_descrip_bloques = open(ruta_bloques, O_RDWR | O_CREAT,
-			S_IRUSR | S_IWUSR);
 
-	fs->bloques = mmap(NULL, cant_total_bloq * tam_bloque,
-			PROT_WRITE | PROT_READ, MAP_SHARED, file_descrip_bloques, 0);
-	log_info(logger_file_system, "lenvantado archivo_bloques");
-
-}
-
-void levantar_fat() {
+uint32_t* levantar_fat() {
     int file_descrip_bloques = open(ruta_fat, O_CREAT | O_RDWR);
     if (file_descrip_bloques == -1) {
         perror("Error al abrir el archivo FAT");
@@ -651,31 +668,59 @@ void levantar_fat() {
         exit(EXIT_FAILURE);
     }
 
-    void *bloq = mmap(NULL, tamanio, PROT_READ | PROT_WRITE, MAP_SHARED, file_descrip_bloques, 0);
-
+    uint32_t *bloq = mmap(NULL, tamanio, PROT_READ | PROT_WRITE, MAP_SHARED, file_descrip_bloques, 0);
 
     if (bloq != MAP_FAILED) {
         log_info(logger_file_system, "El archivo FAT se ha mapeado correctamente en la memoria.");
 
         // Imprimir más información sobre el contenido del archivo FAT
-        uint32_t nuevo_valor = 42;
-        memcpy(bloq, &nuevo_valor, sizeof(uint32_t));
+//        uint32_t nuevo_valor = 6;
+//        bloq[5]=nuevo_valor;
 
         // Imprimir el nuevo valor
-        log_info(logger_file_system, "Nuevo valor en la posición 0: %u", ((uint32_t *)bloq)[0]);
+//        log_info(logger_file_system, "Nuevo valor en la posición 5: %u", ((uint32_t *)bloq)[5]);
     } else {
         perror("Error al mapear el archivo FAT");
         close(file_descrip_bloques);
         exit(EXIT_FAILURE);
     }
 
-    // Asignar el puntero a bloques de fs
-    fs->bloques = bloq;
-
     // Cerrar el archivo después de asignar el mapeo
     close(file_descrip_bloques);
+    return bloq;
 }
+void levantar_archivo_bloques(){
+	   int file_descrip_bloques = open(ruta_bloques, O_CREAT | O_RDWR);
+	    if (file_descrip_bloques == -1) {
+	        perror("Error al abrir el archivo FAT");
+	        exit(EXIT_FAILURE);
+	    }
+	    int tamanio = (cant_total_bloq - cant_bloq_swap) * sizeof(uint32_t);
+	    log_info(logger_file_system, "Levantado archivo_bloques: %i bytes", tamanio);
 
+	    // Establecer el tamaño del archivo si es necesario
+	    if (ftruncate(file_descrip_bloques, tamanio) == -1) {
+	        perror("Error al establecer el tamaño del archivo FAT");
+	        close(file_descrip_bloques);
+	        exit(EXIT_FAILURE);
+	    }
+
+	    void *bloq = mmap(NULL, tamanio, PROT_READ | PROT_WRITE, MAP_SHARED, file_descrip_bloques, 0);
+
+	    if (bloq != MAP_FAILED) {
+	        log_info(logger_file_system, "El archivo FAT se ha mapeado correctamente en la memoria.");
+
+	    // Asignar el puntero a bloques de fs
+	    fs->bloques = bloq;
+	    } else {
+	        perror("Error al mapear el archivo FAT");
+	        close(file_descrip_bloques);
+	        exit(EXIT_FAILURE);
+	    }
+
+	    // Cerrar el archivo después de asignar el mapeo
+	    close(file_descrip_bloques);
+}
 void levantar_fcbs() {
 
 		DIR *directorio_archivos = opendir(ruta_fcbs);
