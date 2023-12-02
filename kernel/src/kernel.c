@@ -253,7 +253,7 @@ t_archivo_pcb* buscar_archivo_pcb(char *nombre, t_pcb *pcb){
 }
 void ejecutar_fwrite(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
 	t_archivo_pcb * archivo = buscar_archivo_pcb(nombre_archivo, pcb);
-	if(strcmp(archivo->modo == "R")){
+	if(strcmp(archivo->modo,"R")==0){
 		(pcb->pid);
 		terminar_proceso(pcb);
 		//TODO falta log;
@@ -300,7 +300,7 @@ void enviar_fopen_fs(char *nombre){
 	eliminar_paquete(paquete);
 }
 void enviar_truncate_fs(char * nombre, int tamanio){
-	t_paquete* paquete = crear_paquete(TRUCATE_FS);
+	t_paquete* paquete = crear_paquete(TRUNCATE_FS);
 	agregar_a_paquete(paquete, nombre, strlen(nombre) + 1);
 	agregar_a_paquete(paquete, &(tamanio), sizeof(int));
 	enviar_paquete(paquete, conexion_file_system);
