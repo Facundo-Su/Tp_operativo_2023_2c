@@ -190,8 +190,8 @@ void procesar_conexion(void* socket){
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
-					char *ruta = "./prueba.txt";
-					//char *ruta =	obtener_ruta(aux);
+					//char *ruta = "./prueba.txt";
+					char *ruta =	obtener_ruta(aux);
 //	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
 //	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 //	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
@@ -678,8 +678,8 @@ void asignar_marco(int pid, int nro_pagina){
 			marco->pid = pid;
 			marco->llegada_fifo = contador_fifo;
 			marco->last_time_lru =0;
-			envio_pagina_fs(pid,nro_pagina);
-			cargar_en_espacio_memoria(i);
+			//envio_pagina_fs(pid,nro_pagina);
+			//cargar_en_espacio_memoria(i);
 			log_info(logger,"SWAP IN -  PID: %i - Marco: i% - Page In: i%-%i",pid,i,pid,nro_pagina);
 			pagina->num_marco = i;
 			contador_fifo++;
