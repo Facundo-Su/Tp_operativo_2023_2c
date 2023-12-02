@@ -3,10 +3,10 @@
 int main(int argc, char *argv[]) {
 
 	char *ruta_config = string_new();
-	if (argc == 2) {
-	} else {
-		perror(" error con ruta leida de config");
-	}
+	//if (argc == 2) {
+	//} else {
+	//	perror(" error con ruta leida de config");
+	//}
 	logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
 
 	ruta_config = "./filesystem.config"; //argv[0] es el nom del programa en si mismo
@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
 
 
 	leer_archivo_bloques();
+	levantar_fat();
 	//iniciar_servidor_fs(puerto_escucha);
 	//liberar_recursos_fs();
 
@@ -61,7 +62,7 @@ t_swap* inicializar_array_swap() {
 t_fat* inicializar_fat() {
 	t_fat *fat = malloc(sizeof(t_fat));
 	fat->tamanio_fat = cant_total_bloq - cant_bloq_swap;
-	//fat->entradas=levantar_fat();
+	fat->entradas=levantar_fat();
 
 	if (fat->entradas == NULL) {
 
@@ -513,27 +514,24 @@ int obtener_ultimo_bloq_fcb(t_fcb *fcb) {
 //leer archivo: lee la info de un bloque a partir del puntero y la envia a memori
 void leer_archivo_bloques() {
 
-	int blfd = open(ruta_bloques, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+	int blfd = open(ruta_bloques, O_CREAT | O_RDWR);
 
 	if (blfd == -1) {
 		perror("Error al abrir/crear el archivo de bloques");
 		exit(EXIT_FAILURE);
 	}
 
-	// Obtiene el tamaño del archivo para mapear toda la región
-	struct stat stat_buf;
-	if (fstat(blfd, &stat_buf) == -1) {
-		perror("Error al obtener el tamaño del archivo");
-		close(blfd);
-		exit(EXIT_FAILURE);
-	}
-	//desplazamiento dentro de los bloque para llegar al cmienzo de fat
+
+	int tam =cant_total_bloq - cant_bloq_swap;
+
 	int offset_a_fat=cant_bloq_swap*tam_bloque;
 
-	// Utiliza mmap para mapear el archivo en memoria
-	void *bloquesMapeado = mmap(NULL, stat_buf.st_size, PROT_READ | PROT_WRITE,
-	MAP_SHARED, blfd, offset_a_fat);
+	void *bloquesMapeado = mmap(NULL, offset_a_fat, PROT_READ | PROT_WRITE,MAP_SHARED, blfd, 0);
 	log_info(logger_file_system, "datos: %s",(char*)bloquesMapeado);
+
+
+
+
 	if (bloquesMapeado == MAP_FAILED) {
 		perror("Error al mapear el archivo de bloques");
 		close(blfd);
@@ -543,10 +541,6 @@ void leer_archivo_bloques() {
 	// Ahora bloquesMapeado apunta a la memoria mapeada del archivo de bloques
 
 	// ... Hacer operaciones con la memoria mapeada ...
-
-
-
-	munmap(bloquesMapeado, stat_buf.st_size);
 	close(blfd);
 
 }
@@ -562,7 +556,7 @@ void crear_archivo_bloque() {
 		//fat
 		log_info(logger_file_system,
 				"escribiendo en la posicion inicial de fat:%i", inicio_fat);
-		//fseek(file_bloq, inicio_fat, SEEK_SET);
+		fseek(file_bloq, inicio_fat, SEEK_SET);
 
 		uint32_t cadena = 2323;
 
@@ -639,25 +633,50 @@ void levantar_archivo_bloques() {
 	log_info(logger_file_system, "lenvantado archivo_bloques");
 
 }
+
 void levantar_fat() {
+    int file_descrip_bloques = open(ruta_fat, O_CREAT | O_RDWR);
+    if (file_descrip_bloques == -1) {
+        perror("Error al abrir el archivo FAT");
+        exit(EXIT_FAILURE);
+    }
 
-	int file_descrip_bloques = open(ruta_fat, O_RDWR);
-	if (file_descrip_bloques == -1) {
+    int tamanio = (cant_total_bloq - cant_bloq_swap) * sizeof(uint32_t);
+    log_info(logger_file_system, "Levantado archivo_bloques: %i bytes", tamanio);
 
-		log_info(logger_file_system, "lenvantado archivo_bloques %i",
-				(cant_total_bloq - cant_bloq_swap) * sizeof(uint32_t));
-		uint32_t *bloq = mmap(NULL,
-				(cant_total_bloq - cant_bloq_swap) * sizeof(uint32_t),
-				PROT_WRITE | PROT_READ, MAP_SHARED, file_descrip_bloques, 0);
-		uint32_t valor = 2;
-		memcpy(bloq[1], &valor, sizeof(uint32_t));
+    // Establecer el tamaño del archivo si es necesario
+    if (ftruncate(file_descrip_bloques, tamanio) == -1) {
+        perror("Error al establecer el tamaño del archivo FAT");
+        close(file_descrip_bloques);
+        exit(EXIT_FAILURE);
+    }
 
-		log_info(logger_file_system, "lenvantado archivo_bloques %u",
-				bloq[800]);
-		fs->bloques = bloq;
-	}
+    void *bloq = mmap(NULL, tamanio, PROT_READ | PROT_WRITE, MAP_SHARED, file_descrip_bloques, 0);
 
-	void levantar_fcbs() {
+
+    if (bloq != MAP_FAILED) {
+        log_info(logger_file_system, "El archivo FAT se ha mapeado correctamente en la memoria.");
+
+        // Imprimir más información sobre el contenido del archivo FAT
+        uint32_t nuevo_valor = 42;
+        memcpy(bloq, &nuevo_valor, sizeof(uint32_t));
+
+        // Imprimir el nuevo valor
+        log_info(logger_file_system, "Nuevo valor en la posición 0: %u", ((uint32_t *)bloq)[0]);
+    } else {
+        perror("Error al mapear el archivo FAT");
+        close(file_descrip_bloques);
+        exit(EXIT_FAILURE);
+    }
+
+    // Asignar el puntero a bloques de fs
+    fs->bloques = bloq;
+
+    // Cerrar el archivo después de asignar el mapeo
+    close(file_descrip_bloques);
+}
+
+void levantar_fcbs() {
 
 		DIR *directorio_archivos = opendir(ruta_fcbs);
 		struct dirent *fcb;
@@ -687,6 +706,4 @@ void levantar_fat() {
 		}
 
 		closedir(directorio_archivos);
-	}
 }
-
