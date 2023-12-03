@@ -178,9 +178,10 @@ void procesar_conexion(void *conexion1){
 				page_aux->pcb_remplazo=pcb_aux;
 
 				envio_page_fault_a_memoria(page_aux);
-				//pthread_t atendiendo_page_fault;
-				//pthread_create(&atendiendo_page_fault,NULL,(void*)envio_page_fault_a_memoria,(void *) &page_aux);
-				//pthread_detach(atendiendo_page_fault);
+
+//				pthread_t atendiendo_page_fault;
+//				pthread_create(&atendiendo_page_fault,NULL,(void*)envio_page_fault_a_memoria,(void *) &page_aux);
+//				pthread_detach(atendiendo_page_fault);
 
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
@@ -205,6 +206,7 @@ void procesar_conexion(void *conexion1){
 			break;
 		case OK_PAG_CARGADA:
 			t_pcb * pcb_2 = queue_pop(list_bloqueado_page_fault);
+			log_warning(logger,"saque un proceso");
 			agregar_a_cola_ready(pcb_2);
 			sem_post(&contador_cola_ready);
 			break;

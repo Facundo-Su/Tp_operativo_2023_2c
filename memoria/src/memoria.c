@@ -30,7 +30,9 @@ void iniciar_recursos(){
 	lista_instrucciones = list_create();
 	contador_fifo =0;
 	sem_init(&sem_memoria_pf,0,1);
+	sem_init(&sem_reserva_swap,0,0);
 	logger_consola_memoria = log_create("./memoriaConsola.log", "consola", 1, LOG_LEVEL_INFO);
+	lista_swap = list_create();
 }
 
 void iniciar_consola(){
@@ -190,8 +192,8 @@ void procesar_conexion(void* socket){
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
-					//char *ruta = "./prueba.txt";
-					char *ruta =	obtener_ruta(aux);
+					char *ruta = "./prueba.txt";
+					//char *ruta =	obtener_ruta(aux);
 //	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
 //	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 //	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
@@ -199,6 +201,9 @@ void procesar_conexion(void* socket){
 
 	                cargar_lista_instruccion(ruta,size,prioridad,*pid);
 	                crear_proceso(*pid, *size);
+
+
+
 	                break;
 	            case MANDAME_PAGINA:
 	            	recibir_mensaje(cliente_fd);
@@ -260,6 +265,15 @@ void procesar_conexion(void* socket){
 	            	int * pagina_proceso = list_get(lista,1);
 	            	int marco_encontrado= obtener_marco(*pid_proceso,*pagina_proceso);
 	            	enviar_marco(marco_encontrado, OBTENER_MARCO,cliente_fd);
+	            	break;
+	            case RESPUESTA_INICIAR_PROCESO_FS:
+	            	lista= recibir_paquete(cliente_fd);
+	            	int* cantidad_bloque = list_get(lista,0);
+	            	for(int i=1;i<=*cantidad_bloque;i++){
+	            		int* pos_swap = list_get(lista,i);
+	            		list_add(lista_swap,*pos_swap);
+	            	}
+
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
 	    			usleep(retardo_respuesta);
@@ -383,6 +397,7 @@ int obtener_marco(int pid, int pagina){
     if (tabla_pagina != NULL) {
             // Se encontró un elemento que cumple con la condición
             t_pagina* pagina_encontrado = list_get(tabla_pagina->paginas,pagina);
+            log_info(logger,"el presencia de la pagina es%i",pagina_encontrado->p);
             if(pagina_encontrado->p ==1){
                 log_warning(logger, "Se encontraron la en el marco PID %i........marco %i", tabla_pagina->pid,pagina_encontrado->num_marco);
             	return pagina_encontrado->num_marco;
@@ -581,18 +596,30 @@ t_tabla_paginas *inicializar_paginas(int pid, int size){
 
 t_list * crear_paginas(int paginas_necesarias){
 	t_list * paginas = list_create();
+	enviar_fs_reservar_swap(paginas_necesarias);
+	sem_wait(&sem_reserva_swap);
+	t_list* lista_de_swap = lista_swap;
 	for(int c =0; c<paginas_necesarias;c++){
 		t_pagina * pagina = malloc(sizeof(t_pagina));
 		pagina->num_marco =-1;
 		pagina->m =0;
 		pagina->p =0;
 		pagina->num_pagina = c;
-		int pos_swap =-1; //= recibir_pos_swap(pid,conexion_filesystem,RESERVAR_SWAP);
-		pagina->pos_en_swap = pos_swap;
+		int* pos_swap_obtenido =list_get(lista_de_swap,c);
+		pagina->pos_en_swap = *pos_swap_obtenido;
 		list_add(paginas,pagina);
 	}
+	list_clean(lista_swap);
 	return paginas;
 }
+
+void enviar_fs_reservar_swap(paginas_necesarias){
+	t_paquete* paquete = crear_paquete(INICIAR_PROCESO);
+	agregar_a_paquete(paquete, &paginas_necesarias, sizeof(int));
+	enviar_paquete(paquete, conexion_filesystem);
+	eliminar_paquete(paquete);
+}
+
 
 void finalizar_proceso(int pid){
 
@@ -681,9 +708,14 @@ void asignar_marco(int pid, int nro_pagina){
 			//envio_pagina_fs(pid,nro_pagina);
 			//cargar_en_espacio_memoria(i);
 			log_info(logger,"SWAP IN -  PID: %i - Marco: i% - Page In: i%-%i",pid,i,pid,nro_pagina);
+
+			//TODO
+			solicitar_swap_en_memoria(pagina->pos_en_swap);
+			cargar_en_espacio_memoria(marco->num_marco);
 			pagina->num_marco = i;
+			pagina->p=1;
 			contador_fifo++;
-			//actualizar_tablas(pid,i,nro_pagina);
+			actualizar_tablas(pid,i,nro_pagina);
 		}else{
 			int nro_marco_remplazado = ejecutar_algoritmo();
 			marco = list_get(memoria->marcos,nro_marco_remplazado);
@@ -699,7 +731,8 @@ void asignar_marco(int pid, int nro_pagina){
 			marco->pid = pid;
 			marco->llegada_fifo =contador_fifo;
 			marco->last_time_lru =0;
-			envio_pagina_fs(pid,nro_pagina);
+			//envio_pagina_fs(pid,nro_pagina);
+			solicitar_swap_en_memoria(marco->num_marco);
 			cargar_en_espacio_memoria(nro_marco_remplazado);
 			contador_fifo++;
 			//actualizar_tablas(pid,nro_marco_remplazado,nro_pagina);
@@ -721,6 +754,15 @@ void asignar_marco(int pid, int nro_pagina){
 	}
 	//sem_post(&enviar_marco);
 }
+
+void solicitar_swap_en_memoria(int pos_swap){
+	t_paquete* paquete = crear_paquete(DATOS_SWAP);
+	agregar_a_paquete(paquete, &pos_swap, sizeof(int));
+	enviar_paquete(paquete, conexion_filesystem);
+	eliminar_paquete(paquete);
+
+}
+
 t_pagina * obtener_pagina_en_marco(int nro_marco,int pid){
     bool encontrar_tabla_pagina(void * tabla_pagina){
           t_tabla_paginas* un_tabla_pagina = (t_tabla_paginas*)tabla_pagina;
@@ -753,8 +795,10 @@ bool pagina_esta_en_memoria(int pid, int nro_pagina){
 	t_list_iterator* iterador = list_iterator_create(memoria->marcos);
 	while(list_iterator_has_next(iterador)){
 		t_marco * marco = (t_marco*)list_iterator_next(iterador);
+        //log_info(logger_consola_memoria,"comparando pid %i",marco->pid);
+        //log_info(logger_consola_memoria,"comparando el pid %i",pid);
 		if(marco->pid == pid && (marco->num_marco == pagina->num_marco)&& pagina->p == 1){
-			//log_info(logger,"Encontre la pagina");
+			log_info(logger,"Encontre la pagina");
 			return true;
 		}
 	}

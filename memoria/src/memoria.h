@@ -15,10 +15,15 @@ t_config* config;
 t_log * logger_consola_memoria;
 sem_t envio_marco;
 sem_t sem_memoria_pf;
+sem_t sem_reserva_swap;
 int contador_fifo;
 void * bloque;
 sem_t contador_espera_cargar;
 void* datos_obtenidos;
+
+t_list* lista_swap;
+
+
 
 typedef enum{
 	FIFO,
