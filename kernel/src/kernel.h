@@ -72,6 +72,7 @@ typedef struct{
 typedef struct{
 	char*nombre;
 	int puntero;
+	int tamanio;
 	char * modo;
 }t_archivo_pcb;
 
@@ -110,6 +111,7 @@ sem_t contador_agregando_new;
 sem_t contador_cola_ready;
 sem_t proceso_desalojo;
 sem_t cont_detener_planificacion;
+sem_t contador_bloqueado_fs_fopen;
 pthread_t deadlock_hilo;
 sem_t sem_deadlock;
 
@@ -123,6 +125,7 @@ t_planificador planificador;
 bool detener;
 
 int *instancias_recursos;
+int tam_archivo;
 
 void obtener_configuracion();
 void asignar_algoritmo(char *algoritmo);

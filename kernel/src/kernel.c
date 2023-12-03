@@ -116,6 +116,11 @@ void procesar_conexion(void *conexion1){
 			    //log_info(logger, "el archivo es %s",nombre_archivo);
 			   // log_info(logger, "el modo del archivo es %s",modo_apertura);
 			    ejecutar_fopen(nombre_archivo, modo_apertura, pcb_aux);
+			    sem_wait(&contador_bloqueado_fs_fopen);
+			    if(tam_archivo=-1){
+
+			    }
+
 			    break;
 
 			case EJECUTAR_F_CLOSE:
@@ -203,6 +208,13 @@ void procesar_conexion(void *conexion1){
 			sem_post(&contador_cola_ready);
 			sem_post(&contador_ejecutando_cpu);
 			sem_post(&proceso_desalojo);
+			break;
+		case RESPUESTA_ABRIR_ARCHIVO:
+			paquete = recibir_paquete(cliente_fd);
+			int* tam_archivo_recibido = list_get(paquete,1);
+			tam_archivo = *tam_archivo_recibido;
+			sem_post(&contador_bloqueado_fs_fopen);
+
 			break;
 		case OK_PAG_CARGADA:
 			t_pcb * pcb_2 = queue_pop(list_bloqueado_page_fault);
@@ -359,7 +371,7 @@ void ejecutar_fopen(char* nombre_archivo, char* modo_apertura, t_pcb* pcb) {
             pthread_rwlock_rdlock(&(archivo->lock));
             archivo->contador_lectura++;
             crear_entrada_archivo_pcb(nombre_archivo,modo_apertura, pcb);
-            enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
+            enviar_pcb(pcb,conexion_file_system,ABRIR_ARCHIVO);
         }
     } else if (strcmp(modo_apertura, "W") == 0) {
         if (archivo->lock_escritura_activo || archivo->contador_lectura > 0) {
@@ -377,7 +389,7 @@ void ejecutar_fopen(char* nombre_archivo, char* modo_apertura, t_pcb* pcb) {
             pthread_rwlock_wrlock(&(archivo->lock));
             archivo->lock_escritura_activo = true;
             crear_entrada_archivo_pcb(nombre_archivo,modo_apertura, pcb);
-            enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
+            enviar_pcb(pcb,conexion_memoria,ABRIR_ARCHIVO);
         }
     }
 }
@@ -702,6 +714,7 @@ void iniciar_recurso(){
 	sem_init(&contador_cola_ready,0,0);
 	sem_init(&proceso_desalojo,0,0);
 	sem_init(&sem_deadlock,0,0);
+	sem_init(&contador_bloqueado_fs_fopen,0,0);
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
     sem_init(&cont_detener_planificacion,0,0);
     detener = false;
