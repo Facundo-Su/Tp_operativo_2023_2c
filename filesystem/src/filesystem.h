@@ -21,6 +21,7 @@
 #include<fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <dirent.h>
 
 #define RESERV_BOOT UINT32_MAX;
 #define MARCA_ASIG UINT32_MAX;
@@ -74,35 +75,54 @@ int retardo_acceso_fat;
 
 
 //metodos de FS
-t_fat* inicializar_fat();
-t_archivo_bloques* inicializar_boques();
+void inicializar_fat();
+
 void inicializar_fcb();
 void inicializar_fs();
 
+
+t_fcb* devolver_fcb(char* nombre);
 char* recibir_nombre_archivo(int socket_cliente);
-void crear_archivo_bloque();
-void crear_archivo_fcb(char*nombre,t_fcb* fcb_creado);
+
+void crear_archivo_fcb(char*nombre);
 int abrir_archivo_fcb(char*);
-void truncar_archivo_fcb(t_fcb*);
-void* connection_handler(void* socket_conexion);
-void ampliar_tam_archivo(t_fcb* fcb_para_modif,int tamanio_nuevo);
-void guardar_tam_fcb(t_fcb* fcb);
-void reducir_tam_archivo(t_fcb *fcb_para_modif,int nuevo_tamanio);
+void truncar_archivo(char*nombre,int tamanio);
+void escribir_fcb_en_archivo(t_fcb *fcb);
+//swap
+void escribir_bloque_swap(int puntero,void *a_escribir);
+void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques);
+int buscar_bloq_libre_swap();
+void finalizar_proceso(t_list *lista_liberar);
 t_list* iniciar_proceso(uint32_t cant_bloques);
+
+//fat
+void truncar_archivo(char *nombre, int nuevo_tamanio_bytes);
+void levantar_fat() ;
+void levantar_fcbs();
+void* leer_archivo_bloques_fat(int puntero, char *nombre);
 int obtener_ultimo_bloq_fcb(t_fcb* fcb);
 uint32_t obtener_bloque_por_indice(t_fcb *fcb, uint32_t indice_bloque);
 void reducir_tam_archivo(t_fcb* fcb_para_modif,int nuevo_tam);
-void ampliar_tam_archivo(t_fcb* fb_para_modif,int nuevo_tam);
+void ampliar_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes);
 void asignar_entradas_fat(t_fcb *fcb_a_guardar);
+
+//bloques
+void levantar_archivo_bloques();
+
+
+//respuestas conxiones
+void enviar_tamanio_archivo(int tamanio, int cliente_fd);
+void enviar_respuesta_crear_archivo();
+
+
+
 void obtener_configuracion();
 void terminar_programa();
-void levantar_fcbs();
-void* leer_archivo_bloques(int puntero,char* nombre);
-void* leer_datos_bloques(uint32_t indice);
+
 t_config* iniciar_config();
+void* connection_handler(void* socket_conexion);
 int iniciar_servidor_file_system(char*);
-void iniciar_consola();
-void iterator(char* value);
+
 void * procesar_conexion(int);
 
 #endif /* SRC_FILESYSTEM_H_ */
