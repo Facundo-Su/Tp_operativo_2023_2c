@@ -124,8 +124,6 @@ void iniciar_servidor_memoria(char *puerto) {
         int cliente_fd = esperar_cliente(memoria_fd);
 		pthread_t atendiendo;
 		pthread_create(&atendiendo,NULL,(void*)procesar_conexion,(void *) &cliente_fd);
-		if (setsockopt(cliente_fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
-			    error("setsockopt(SO_REUSEADDR) failed");
 		pthread_detach(atendiendo);
 
     }
@@ -236,7 +234,7 @@ void procesar_conexion(void* socket){
 	            	//TODO realizar operacion;
 	            //	memcpy(memoria->espacio_usuario + (marco_out* tam_pagina) + *desplazamiento_out, valor_remplazar, sizeof(uint32_t));
 	            	uint32_t *valor_leido2 =malloc(sizeof(uint32_t));
-	            	memcpy(valor_leido2, memoria->espacio_usuario + (*marco_out *tam_pagina)+ *desplazamiento_out , sizeof(uint32_t));
+	            	memcpy( memoria->espacio_usuario + (*marco_out *tam_pagina)+ *desplazamiento_out ,valor_leido2, sizeof(uint32_t));
 	            	//log_info(logger,"%u",*valor_leido2);
 	            	//t_pagina * pagina = list_get()
 	            	//modificar_tabla_pagina(*pid_out,*pagina_out);
@@ -271,8 +269,14 @@ void procesar_conexion(void* socket){
 	            	int* cantidad_bloque = list_get(lista,0);
 	            	for(int i=1;i<=*cantidad_bloque;i++){
 	            		int* pos_swap = list_get(lista,i);
+
 	            		list_add(lista_swap,*pos_swap);
+	            		//int *valor = list_get(lista_swap,i-1);
+
 	            	}
+	            	int valor= list_get(lista_swap,0);
+	            	log_error(logger,"el valor de swap en el direccion 0 es %i",valor);
+	            	sem_post(&sem_reserva_swap);
 
 	            	break;
 	    		case INSTRUCCIONES_A_MEMORIA:
@@ -598,15 +602,15 @@ t_list * crear_paginas(int paginas_necesarias){
 	t_list * paginas = list_create();
 	enviar_fs_reservar_swap(paginas_necesarias);
 	sem_wait(&sem_reserva_swap);
-	t_list* lista_de_swap = lista_swap;
 	for(int c =0; c<paginas_necesarias;c++){
 		t_pagina * pagina = malloc(sizeof(t_pagina));
 		pagina->num_marco =-1;
 		pagina->m =0;
 		pagina->p =0;
 		pagina->num_pagina = c;
-		int* pos_swap_obtenido =list_get(lista_de_swap,c);
-		pagina->pos_en_swap = *pos_swap_obtenido;
+		int pos_swap_obtenido =list_get(lista_swap,c);
+		log_error(logger,"asigne al pos swap  %i",pos_swap_obtenido);
+		pagina->pos_en_swap = pos_swap_obtenido;
 		list_add(paginas,pagina);
 	}
 	list_clean(lista_swap);

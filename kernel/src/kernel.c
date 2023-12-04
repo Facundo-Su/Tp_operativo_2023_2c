@@ -117,10 +117,6 @@ void procesar_conexion(void *conexion1){
 			   // log_info(logger, "el modo del archivo es %s",modo_apertura);
 			    ejecutar_fopen(nombre_archivo, modo_apertura, pcb_aux);
 			    sem_wait(&contador_bloqueado_fs_fopen);
-			    if(tam_archivo=-1){
-
-			    }
-
 			    break;
 
 			case EJECUTAR_F_CLOSE:
@@ -312,7 +308,8 @@ void enviar_fread_fs(char *nombre,int dir_fisica,int puntero,int pid){
 	eliminar_paquete(paquete);
 }
 void enviar_fopen_fs(char *nombre){
-	t_paquete* paquete = crear_paquete(CREAR_ARCHIVO);
+	t_paquete* paquete = crear_paquete(ABRIR_ARCHIVO);
+	log_error(logger,"el valor del archivo es %s",nombre);
 	agregar_a_paquete(paquete, nombre, strlen(nombre) + 1);
 	enviar_paquete(paquete, conexion_file_system);
 	eliminar_paquete(paquete);
@@ -770,19 +767,23 @@ void generar_conexion() {
 
 			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
 			pthread_create(&conexion_memoria_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_memoria);
+			pthread_detach(conexion_memoria_hilo);
 	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		case '2':
 			conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
 			pthread_create(&conexion_file_system_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_file_system);
+			pthread_detach(conexion_file_system_hilo);
 	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		case '3':
 			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
 	        log_info(logger_consola,"conexion generado correctamente\n");
 			pthread_create(&conexion_cpu_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_cpu);
+			pthread_detach(conexion_cpu_hilo);
 			conexion_cpu_interrupt = crear_conexion(ip_cpu, puerto_cpu_interrupt);
 			pthread_create(&conexion_cpu_interrupt_hilo, NULL, (void*) procesar_conexion, (void *)&conexion_cpu_interrupt_hilo);
+			pthread_detach(conexion_cpu_interrupt_hilo);
 	        log_info(logger_consola,"conexion generado correctamente\n");
 			break;
 		default:

@@ -7,6 +7,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		perror(" error con ruta leida de config");
 	}
+	prueba =0;
 	logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
 
 	logger_file_system = log_create("./filesystem.log", "FILESYSTEM", true,
@@ -24,11 +25,12 @@ int main(int argc, char *argv[]) {
 			"se inicializo las estructuras de file system");
 
 	//TODO quitar cuando termine  de hacer pruebas
-	int punt=fs->bloques;
-	int a_escribir=128;
+	//int punt=fs->bloques;
+	//int a_escribir=128;
 
-	escribir_bloque_swap(punt, &a_escribir);
-	//iniciar_servidor_fs(puerto_escucha);
+	//escribir_bloque_swap(punt, &a_escribir);
+
+	iniciar_servidor_fs(puerto_escucha);
 	liberar_recursos_fs();
 
 	//levantar_archivo_bloques();
@@ -89,6 +91,9 @@ void liberar_recursos_fs() {
 //crea el array de bloques swap
 t_swap* inicializar_array_swap() {
 	t_swap *swap_array = malloc(cant_bloq_swap * sizeof(t_swap));
+	for(int i=0;i<cant_bloq_swap;i++){
+		swap_array[i].libre=false;
+	}
 	return swap_array;
 }
 //crea el array de X tamanio, reserva la pos [0], y deja el resto en 0=libre
@@ -140,15 +145,16 @@ void obtener_configuracion() {
 }
 
 // cada hilo creado ejecuta connection_handler
-void* procesar_conexion(int cliente_fd) {
+void* procesar_conexion(void* conexion1) {
 	t_list *lista;
+	int *conexion = (int*)conexion1;
+	int cliente_fd = *conexion;
 
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
-			log_info(logger, "hola");
 			enviar_mensaje("saludo desde file system", cliente_fd);
 			break;
 		case PAQUETE:
@@ -157,23 +163,14 @@ void* procesar_conexion(int cliente_fd) {
 
 			break;
 		case ABRIR_ARCHIVO:
-			char *nombre_archivo = recibir_nombre_archivo(cliente_fd);
-			int tamanio_archivo = abrir_archivo_fcb(nombre_archivo);
+			t_list* nose = recibir_paquete(cliente_fd);
+			char *nombre_nose = list_get(nose,0);
+			log_info(logger_file_system, "llegue %i vez ",prueba);
+			prueba++;
+			log_info(logger_file_system, "Abrir Archivo: <%s>",nombre_nose);
 
-			if (tamanio_archivo != -1) {
-				//se envia el tamanio como char* o int?
-				log_info(logger_file_system, "Abrir Archivo: < %s >",
-						nombre_archivo);
-
-
-				enviar_tamanio_archivo(tamanio_archivo, cliente_fd);
-			} else {
-
-				enviar_tamanio_archivo(tamanio_archivo, cliente_fd);
-
-			}
-			free(nombre_archivo);
-
+			int tamanio_archivo = abrir_archivo_fcb(nombre_nose);
+			//enviar_tamanio_archivo(tamanio_archivo, cliente_fd);
 			break;
 		case CREAR_ARCHIVO:
 			char *nombre_a_crear = recibir_nombre_archivo(cliente_fd);
@@ -200,8 +197,10 @@ void* procesar_conexion(int cliente_fd) {
 
 			break;
 		case INICIAR_PROCESO: //reserva bloques y reenvia la lista de bloques asignados
-			int cant_bloq = recibir_cantidad_req_bloq(cliente_fd);
-			t_list *lista_asignados = iniciar_proceso(cant_bloq);
+			lista = recibir_paquete(cliente_fd);
+			int *cant_bloq = list_get(lista,0);
+			t_list *lista_asignados = iniciar_proceso(*cant_bloq,cliente_fd);
+
 
 			break;
 		case FINALIZAR_PROCESO:
@@ -257,10 +256,14 @@ void enviar_tamanio_archivo(int tamanio, int cliente_fd) {
 }
 void enviar_bloques_asignados_swap(t_list *lista_asignados, int socket_cliente) {
 
-	t_paquete *paquete = crear_paquete(RESPUESTA_SOLICITUD_BLOQUES);
-	for (uint32_t i = 0; i < list_size(lista_asignados); i++) {
-		agregar_a_paquete(paquete, list_get(lista_asignados, i),
-				sizeof(uint32_t));
+	t_paquete *paquete = crear_paquete(RESPUESTA_INICIAR_PROCESO_FS);
+	int cantidad_de_bloque = list_size(lista_asignados);
+	log_info(logger_file_system,"%i",list_size(lista_asignados));
+
+	agregar_a_paquete(paquete, &cantidad_de_bloque, sizeof(int));
+	for (int i = 0; i < list_size(lista_asignados); i++) {
+		int* valor =list_get(lista_asignados, i);
+		agregar_a_paquete(paquete,&valor,sizeof(int));
 	}
 	enviar_paquete(paquete, socket_cliente);
 	eliminar_paquete(paquete);
@@ -273,10 +276,7 @@ void iniciar_servidor_fs(char *puerto) {
 	while (1) {
 		int cliente_fd = esperar_cliente(fs_fd);
 		pthread_t atendiendo;
-		pthread_create(&atendiendo, NULL, (void*) procesar_conexion,(void*) cliente_fd);
-		if (setsockopt(cliente_fd, SOL_SOCKET, SO_REUSEADDR, &(int ) { 1 },
-				sizeof(int)) < 0)
-			error("setsockopt(SO_REUSEADDR) failed");
+		pthread_create(&atendiendo, NULL, (void*) procesar_conexion,(void*) &cliente_fd);
 		pthread_detach(atendiendo);
 
 	}
@@ -326,6 +326,7 @@ char* recibir_nombre_archivo(int socket_cliente) {
 // abrir archivo; si el archivo existe se agrega a list_fcb y devuelve el tam sino -1
 int abrir_archivo_fcb(char *nombre_fcb) {
 	//preparo la ruta del archivo fcb
+/*
 	char *nueva_ruta = armar_ruta_fcb(nombre_fcb);
 	int tamanio_archivo = -1;
 	log_info(logger_file_system, "ruta copia %s", nueva_ruta);
@@ -351,8 +352,8 @@ int abrir_archivo_fcb(char *nombre_fcb) {
 	config_destroy(config_fcb);
 	free(inicial_a_guardar);
 	free(nueva_ruta);
-
-	return tamanio_archivo;
+*/
+	return 1;
 }
 
 uint32_t buscar_entrada_libre_fat() {
@@ -640,23 +641,27 @@ int recibir_cantidad_req_bloq(int socket_cliente) {
 }
 
 //devuelve la lista de boques asignada al proceso
-t_list* iniciar_proceso(uint32_t cant_bloques) {
+t_list* iniciar_proceso(uint32_t cant_bloques, int cliente_fd) {
 	t_list *bloq_asignados = list_create();
-	asignar_bloques_swap(bloq_asignados, cant_bloques);
+	asignar_bloques_swap(bloq_asignados, cant_bloques,cliente_fd);
 
 	return bloq_asignados;
 
 }
-void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques) {
+
+void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques, int cliente_fd) {
 	for (int i = 0; i < cant_bloques; i++) {
 		int index_bloq = buscar_bloq_libre_swap();
+
+		log_warning(logger_file_system,"nose capo %i",index_bloq);
 		fs->array_swap[index_bloq].libre = false;
 
-		list_add(bloques_asignados, &index_bloq);
-
+		list_add(bloques_asignados, index_bloq);
 	}
+	enviar_bloques_asignados_swap(bloques_asignados,cliente_fd);
 
 }
+
 //busco en la fat entrada con valor 0=libre y devuelvo el indice
 int buscar_bloq_libre_swap() {
 	int num_bloque;

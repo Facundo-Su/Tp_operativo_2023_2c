@@ -90,10 +90,10 @@ void truncar_archivo(char*nombre,int tamanio);
 void escribir_fcb_en_archivo(t_fcb *fcb);
 //swap
 void escribir_bloque_swap(int puntero,void *a_escribir);
-void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques);
+void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques,int);
 int buscar_bloq_libre_swap();
 void finalizar_proceso(t_list *lista_liberar);
-t_list* iniciar_proceso(uint32_t cant_bloques);
+t_list* iniciar_proceso(uint32_t cant_bloques,int);
 
 //fat
 void truncar_archivo(char *nombre, int nuevo_tamanio_bytes);
@@ -114,7 +114,7 @@ void levantar_archivo_bloques();
 void enviar_tamanio_archivo(int tamanio, int cliente_fd);
 void enviar_respuesta_crear_archivo();
 
-
+int prueba;
 
 void obtener_configuracion();
 void terminar_programa();
@@ -123,6 +123,6 @@ t_config* iniciar_config();
 void* connection_handler(void* socket_conexion);
 int iniciar_servidor_file_system(char*);
 
-void * procesar_conexion(int);
+void * procesar_conexion(void*);
 
 #endif /* SRC_FILESYSTEM_H_ */
