@@ -235,10 +235,9 @@ void procesar_conexion(void* socket){
 	            //	memcpy(memoria->espacio_usuario + (marco_out* tam_pagina) + *desplazamiento_out, valor_remplazar, sizeof(uint32_t));
 	            	uint32_t *valor_leido2 =malloc(sizeof(uint32_t));
 	            	memcpy( memoria->espacio_usuario + (*marco_out *tam_pagina)+ *desplazamiento_out ,valor_leido2, sizeof(uint32_t));
-	            	//log_info(logger,"%u",*valor_leido2);
-	            	//t_pagina * pagina = list_get()
-	            	//modificar_tabla_pagina(*pid_out,*pagina_out);
 	            	int dir_mov_out = *marco_out * tam_pagina;
+	            	t_pagina* pagina_mov_out = obtener_pagina(*pid_out, *pagina_out);
+	            	pagina_mov_out->m=1;
 	            	log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_out,dir_mov_out);
 	            	break;
 	            case LEER_ARCHIVO:
@@ -742,19 +741,10 @@ void asignar_marco(int pid, int nro_pagina){
 			//actualizar_tablas(pid,nro_marco_remplazado,nro_pagina);
 		}
 	}else{
-	    bool encontrar_tabla_pagina(void * tabla_pagina){
-	          t_tabla_paginas* un_tabla_pagina = (t_tabla_paginas*)tabla_pagina;
-	          //log_info(logger_consola_memoria,"comparando pid %i",pid);
-	          int valor_comparar =un_tabla_pagina->pid;
-	          //log_info(logger_consola_memoria,"comparando el pid %i",valor_comparar);
-	          return valor_comparar == pid;
-	    }
-	    t_tabla_paginas* tabla_pagina = list_find(memoria->lista_tabla_paginas, encontrar_tabla_pagina);
+
 		actualizar_marcos_lru();
-		t_pagina * pagina3 = list_get(tabla_pagina->paginas,nro_pagina);
-		marco = list_get(memoria->marcos,pagina3->num_marco);
+		marco = list_get(memoria->marcos,pagina->num_marco);
 		marco->last_time_lru =0;
-		list_replace(memoria->marcos,marco->num_marco,marco);
 	}
 	//sem_post(&enviar_marco);
 }
