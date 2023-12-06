@@ -40,14 +40,6 @@ typedef struct{
 	uint32_t* entradas;
 }t_fat;
 
-
-typedef struct {
-	uint32_t * datos;
-}t_archivo_bloques;
-typedef struct {
-	uint32_t pid_proceso;
-	t_list* bloq_asignados;
-}t_bloq_asignados;
 typedef struct{
 	bool libre;
 	uint32_t valor;
@@ -55,7 +47,7 @@ typedef struct{
 typedef struct{
 	t_list* fcb_list;
 	t_fat *fat;
-	t_archivo_bloques *bloques;
+	void *bloques;
 	t_swap* array_swap;
 }t_FS;
 
@@ -105,10 +97,9 @@ uint32_t obtener_bloque_por_indice(t_fcb *fcb, uint32_t indice_bloque);
 void reducir_tam_archivo(t_fcb* fcb_para_modif,int nuevo_tam);
 void ampliar_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes);
 void asignar_entradas_fat(t_fcb *fcb_a_guardar);
-
+void enviar_respuesta_truncar(int socket_cliente);
 //bloques
 void levantar_archivo_bloques();
-
 
 //respuestas conxiones
 void enviar_tamanio_archivo(int tamanio, int cliente_fd);

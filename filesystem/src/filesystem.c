@@ -92,7 +92,7 @@ void liberar_recursos_fs() {
 t_swap* inicializar_array_swap() {
 	t_swap *swap_array = malloc(cant_bloq_swap * sizeof(t_swap));
 	for(int i=0;i<cant_bloq_swap;i++){
-		swap_array[i].libre=false;
+		swap_array[i].libre=true;
 	}
 	return swap_array;
 }
@@ -174,24 +174,25 @@ void* procesar_conexion(void* conexion1) {
 			break;
 		case CREAR_ARCHIVO:
 			char *nombre_a_crear = recibir_nombre_archivo(cliente_fd);
-
+			log_info(logger_file_system, "Crear Archivo: <%s>",nombre_a_crear);
 			crear_archivo_fcb(nombre_a_crear);
 			//enviar_respuesta_crear_archivo();
 			break;
 		case LEER_ARCHIVO:
 			//recibe punteto desde el cual leer
 			char *nombre_arc = recibir_nombre_archivo(cliente_fd);
+
 			int puntero = recibir_entero(cliente_fd);
 
 			leer_archivo_bloques_fat(puntero, nombre_arc);
 			break;
 		case TRUNCAR_ARCHIVO:
 			char *nombre = recibir_nombre_archivo(cliente_fd);
+			log_info(logger_file_system, "truncar archivo: <  %s >",nombre);
 			int *tamanio_nuevo = recibir_entero(cliente_fd);
-			t_fcb *fcb_a_truncar = devolver_fcb(nombre);
 
-			truncar_archivo(fcb_a_truncar, tamanio_nuevo);
-
+			truncar_archivo(nombre, tamanio_nuevo);
+			enviar_respuesta_truncar(cliente_fd);//1=OK
 			break;
 		case ESCRIBIR_ARCHIVO:
 
@@ -199,9 +200,9 @@ void* procesar_conexion(void* conexion1) {
 		case INICIAR_PROCESO: //reserva bloques y reenvia la lista de bloques asignados
 			lista = recibir_paquete(cliente_fd);
 			int *cant_bloq = list_get(lista,0);
+			log_info(logger_file_system, "Cantidad de bloques swap a reservar %i",cant_bloq);
 			t_list *lista_asignados = iniciar_proceso(*cant_bloq,cliente_fd);
-
-
+			enviar_bloques_asignados_swap(lista_asignados,cliente_fd);
 			break;
 		case FINALIZAR_PROCESO:
 			break;
@@ -212,7 +213,13 @@ void* procesar_conexion(void* conexion1) {
 		}
 	}
 }
+void enviar_respuesta_truncar(int socket_cliente){
+	t_paquete* paquete=crear_paquete(OK_TRUNCAR_ARCHIVO);
 
+	agregar_a_paquete(paquete, 1,sizeof(int) );
+	enviar_paquete(paquete, socket_cliente);
+	eliminar_paquete(paquete);
+}
 t_fcb* devolver_fcb(char *nombre) {
 	log_info(logger_file_system, "archivo a buscar %s", nombre);
 	for (int i = 0; i < list_size(fs->fcb_list); i++) {
@@ -664,10 +671,10 @@ void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques, int clien
 
 //busco en la fat entrada con valor 0=libre y devuelvo el indice
 int buscar_bloq_libre_swap() {
-	int num_bloque;
+	int num_bloque=0;
 	//primero reservado para boot
 	for (int i = 0; i < cant_bloq_swap; i++) {
-		if (fs->array_swap[i].libre) {
+		if (fs->array_swap[i].libre==true) {
 
 			num_bloque = i;
 			break;
