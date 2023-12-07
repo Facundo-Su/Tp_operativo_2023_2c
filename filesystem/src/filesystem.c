@@ -688,17 +688,14 @@ void escribir_bloque_swap(int puntero,void *a_escribir) {
 }
 void poner_bloq_swap_reservado(uint32_t num_bloque) {
 	log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
-	int marca_reservado=68;
+	int marca_reservado=0;
 	if(fs->bloques+(tam_bloque*num_bloque)==NULL){
 
 		log_info(logger_file_system, "puntero swap es nulo");
 	}
 	void* buffer_bloque=fs->bloques;
 
-	memcpy(buffer_bloque,&marca_reservado,tam_bloque);
-	memcpy(buffer_bloque +(tam_bloque),&marca_reservado,tam_bloque);
-	memcpy(buffer_bloque+ (tam_bloque*2),&marca_reservado,tam_bloque);
-
+	memset(buffer_bloque,marca_reservado,tam_bloque);
 
 }
 void* leer_bloque_swap(int puntero){
