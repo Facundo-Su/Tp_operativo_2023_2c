@@ -220,9 +220,10 @@ void procesar_conexion(void* socket){
 	            	//asignar_marco(pid, *nro_pag_mov_in);
 	            	uint32_t *valor_leido =malloc(sizeof(uint32_t));
 	            	memcpy(valor_leido, memoria->espacio_usuario + (*marco *tam_pagina) + *desplazamiento, sizeof(uint32_t));
+	            	log_error(logger,"valor leido %u",*valor_leido);
 	            	enviar_registro_leido_mov_in(*valor_leido,ENVIO_MOV_IN,cliente_fd);
 	            	int dir_mov_in = *marco *tam_pagina;
-	            	log_info(logger,"PID: %i- Accion: LEER - Direccion fisica: ",marco_obtenido->pid,dir_mov_in);
+	            	log_info(logger,"PID: %i- Accion: LEER - Direccion fisica: %i",marco_obtenido->pid,dir_mov_in);
 	            	break;
 	            case ENVIO_MOV_OUT:
 	            	lista = recibir_paquete(cliente_fd);
@@ -231,10 +232,10 @@ void procesar_conexion(void* socket){
 	            	int *pagina_out = list_get(lista,2);
 	            	int *pid_out = list_get(lista,3);
 	            	uint32_t *valor_remplazar = list_get(lista,4);
-	            	//TODO realizar operacion;
 	            //	memcpy(memoria->espacio_usuario + (marco_out* tam_pagina) + *desplazamiento_out, valor_remplazar, sizeof(uint32_t));
-	            	uint32_t *valor_leido2 =malloc(sizeof(uint32_t));
-	            	memcpy( memoria->espacio_usuario + (*marco_out *tam_pagina)+ *desplazamiento_out ,valor_leido2, sizeof(uint32_t));
+	            	//uint32_t *valor_leido2 =malloc(sizeof(uint32_t));
+	            	memcpy(memoria->espacio_usuario + (*marco_out * tam_pagina) + *desplazamiento_out, valor_remplazar, sizeof(uint32_t));
+	            	//memcpy(valor_leido2, memoria->espacio_usuario + (*marco_out * tam_pagina) + *desplazamiento_out, sizeof(uint32_t));
 	            	int dir_mov_out = *marco_out * tam_pagina;
 	            	t_pagina* pagina_mov_out = obtener_pagina(*pid_out, *pagina_out);
 	            	pagina_mov_out->m=1;
@@ -641,7 +642,7 @@ void finalizar_proceso(int pid){
 		t_pagina* pagina2 = (t_pagina*)list_iterator_next(iterador2);
 		list_add(list_pos_swap_fin,pagina2->pos_en_swap);
 	}
-
+	liberar_marcos(pid);
 	enviar_fs_finalizar(list_pos_swap_fin);
 	list_remove_element(memoria->lista_tabla_paginas, aux);
 	liberar_tabla_paginas(aux);
@@ -755,9 +756,9 @@ void asignar_marco(int pid, int nro_pagina){
 				free(pagina_modificada);
 				log_info(logger,"SWAP OUT -  PID: %i - Marco: %i - Page Out: %i-%i",marco->pid,marco->num_marco,marco->pid,pagina->num_pagina);
 			}
-
 			pagina2->p=0;
 			pagina2->m=0;
+			pagina2->num_marco =-1;
 
 			marco->pid = pid;
 			marco->llegada_fifo =contador_fifo;
@@ -787,7 +788,21 @@ void solicitar_swap_en_memoria(int pos_swap){
 	eliminar_paquete(paquete);
 
 }
+void liberar_marcos(int pid){
+	t_list_iterator* iterador = list_iterator_create(memoria->marcos);
+	while(list_iterator_has_next(iterador)){
+		t_marco * marco = (t_marco*)list_iterator_next(iterador);
+		if(marco->pid == pid){
+			log_error(logger,"LIBERA EL MARCO %i",marco->num_marco);
+			marco->is_free = true;
+			marco->pid =-1;
+			marco->llegada_fifo =0;
+			marco->last_time_lru =0;
+		}
+	}
+	list_iterator_destroy(iterador);
 
+}
 t_pagina * obtener_pagina_en_marco(int nro_marco,int pid){
     bool encontrar_tabla_pagina(void * tabla_pagina){
           t_tabla_paginas* un_tabla_pagina = (t_tabla_paginas*)tabla_pagina;

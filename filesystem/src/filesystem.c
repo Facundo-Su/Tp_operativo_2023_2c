@@ -33,12 +33,12 @@ int main(int argc, char *argv[]) {
 //	memcpy(buffer_bloque +(tam_bloque),&marca_reservado,sizeof(char));
 //	memcpy(buffer_bloque+ (tam_bloque*2),&marca_reservado,sizeof(char));
 
-	 int marca_reservado=0;//ascii 0=caracter nulo
-	void* buffer_bloque=fs->bloques;
-
-	memset(buffer_bloque,marca_reservado,tam_bloque);
-	memset(buffer_bloque +(tam_bloque),marca_reservado,tam_bloque);
-	memset(buffer_bloque+ (tam_bloque*2),marca_reservado,tam_bloque);
+//	 int marca_reservado=0;//ascii 0=caracter nulo
+//	void* buffer_bloque=fs->bloques;
+//
+//	memset(buffer_bloque,marca_reservado,tam_bloque);
+//	memset(buffer_bloque +(tam_bloque),marca_reservado,tam_bloque);
+//	memset(buffer_bloque+ (tam_bloque*2),marca_reservado,tam_bloque);
 
 	iniciar_servidor_fs(puerto_escucha);
 	liberar_recursos_fs();
@@ -421,8 +421,7 @@ int abrir_archivo_fcb(char *nombre_fcb) {
 
 	t_fcb *fcb_abierto = malloc(sizeof(t_fcb));
 	fcb_abierto->nombre_archivo = nombre_fcb;
-	fcb_abierto->bloq_inicial_archivo = config_get_int_value(config_fcb,
-			"BLOQUE_INICIAL");
+	fcb_abierto->bloq_inicial_archivo = config_get_int_value(config_fcb,"BLOQUE_INICIAL");
 	fcb_abierto->tamanio_archivo = config_get_int_value(config_fcb,
 			"TAMANIO_ARCHIVO");
 
