@@ -623,7 +623,7 @@ void enviar_fs_reservar_swap(int paginas_necesarias){
 	eliminar_paquete(paquete);
 }
 
-
+//TODO
 void finalizar_proceso(int pid){
 
 	t_list_iterator* iterador = list_iterator_create(memoria->lista_tabla_paginas);
@@ -709,7 +709,7 @@ void asignar_marco(int pid, int nro_pagina){
 			marco->last_time_lru =0;
 			//envio_pagina_fs(pid,nro_pagina);
 			//cargar_en_espacio_memoria(i);
-			log_info(logger,"SWAP IN -  PID: %i - Marco: i% - Page In: i%-%i",pid,i,pid,nro_pagina);
+			log_info(logger,"SWAP IN -  PID: %i - Marco: %i - Page In: %i - %i",pid,i,pid,nro_pagina);
 
 			//TODO
 			solicitar_swap_en_memoria(pagina->pos_en_swap);
@@ -717,7 +717,7 @@ void asignar_marco(int pid, int nro_pagina){
 			pagina->num_marco = i;
 			pagina->p=1;
 			contador_fifo++;
-			actualizar_tablas(pid,i,nro_pagina);
+			//actualizar_tablas(pid,i,nro_pagina);
 		}else{
 			int nro_marco_remplazado = ejecutar_algoritmo();
 			marco = list_get(memoria->marcos,nro_marco_remplazado);
@@ -730,9 +730,15 @@ void asignar_marco(int pid, int nro_pagina){
 				free(pagina_modificada);
 				log_info(logger,"SWAP OUT -  PID: %i - Marco: %i - Page Out: %i-%i",marco->pid,marco->num_marco,marco->pid,pagina->num_pagina);
 			}
+
+			pagina2->p=0;
+			pagina2->m=0;
+
 			marco->pid = pid;
 			marco->llegada_fifo =contador_fifo;
 			marco->last_time_lru =0;
+			pagina->num_marco= nro_marco_remplazado;
+			pagina->p=1;
 			//envio_pagina_fs(pid,nro_pagina);
 			solicitar_swap_en_memoria(marco->num_marco);
 			cargar_en_espacio_memoria(nro_marco_remplazado);
@@ -746,6 +752,7 @@ void asignar_marco(int pid, int nro_pagina){
 		marco->last_time_lru =0;
 	}
 	//sem_post(&enviar_marco);
+
 }
 
 void solicitar_swap_en_memoria(int pos_swap){
