@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 	memset(buffer_bloque +(tam_bloque),marca_reservado,tam_bloque);
 	memset(buffer_bloque+ (tam_bloque*2),marca_reservado,tam_bloque);
 
-	//iniciar_servidor_fs(puerto_escucha);
+	iniciar_servidor_fs(puerto_escucha);
 	liberar_recursos_fs();
 
 	//levantar_archivo_bloques();
@@ -211,7 +211,7 @@ void* procesar_conexion(void* conexion1) {
 
 			log_info(logger_file_system, "Crear Archivo: <%s>",nombre_a_crear);
 			crear_archivo_fcb(nombre_a_crear);
-			enviar_respuesta_crear_archivo();
+			enviar_respuesta_crear_archivo(cliente_fd);
 			break;
 		case LEER_ARCHIVO:
 			//recibe punteto desde el cual leer
@@ -222,6 +222,20 @@ void* procesar_conexion(void* conexion1) {
 			log_info(logger_file_system	, "Leer Archivo: < %s > - Puntero: < %i > - Memoria: < falta>",nombre_arc,*puntero);
 
 			void*leido=leer_archivo_bloques_fat(*puntero, nombre_arc);
+
+			break;
+		case DATOS_SWAP:
+			lista = recibir_paquete(cliente_fd);
+			int* posicion_swap_datos_swap = list_get(lista,0);
+			void* datos_swap_retornar = malloc(tam_bloque);
+
+			datos_swap_retornar=leer_bloque_swap(*posicion_swap_datos_swap);
+			enviar_bloque_para_memoria(datos_swap_retornar,cliente_fd);
+			break;
+		case REMPLAZAR_PAGINA:
+			lista = recibir_paquete(cliente_fd);
+			int* posicion_swap_datos_swap = list_get(lista,0);
+			void* datos_swap_retornar2 = datos_swap_retornar2 = list_get(lista,1);
 
 
 			break;
@@ -269,6 +283,14 @@ void* procesar_conexion(void* conexion1) {
 		}
 	}
 }
+enviar_bloque_para_memoria(void* datos_swap_retornar,int cliente_fd){
+	t_paquete* paquete=crear_paquete(DATOS_SWAP);
+	agregar_a_paquete(paquete, datos_swap_retornar,tam_bloque);
+	enviar_paquete(paquete, cliente_fd);
+	eliminar_paquete(paquete);
+}
+
+
 void enviar_respuesta_truncar(int socket_cliente){
 	t_paquete* paquete=crear_paquete(OK_TRUNCAR_ARCHIVO);
 
@@ -303,10 +325,11 @@ int recibir_entero(int socket_cliente) {
 	}
 }
 
-void enviar_respuesta_crear_archivo() {
+void enviar_respuesta_crear_archivo(int cliente_fd) {
 
 	t_paquete *paquete = crear_paquete(RESPUESTA_CREAR_ARCHIVO);
 	agregar_a_paquete(paquete, 0, sizeof(int));
+	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);
 }
 void enviar_tamanio_archivo(int tamanio, int cliente_fd) {
@@ -697,6 +720,7 @@ void poner_bloq_swap_reservado(uint32_t num_bloque) {
 	memset(buffer_bloque,marca_reservado,tam_bloque);
 
 }
+
 void* leer_bloque_swap(int puntero){
 	uint32_t num_bloq=puntero/tam_bloque;
 	void* datos=malloc(tam_bloque);

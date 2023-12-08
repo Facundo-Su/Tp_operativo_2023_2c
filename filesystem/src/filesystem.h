@@ -100,10 +100,12 @@ void asignar_entradas_fat(t_fcb *fcb_a_guardar);
 void enviar_respuesta_truncar(int socket_cliente);
 //bloques
 void levantar_archivo_bloques();
+void* leer_bloque_swap(int );
+void enviar_bloque_para_memoria(void* ,int );
 
 //respuestas conxiones
 void enviar_tamanio_archivo(int tamanio, int cliente_fd);
-void enviar_respuesta_crear_archivo();
+void enviar_respuesta_crear_archivo(int);
 
 int prueba;
 

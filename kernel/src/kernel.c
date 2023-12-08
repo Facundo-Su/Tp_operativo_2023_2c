@@ -786,6 +786,25 @@ void generar_conexion() {
 	pthread_t conexion_cpu_hilo;
 	pthread_t conexion_cpu_interrupt_hilo;
 
+	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+	pthread_create(&conexion_memoria_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_memoria);
+	pthread_detach(conexion_memoria_hilo);
+	log_info(logger_consola,"conexion generado correctamente\n");
+
+	conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
+	pthread_create(&conexion_file_system_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_file_system);
+	pthread_detach(conexion_file_system_hilo);
+	log_info(logger_consola,"conexion generado correctamente\n");
+
+	conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
+	log_info(logger_consola,"conexion generado correctamente\n");
+	pthread_create(&conexion_cpu_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_cpu);
+	pthread_detach(conexion_cpu_hilo);
+	conexion_cpu_interrupt = crear_conexion(ip_cpu, puerto_cpu_interrupt);
+	pthread_create(&conexion_cpu_interrupt_hilo, NULL, (void*) procesar_conexion, (void *)&conexion_cpu_interrupt_hilo);
+	pthread_detach(conexion_cpu_interrupt_hilo);
+	log_info(logger_consola,"conexion generado correctamente\n");
+/*
 	log_info(logger_consola,"ingrese q que modulos deseas conectar"
 			"\n 1. modulo memoria"
 			"\n 2. modulo filesystem"
@@ -796,31 +815,18 @@ void generar_conexion() {
 	switch (*valor) {
 		case '1':
 
-			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
-			pthread_create(&conexion_memoria_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_memoria);
-			pthread_detach(conexion_memoria_hilo);
-	        log_info(logger_consola,"conexion generado correctamente\n");
+
 			break;
 		case '2':
-			conexion_file_system = crear_conexion(ip_filesystem, puerto_filesystem);
-			pthread_create(&conexion_file_system_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_file_system);
-			pthread_detach(conexion_file_system_hilo);
-	        log_info(logger_consola,"conexion generado correctamente\n");
+
 			break;
 		case '3':
-			conexion_cpu = crear_conexion(ip_cpu, puerto_cpu_dispatch);
-	        log_info(logger_consola,"conexion generado correctamente\n");
-			pthread_create(&conexion_cpu_hilo,NULL,(void*) procesar_conexion,(void *)&conexion_cpu);
-			pthread_detach(conexion_cpu_hilo);
-			conexion_cpu_interrupt = crear_conexion(ip_cpu, puerto_cpu_interrupt);
-			pthread_create(&conexion_cpu_interrupt_hilo, NULL, (void*) procesar_conexion, (void *)&conexion_cpu_interrupt_hilo);
-			pthread_detach(conexion_cpu_interrupt_hilo);
-	        log_info(logger_consola,"conexion generado correctamente\n");
+
 			break;
 		default:
 			log_info(logger_consola,"no corresponde a ninguno\n");
 			break;
-	}
+	}*/
 
 }
 
