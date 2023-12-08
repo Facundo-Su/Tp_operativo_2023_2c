@@ -634,10 +634,35 @@ void finalizar_proceso(int pid){
 			aux = tabla_paginas;
 		}
 	}
+
+	t_list*list_pos_swap_fin=list_create();
+	t_list_iterator* iterador2 = list_iterator_create(aux->paginas);
+	while(iterador2!= NULL && list_iterator_has_next(iterador2)){
+		t_pagina* pagina2 = (t_pagina*)list_iterator_next(iterador2);
+		list_add(list_pos_swap_fin,pagina2->pos_en_swap);
+	}
+
+	enviar_fs_finalizar(list_pos_swap_fin);
 	list_remove_element(memoria->lista_tabla_paginas, aux);
 	liberar_tabla_paginas(aux);
+	free(aux);
 	list_iterator_destroy(iterador);
 }
+
+
+void enviar_fs_finalizar(t_list* lista_pos_swap){
+	t_paquete*paquete = crear_paquete(FINALIZAR_PROCESO);
+	int cantidad_pagina = list_size(lista_pos_swap);
+	agregar_a_paquete(paquete, &cantidad_pagina, sizeof(int));
+	for(int i=0;i<cantidad_pagina;i++){
+		int valor = list_get(lista_pos_swap,0);
+		agregar_a_paquete(paquete, &valor, sizeof(int));
+	}
+	enviar_paquete(paquete, conexion_filesystem);
+	eliminar_paquete(paquete);
+
+}
+
 void liberar_tabla_paginas(t_tabla_paginas *tabla){
 	list_destroy_and_destroy_elements(tabla->paginas, free);
 }
