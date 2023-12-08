@@ -170,13 +170,13 @@ void* procesar_conexion(void* conexion1) {
 			log_info(logger_file_system, "Abrir Archivo: <%s>",nombre_nose);
 
 			int tamanio_archivo = abrir_archivo_fcb(nombre_nose);
-			//enviar_tamanio_archivo(tamanio_archivo, cliente_fd);
+			enviar_tamanio_archivo(tamanio_archivo, cliente_fd);
 			break;
 		case CREAR_ARCHIVO:
 			char *nombre_a_crear = recibir_nombre_archivo(cliente_fd);
 			log_info(logger_file_system, "Crear Archivo: <%s>",nombre_a_crear);
 			crear_archivo_fcb(nombre_a_crear);
-			//enviar_respuesta_crear_archivo();
+			enviar_respuesta_crear_archivo();
 			break;
 		case LEER_ARCHIVO:
 			//recibe punteto desde el cual leer
@@ -200,7 +200,7 @@ void* procesar_conexion(void* conexion1) {
 		case INICIAR_PROCESO: //reserva bloques y reenvia la lista de bloques asignados
 			lista = recibir_paquete(cliente_fd);
 			int *cant_bloq = list_get(lista,0);
-			log_info(logger_file_system, "Cantidad de bloques swap a reservar %i",cant_bloq);
+			log_info(logger_file_system, "Cantidad de bloques swap a reservar %i",*cant_bloq);
 			t_list *lista_asignados = iniciar_proceso(*cant_bloq,cliente_fd);
 			enviar_bloques_asignados_swap(lista_asignados,cliente_fd);
 			break;
@@ -250,7 +250,7 @@ int recibir_entero(int socket_cliente) {
 void enviar_respuesta_crear_archivo() {
 
 	t_paquete *paquete = crear_paquete(RESPUESTA_CREAR_ARCHIVO);
-	agregar_a_paquete(paquete, 1, sizeof(int));
+	agregar_a_paquete(paquete, 0, sizeof(int));
 	eliminar_paquete(paquete);
 }
 void enviar_tamanio_archivo(int tamanio, int cliente_fd) {
@@ -293,7 +293,7 @@ void iniciar_servidor_fs(char *puerto) {
 
 //arma la ruta para acceder al fcb
 char* armar_ruta_fcb(char *nombre_fcb) {
-	char *nueva_ruta = malloc(string_length(ruta_fcbs) + 1);
+	char *nueva_ruta = malloc(string_length(ruta_fcbs)+string_length(nombre_fcb)+1);
 	strcpy(nueva_ruta, ruta_fcbs);
 	string_append(&nueva_ruta, nombre_fcb);
 	string_append(&nueva_ruta, ".fcb");
@@ -333,7 +333,7 @@ char* recibir_nombre_archivo(int socket_cliente) {
 // abrir archivo; si el archivo existe se agrega a list_fcb y devuelve el tam sino -1
 int abrir_archivo_fcb(char *nombre_fcb) {
 	//preparo la ruta del archivo fcb
-/*
+
 	char *nueva_ruta = armar_ruta_fcb(nombre_fcb);
 	int tamanio_archivo = -1;
 	log_info(logger_file_system, "ruta copia %s", nueva_ruta);
@@ -359,7 +359,7 @@ int abrir_archivo_fcb(char *nombre_fcb) {
 	config_destroy(config_fcb);
 	free(inicial_a_guardar);
 	free(nueva_ruta);
-*/
+
 	return 1;
 }
 
@@ -393,8 +393,7 @@ int calcular_bloq_necesarios_fcb(int tam_bytes) {
 void asignar_entradas_fat(t_fcb *fcb_guardar) {
 	int cant_bloq_necesarios = calcular_bloq_necesarios_fcb(
 			fcb_guardar->tamanio_archivo);
-	log_info(logger_file_system, "cantidad  de bloq a asignar a %s %i",
-			fcb_guardar->nombre_archivo, cant_bloq_necesarios);
+	log_info(logger_file_system, "cantidad  de bloq a asignar a %s %i",fcb_guardar->nombre_archivo, cant_bloq_necesarios);
 	//asigno entrada al bloque inicial
 	int entrada_libre = buscar_entrada_libre_fat();
 	fcb_guardar->bloq_inicial_archivo = entrada_libre;

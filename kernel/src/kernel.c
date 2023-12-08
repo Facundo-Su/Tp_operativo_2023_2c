@@ -103,6 +103,10 @@ void procesar_conexion(void *conexion1){
 			    log_info(logger ,"PID: %i - Bloqueado por: %s",pcb_aux->pid,nombre_archivo_truncate);
 			    pcb_aux->estado = WAITING;
 			    queue_push(cola_bloqueado_fs,pcb_aux);
+
+			    t_archivo* archivo= buscar_en_tabla_archivo_general(nombre_archivo_truncate);
+			    archivo->tamanio = tamanio;
+
 				list_remove(pcb_en_ejecucion,0);
 			    sem_post(&contador_ejecutando_cpu);
 			    sem_post(&contador_cola_ready);
@@ -116,7 +120,7 @@ void procesar_conexion(void *conexion1){
 			    //log_info(logger, "el archivo es %s",nombre_archivo);
 			   // log_info(logger, "el modo del archivo es %s",modo_apertura);
 			    ejecutar_fopen(nombre_archivo, modo_apertura, pcb_aux);
-			    sem_wait(&contador_bloqueado_fs_fopen);
+
 			    break;
 
 			case EJECUTAR_F_CLOSE:
@@ -207,8 +211,9 @@ void procesar_conexion(void *conexion1){
 			break;
 		case RESPUESTA_ABRIR_ARCHIVO:
 			paquete = recibir_paquete(cliente_fd);
-			int* tam_archivo_recibido = list_get(paquete,1);
+			int* tam_archivo_recibido = list_get(paquete,0);
 			tam_archivo = *tam_archivo_recibido;
+			log_error(logger,"llegue a respuesta abrir archivo");
 			sem_post(&contador_bloqueado_fs_fopen);
 
 			break;
@@ -218,7 +223,7 @@ void procesar_conexion(void *conexion1){
 			agregar_a_cola_ready(pcb_2);
 			sem_post(&contador_cola_ready);
 			break;
-		case OK_ARCHIVO_TRUNCADO:
+		case OK_TRUNCAR_ARCHIVO:
 			t_pcb * pcb_3 = queue_pop(cola_bloqueado_fs);
 			agregar_a_cola_ready(pcb_3);
 			sem_post(&contador_cola_ready);
@@ -232,6 +237,14 @@ void procesar_conexion(void *conexion1){
 			t_pcb * pcb_5 = queue_pop(cola_bloqueado_fs);
 			agregar_a_cola_ready(pcb_5);
 			sem_post(&contador_cola_ready);
+			break;
+		case RESPUESTA_CREAR_ARCHIVO:
+			paquete = recibir_paquete(cliente_fd);
+			int* tam_archivo_recibido_creado = list_get(paquete,1);
+			tam_archivo = *tam_archivo_recibido_creado;
+			log_error(logger,"llegue a respuesta crear archivo");
+			sem_post(&contador_bloqueado_fs_fopen);
+
 			break;
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
@@ -315,7 +328,7 @@ void enviar_fopen_fs(char *nombre){
 	eliminar_paquete(paquete);
 }
 void enviar_truncate_fs(char * nombre, int tamanio){
-	t_paquete* paquete = crear_paquete(TRUNCATE_FS);
+	t_paquete* paquete = crear_paquete(TRUNCAR_ARCHIVO);
 	agregar_a_paquete(paquete, nombre, strlen(nombre) + 1);
 	agregar_a_paquete(paquete, &(tamanio), sizeof(int));
 	enviar_paquete(paquete, conexion_file_system);
@@ -327,16 +340,27 @@ t_archivo * buscar_en_tabla_archivo_general(char* nombre){
 	while(list_iterator_has_next(iterador)){
 		t_archivo* archivo = (t_archivo*)list_iterator_next(iterador);
 		if(strcmp(nombre,archivo->nombre_archivo) == 0){
+			log_error(logger,"encontre el archivo");
 				return archivo;
 		}
 	}
 	list_iterator_destroy(iterador);
+
 	enviar_fopen_fs(nombre);
+
+	sem_wait(&contador_bloqueado_fs_fopen);
+
+    if(tam_archivo==-1){
+    	enviar_fcreate(nombre);
+    	sem_wait(&sem_ok_archivo_creado);
+    }
+
 	t_archivo* archivo = malloc(sizeof(t_archivo));
 	archivo->nombre_archivo =nombre;
 	archivo->cola_bloqueados =queue_create();
 	archivo->contador_lectura =0;
 	archivo->lock_escritura_activo = false;
+	archivo->tamanio= 0;
 	pthread_rwlock_init(&(archivo->lock), NULL);
 	list_add(tabla_archivo_general,archivo);
 	return archivo;
@@ -349,6 +373,12 @@ void crear_entrada_archivo_pcb(char * nombre,char * modo_apertura,t_pcb * pcb){
 	list_add(pcb->tabla_archivo_abierto, archivo);
 }
 
+void enviar_fcreate(char* nombre){
+	t_paquete* paquete = crear_paquete(CREAR_ARCHIVO);
+	agregar_a_paquete(paquete, nombre, strlen(nombre)+1);
+	enviar_paquete(paquete, conexion_file_system);
+	eliminar_paquete(paquete);
+}
 
 void ejecutar_fopen(char* nombre_archivo, char* modo_apertura, t_pcb* pcb) {
     t_archivo* archivo = buscar_en_tabla_archivo_general(nombre_archivo);
@@ -368,7 +398,7 @@ void ejecutar_fopen(char* nombre_archivo, char* modo_apertura, t_pcb* pcb) {
             pthread_rwlock_rdlock(&(archivo->lock));
             archivo->contador_lectura++;
             crear_entrada_archivo_pcb(nombre_archivo,modo_apertura, pcb);
-            enviar_pcb(pcb,conexion_file_system,ABRIR_ARCHIVO);
+            enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
         }
     } else if (strcmp(modo_apertura, "W") == 0) {
         if (archivo->lock_escritura_activo || archivo->contador_lectura > 0) {
@@ -386,7 +416,7 @@ void ejecutar_fopen(char* nombre_archivo, char* modo_apertura, t_pcb* pcb) {
             pthread_rwlock_wrlock(&(archivo->lock));
             archivo->lock_escritura_activo = true;
             crear_entrada_archivo_pcb(nombre_archivo,modo_apertura, pcb);
-            enviar_pcb(pcb,conexion_memoria,ABRIR_ARCHIVO);
+            enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
         }
     }
 }
@@ -556,10 +586,8 @@ void iniciar_consola(){
 				break;
 			default:
 				log_info(logger_consola,"no corresponde a ninguno");
+				break;
 		}
-		free(variable);
-
-
 	}
 
 }
@@ -716,6 +744,7 @@ void iniciar_recurso(){
     sem_init(&cont_detener_planificacion,0,0);
     detener = false;
     tabla_archivo_general = list_create();
+    sem_init(&sem_ok_archivo_creado,0,0);
 }
 
 void enviar_mensaje_kernel() {
@@ -810,6 +839,7 @@ void iniciar_proceso(char* archivo_test,int size,int prioridad,int pid){
 
 	enviar_paquete(paquete, conexion_memoria);
 	crear_pcb(prioridad);
+	log_warning(logger,"iniciar proceso");
 	sem_post(&contador_agregando_new);
 
 	//free(prueba);
@@ -883,8 +913,8 @@ void agregar_a_cola_ready(t_pcb* pcb){
 	log_info(logger, "PID: %i - Estado Anterior: %s - Estado Actual: NEW",pcb->pid,estado_anterior);
 	pcb->estado=READY;
 	sem_post(&mutex_cola_ready);
-	char * procesos = listar_procesos(cola_ready);
-	log_info(logger, "Cola Ready %s: %s",planificador,procesos);
+	//char * procesos = listar_procesos(cola_ready);
+	//log_info(logger, "Cola Ready %s: %s",planificador,procesos);
 }
 
 
@@ -992,7 +1022,7 @@ void de_ready_a_prioridades(){
     }else{
     		t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
     		//t_pcb* pcb_axu_comparador = queue_pop(cola_ready);
-    		if(pcb_aux->prioridad<pcb_a_comparar_prioridad->prioridad){
+    		if(pcb_aux->prioridad>pcb_a_comparar_prioridad->prioridad){
     	        enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_DESALOJAR);
     	        sem_wait(&proceso_desalojo);
     	        sem_post(&contador_cola_ready);
@@ -1004,7 +1034,7 @@ void de_ready_a_prioridades(){
 bool comparador_prioridades(void* caso1,void* caso2){
 	t_pcb* pcb1 = ((t_pcb*) caso1);
 	t_pcb* pcb2 = ((t_pcb*) caso2);
-	if(pcb1->prioridad > pcb2->prioridad){
+	if(pcb1->prioridad < pcb2->prioridad){
 		return true;
 	} else return false;
 }

@@ -20,6 +20,9 @@ int conexion_cpu;
 int conexion_cpu_interrupt;
 char ** recursos_config;
 char ** instancias_recursos_config;
+
+
+
 //estructura de algoritmo
 bool detener;
 
@@ -67,12 +70,12 @@ typedef struct{
 	int contador_lectura;
 	pthread_rwlock_t lock;
 	t_queue* cola_bloqueados;
+	int tamanio;
 }t_archivo;
 
 typedef struct{
 	char*nombre;
 	int puntero;
-	int tamanio;
 	char * modo;
 }t_archivo_pcb;
 
@@ -114,6 +117,8 @@ sem_t cont_detener_planificacion;
 sem_t contador_bloqueado_fs_fopen;
 pthread_t deadlock_hilo;
 sem_t sem_deadlock;
+sem_t sem_ok_archivo_creado;
+
 
 char *puerto_memoria;
 char *puerto_filesystem;

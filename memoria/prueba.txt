@@ -1,2 +1,5 @@
+SET AX 1
 F_OPEN chau R
+F_SEEK chau 10
+F_CLOSE chau
 EXIT

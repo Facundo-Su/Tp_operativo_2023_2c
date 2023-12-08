@@ -191,9 +191,9 @@ void procesar_conexion(void* socket){
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
 					char *ruta = "./prueba.txt";
-					//char *ruta =	obtener_ruta(aux);
-//	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
-//	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
+					//char *ruta = obtener_ruta(aux);
+	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
+	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 //	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
 //	                log_info(logger, "Me llegaron los siguientes valores de pid: %i",*pid);
 
@@ -419,10 +419,9 @@ int obtener_marco(int pid, int pagina){
 }
 
 char* obtener_ruta(char* valorRecibido) {
-    char* ruta = malloc(strlen(path_instrucciones) + strlen(valorRecibido) + 5); // +5 para ".txt" y el carácter nulo
+    char* ruta = malloc(strlen(path_instrucciones) + strlen(valorRecibido) + 1); // +5 para ".txt" y el carácter nulo
     strcpy(ruta, path_instrucciones);
     strcat(ruta, valorRecibido);
-    strcat(ruta, ".txt");
     return ruta;
 }
 
@@ -452,7 +451,7 @@ void enviar_tam_pagina(int tam , int cliente_fd){
 
 void cargar_lista_instruccion(char *ruta, int size, int prioridad, int pid) {
     t_instrucciones* instruccion = malloc(sizeof(t_instruccion));
-    log_info(logger_consola_memoria, "%i", pid);
+    log_info(logger_consola_memoria, "%i SSSSSSSSSSSSSSSS", pid);
     instruccion->pid = pid;
     instruccion->instrucciones = list_create();
     FILE* archivo = fopen(ruta, "r");
@@ -617,8 +616,9 @@ t_list * crear_paginas(int paginas_necesarias){
 	return paginas;
 }
 
-void enviar_fs_reservar_swap(paginas_necesarias){
+void enviar_fs_reservar_swap(int paginas_necesarias){
 	t_paquete* paquete = crear_paquete(INICIAR_PROCESO);
+	log_error(logger,"el pagina que te envie es %i",paginas_necesarias);
 	agregar_a_paquete(paquete, &paginas_necesarias, sizeof(int));
 	enviar_paquete(paquete, conexion_filesystem);
 	eliminar_paquete(paquete);
