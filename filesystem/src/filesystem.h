@@ -21,6 +21,7 @@
 #include<fcntl.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <dirent.h>
 
 #define RESERV_BOOT UINT32_MAX;
 #define MARCA_ASIG UINT32_MAX;
@@ -32,20 +33,13 @@ typedef struct{
 	char* nombre_archivo;
 	uint32_t tamanio_archivo;
 	uint32_t bloq_inicial_archivo;
-	//procesos que tienen abierto el archivo
-	uint32_t cant_aperturas;
 }t_fcb;
+
 typedef struct{
 	int tamanio_fat;
 	uint32_t* entradas;
 }t_fat;
-typedef struct {
-	uint32_t * datos;
-}t_archivo_bloques;
-typedef struct {
-	uint32_t pid_proceso;
-	t_list* bloq_asignados;
-}t_bloq_asignados;
+
 typedef struct{
 	bool libre;
 	uint32_t valor;
@@ -53,9 +47,10 @@ typedef struct{
 typedef struct{
 	t_list* fcb_list;
 	t_fat *fat;
-	t_archivo_bloques *bloques;
+	void *bloques;
 	t_swap* array_swap;
 }t_FS;
+
 t_FS *fs;
 char* ruta_fcbs;
 int conexion_memoria;
@@ -72,38 +67,57 @@ int retardo_acceso_fat;
 
 
 //metodos de FS
-t_fat* inicializar_fat();
-t_archivo_bloques* inicializar_boques();
+void inicializar_fat();
+
 void inicializar_fcb();
 void inicializar_fs();
 
+
+t_fcb* devolver_fcb(char* nombre);
 char* recibir_nombre_archivo(int socket_cliente);
-void crear_archivo_bloque();
-void crear_archivo_fcb(char*nombre,t_fcb* fcb_creado);
+
+void crear_archivo_fcb(char*nombre);
 int abrir_archivo_fcb(char*);
-void truncar_archivo(t_fcb*,int nuevo_tam);
-void* connection_handler(void* socket_conexion);
-void ampliar_tam_archivo(t_fcb* fcb_para_modif,int tamanio_nuevo);
-void guardar_tam_fcb(t_fcb* fcb);
-void reducir_tam_archivo(t_fcb *fcb_para_modif,int nuevo_tamanio);
-t_list* iniciar_proceso(uint32_t cant_bloques);
-int obtener_ultimo_bloq_fcb(t_fcb* fcb);
-int obtener_bloque_por_indice(t_fcb*,int);
-void reducir_tam_archivo(t_fcb* fcb_para_modif,int nuevo_tam);
-void ampliar_tam_archivo(t_fcb* fb_para_modif,int nuevo_tam);
-void asignar_entradas_fat(t_fcb *fcb_a_guardar);
-void obtener_configuracion();
-int calcular_bloq_necesarios_fcb(int tam_bytes);
-int buscar_entrada_libre_fat();
+void truncar_archivo(char*nombre,int tamanio);
+void escribir_fcb_en_archivo(t_fcb *fcb);
+//swap
+void escribir_bloque_swap(int puntero,void *a_escribir);
+void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques);
 int buscar_bloq_libre_swap();
-t_list* iniciar_proceso();
+void finalizar_proceso(t_list *lista_liberar);
+t_list* iniciar_proceso(int cant_bloques);
+void reemplazar_bloq_swap(int num_bloque,void *a_escribir) ;
 
+//fat
+void truncar_archivo(char *nombre, int nuevo_tamanio_bytes);
+void levantar_fat() ;
+void levantar_fcbs();
+void* leer_archivo_bloques_fat(int puntero, char *nombre);
+int obtener_ultimo_bloq_fcb(t_fcb* fcb);
+uint32_t obtener_bloque_por_indice(t_fcb *fcb, uint32_t indice_bloque);
+void reducir_tam_archivo(t_fcb* fcb_para_modif,int nuevo_tam);
+void ampliar_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes);
+void asignar_entradas_fat(t_fcb *fcb_a_guardar);
+void enviar_respuesta_truncar(int socket_cliente);
+void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir);
+//bloques
+void levantar_archivo_bloques();
+void* leer_bloque_swap(int );
+void enviar_bloque_para_memoria(void* ,int );
 
+//respuestas conxiones
+void enviar_tamanio_archivo(int tamanio, int cliente_fd);
+void enviar_respuesta_crear_archivo(int);
+
+int prueba;
+
+void obtener_configuracion();
 void terminar_programa();
+
 t_config* iniciar_config();
+void* connection_handler(void* socket_conexion);
 int iniciar_servidor_file_system(char*);
-void iniciar_consola();
-void iterator(char* value);
-void * procesar_conexion(int);
+
+void * procesar_conexion(void*);
 
 #endif /* SRC_FILESYSTEM_H_ */
