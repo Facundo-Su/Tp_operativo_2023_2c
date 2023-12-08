@@ -82,10 +82,10 @@ void truncar_archivo(char*nombre,int tamanio);
 void escribir_fcb_en_archivo(t_fcb *fcb);
 //swap
 void escribir_bloque_swap(int puntero,void *a_escribir);
-void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques,int);
+void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques);
 int buscar_bloq_libre_swap();
 void finalizar_proceso(t_list *lista_liberar);
-t_list* iniciar_proceso(uint32_t cant_bloques,int);
+t_list* iniciar_proceso(int cant_bloques);
 
 //fat
 void truncar_archivo(char *nombre, int nuevo_tamanio_bytes);

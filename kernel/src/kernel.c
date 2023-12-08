@@ -467,13 +467,15 @@ bool archivo_abierto_para_escritura(t_archivo* archivo, t_pcb* pcb) {
 }
 void eliminar_entrada_pcb (t_pcb * pcb, char * nombre){
 	t_list_iterator* iterador = list_iterator_create(pcb->tabla_archivo_abierto);
+	t_archivo_pcb* aux;
 		while(list_iterator_has_next(iterador)){
 			t_archivo_pcb* archivo = (t_archivo_pcb*)list_iterator_next(iterador);
 			if(strcmp(nombre,archivo->nombre) == 0){
-				list_remove_element(pcb->tabla_archivo_abierto,archivo);
-				free(archivo);
+				aux = archivo;
 			}
 		}
+		list_remove_element(pcb->tabla_archivo_abierto,aux);
+		free(aux);
 		list_iterator_destroy(iterador);
 }
 void eliminar_entrada_tabla_general (char * nombre){
@@ -1288,20 +1290,22 @@ t_recurso_pcb*crear_recurso_pcb(char*nombre,int pid){
 void quitar_recurso_pcb(int pid, char*nombre){
 	t_list_iterator* iterador = list_iterator_create(lista_recursos_pcb);
 	int j=0;
+	t_recurso_pcb * aux;
 	while(list_iterator_has_next(iterador)){
 		t_recurso_pcb* recurso = (t_recurso_pcb*)list_iterator_next(iterador);
 		if((strcmp(nombre,recurso->nombre) == 0) && pid == recurso->pid){
 			if(recurso->instancias > 1){
 				recurso->instancias--;
-				list_replace(lista_recursos_pcb, j, recurso);
 			}else{
-				list_remove(lista_recursos_pcb,j);
-				free(recurso);
+				aux = recurso;
 			}
 		}
-		j++;
 	}
 	list_iterator_destroy(iterador);
+	if(aux!= NULL){
+		list_remove_element(lista_recursos_pcb,aux);
+		free(aux);
+	}
 }
 
 void liberar_recursos(int pid){
@@ -1312,7 +1316,6 @@ void liberar_recursos(int pid){
 		while(list_iterator_has_next(iterador)){
 			t_recurso* recurso = (t_recurso*)list_iterator_next(iterador);
 			t_recurso_pcb * recurso_pcb = buscar_recurso_pcb(recurso->nombre,pid);
-
 			if(recurso_pcb != NULL){
 				int instancias = recurso_pcb->instancias;
 				while(instancias!=0){
@@ -1322,12 +1325,10 @@ void liberar_recursos(int pid){
 						sem_post(&contador_cola_ready);
 					}
 					recurso->instancias++;
-					list_replace(lista_recursos,j,recurso);
 					quitar_recurso_pcb(pid,recurso->nombre);
 					instancias --;
 				}
 			}
-			j++;
 		}
 		list_iterator_destroy(iterador);
 }
