@@ -9,7 +9,7 @@ int main(int argc, char **argv){
 
     logger = log_create("./kernel.log", "KERNEL", true, LOG_LEVEL_INFO);
     //log_info(logger, "Soy el Kernel!");
-
+    detenido = false;
     obtener_configuracion();
     iniciar_recurso();
     lista_recursos = list_create();
@@ -558,11 +558,12 @@ void iniciar_consola(){
 			case '3':
 				log_info(logger,"INICIO DE PLANIFICACIÓN");
 				iniciar_planificacion();
+
 				break;
 			case '4':
 				log_info(logger,"PAUSA DE PLANIFICACIÓN");
 				detener_planificacion_corto_largo();
-				//se_detuvo =true;
+				//detenido = true;
 				break;
 			case '5':
 				char* valor2 = readline(">");
@@ -580,16 +581,7 @@ void iniciar_consola(){
 			case '7':
 				generar_conexion();
 				break;
-			case '8':
-				enviar_mensaje_kernel();
-				break;
-			case '9':
-				crear_pcb(FIFO);
-				log_info(logger,"%i",list_size(cola_new));
-				enviar_pcb(queue_pop(cola_new),conexion_cpu,RECIBIR_PCB);
-				break;
 			default:
-				log_info(logger_consola,"no corresponde a ninguno");
 				break;
 		}
 	}
@@ -924,7 +916,7 @@ t_pcb* quitar_de_cola_ready(){
 
 void planificador_largo_plazo(){
 	while(1){
-		if(!detener){
+		if(detener){
 			break;
 		}
 		sem_wait(&contador_agregando_new);
@@ -940,15 +932,15 @@ void planificador_largo_plazo(){
 //TODO MOTIVO DE QUE DESPUES DE INICIAR PLANIFICACION NO ME DEJA INGRESAR OTRA OPERACION
 void planificador_corto_plazo(){
 	while(1){
+		if(detener){
+			break;
+		}
 		sem_wait(&contador_cola_ready);
 		//sem_wait(&contador_ejecutando_cpu);
 		switch(planificador){
 		case FIFO:
 			if(!queue_is_empty(cola_ready)){
 				sem_wait(&contador_ejecutando_cpu);
-				if(detener){
-					sem_wait(&sem_pausa_corto_plazo);
-				}
 				de_ready_a_fifo();
 			}
 			break;
@@ -1102,6 +1094,11 @@ void iniciar_planificacion(){
 	pthread_t * hilo_corto_plazo;
 	pthread_t * hilo_largo_plazo;
 	sem_post(&sem_pausa_corto_plazo);
+//	if(detenido){
+//		sem_post(&contador_agregando_new);
+//		sem_post(&contador_ejecutando_cpu);
+//
+//	detenido = false;
 	pthread_create(&hilo_largo_plazo,NULL,(void*) planificador_largo_plazo,NULL);
 	pthread_create(&hilo_corto_plazo,NULL,(void*) planificador_corto_plazo,NULL);
 	pthread_detach(*hilo_largo_plazo);
@@ -1370,9 +1367,10 @@ void terminar_proceso(t_pcb * pcb){
 	if(!list_is_empty(pcb_en_ejecucion)){
 		list_remove(pcb_en_ejecucion,0);
 	}
-	sem_post(&grado_multiprogramacion);
-	sem_post(&contador_ejecutando_cpu);
 	sem_post(&contador_cola_ready);
+	sem_post(&contador_ejecutando_cpu);
+	log_error(logger,"pase por aca");
+	sem_post(&grado_multiprogramacion);
 }
 
 t_pcb * encontrar_pcb(int pid){

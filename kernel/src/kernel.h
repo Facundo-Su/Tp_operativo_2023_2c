@@ -132,7 +132,7 @@ int quantum;
 int grado_multiprogramacion_ini;
 t_planificador planificador;
 bool detener;
-
+bool detenido;
 int *instancias_recursos;
 int tam_archivo;
 
