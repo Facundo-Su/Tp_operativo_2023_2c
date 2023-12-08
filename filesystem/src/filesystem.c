@@ -24,14 +24,37 @@ int main(int argc, char *argv[]) {
 	log_info(logger_file_system,"se inicializo las estructuras de file system");
 
 	//TODO quitar cuando termine  de hacer pruebas
+	int prueba;
+	prueba=abrir_archivo_fcb("pastel");
+	crear_archivo_fcb("tarta");
+	truncar_archivo("tarta", 16*4);
 
+	for(uint32_t i=0;i<fs->fat->tamanio_fat;i++){
+		log_info(logger_file_system,"muestra la fat %i=%u",i,fs->fat->entradas[i]);
+	}
+	log_info(logger_file_system,"salida del for");
+	int*prueba2=malloc(sizeof(int));
+	*prueba2=9;
 
-// char marca_reservado='\0';
+	escribir_bloque_fat(16*2, "tarta", *prueba2);
+
+	uint32_t*lectura=leer_archivo_bloques_fat(16*2, "tarta");
+	log_info(logger_file_system,"lectura de fat %i",*lectura);
+//	log_info(logger_file_system,"muestra la fat %i",prueba);
+//	int pruebaescritura=10;
+//	escribir_bloque_fat(16*3,"chau",&pruebaescritura);
+//    int marca_reservado=7;
 //	void* buffer_bloque=fs->bloques;
-//
-//	memcpy(buffer_bloque,&marca_reservado,sizeof(char));
-//	memcpy(buffer_bloque +(tam_bloque),&marca_reservado,sizeof(char));
-//	memcpy(buffer_bloque+ (tam_bloque*2),&marca_reservado,sizeof(char));
+//	log_info(logger_file_system,"contenido %i",*pruebaescritura);
+
+//	memcpy(buffer_bloque,&marca_reservado,tam_bloque);
+//	memcpy(buffer_bloque +(tam_bloque),&marca_reservado,tam_bloque);
+//	memcpy(buffer_bloque+ (tam_bloque*2),&marca_reservado,tam_bloque);
+//	int* lectura=malloc(tam_bloque);
+//	memcpy(lectura,buffer_bloque+ (tam_bloque*2),tam_bloque);
+//	log_info(logger_file_system,"contenido %i",*lectura);
+
+
 
 //	 int marca_reservado=0;//ascii 0=caracter nulo
 //	void* buffer_bloque=fs->bloques;
@@ -40,8 +63,8 @@ int main(int argc, char *argv[]) {
 //	memset(buffer_bloque +(tam_bloque),marca_reservado,tam_bloque);
 //	memset(buffer_bloque+ (tam_bloque*2),marca_reservado,tam_bloque);
 
-	iniciar_servidor_fs(puerto_escucha);
-	liberar_recursos_fs();
+	//iniciar_servidor_fs(puerto_escucha);
+	//liberar_recursos_fs();
 
 	//levantar_archivo_bloques();
 	return EXIT_SUCCESS;
@@ -412,33 +435,15 @@ char* recibir_nombre_archivo(int socket_cliente) {
 // abrir archivo; si el archivo existe se agrega a list_fcb y devuelve el tam sino -1
 int abrir_archivo_fcb(char *nombre_fcb) {
 	//preparo la ruta del archivo fcb
+	int tamanio=-1;
+	t_fcb* fcb=NULL;
+	fcb=devolver_fcb(nombre_fcb);
+	if(fcb!=NULL){
+		tamanio=fcb->tamanio_archivo;
+		return tamanio;
+	}
+	return tamanio;
 
-	char *nueva_ruta = armar_ruta_fcb(nombre_fcb);
-	int tamanio_archivo = -1;
-	log_info(logger_file_system, "ruta copia %s", nueva_ruta);
-	//creo el config del archivo fcb
-	t_config *config_fcb = config_create(nueva_ruta);
-
-	t_fcb *fcb_abierto = malloc(sizeof(t_fcb));
-	fcb_abierto->nombre_archivo = nombre_fcb;
-	fcb_abierto->bloq_inicial_archivo = config_get_int_value(config_fcb,"BLOQUE_INICIAL");
-	fcb_abierto->tamanio_archivo = config_get_int_value(config_fcb,
-			"TAMANIO_ARCHIVO");
-
-	tamanio_archivo = fcb_abierto->tamanio_archivo;
-	//agrego a la lista fcbs abiertos
-	list_add(fs->fcb_list, fcb_abierto);
-	//crea la entrada a la FAT y le asigna los bloques
-	asignar_entradas_fat(fcb_abierto);
-	char *inicial_a_guardar = intAString(fcb_abierto->bloq_inicial_archivo);
-	config_set_value(config_fcb, "BLOQUE_INICIAL", inicial_a_guardar);
-	config_save(config_fcb);
-
-	config_destroy(config_fcb);
-	free(inicial_a_guardar);
-	free(nueva_ruta);
-
-	return tamanio_archivo;
 }
 
 uint32_t buscar_entrada_libre_fat() {
@@ -579,7 +584,7 @@ void ampliar_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes) {
 			fcb->bloq_inicial_archivo);
 	//me paro en el ultimo bloque
 	while (fs->fat->entradas[indice] != UINT32_MAX) {
-
+		log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", indice,fs->fat->entradas[indice]);
 		indice = fs->fat->entradas[indice];
 
 	}
@@ -620,14 +625,13 @@ void reducir_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes) {
 	int cont = 0;
 	while (cont < cant_bloq_a_liberar) {
 		fs->fat->entradas[indice_final] = 0;
-		fs->fat->entradas[anterior_indice] = EOFF
-		;
+		fs->fat->entradas[anterior_indice] = EOFF;
 
 		//me paro nuevamente en el ultimo bloque
 		indice_final = fcb->bloq_inicial_archivo;
-		anterior_indice = EOFF
-		;
+		anterior_indice = EOFF;
 		while (fs->fat->entradas[indice_final] != UINT32_MAX) {
+			log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", indice_final,fs->fat->entradas[indice_final]);
 			anterior_indice = indice_final;
 			indice_final = fs->fat->entradas[indice_final];
 		}
@@ -667,27 +671,36 @@ void* leer_archivo_bloques_fat(int puntero, char *nombre) {
 	void *datos = malloc(tam_bloque);
 	void *puntero_buffer = fs->bloques;
 	void* puntero_fat = puntero_buffer +(cant_bloq_swap*tam_bloque);
-
+	usleep(retardo_acceso_bloq*1000);
 	memcpy(datos, puntero_fat+(bloque*tam_bloque), tam_bloque);
 
 	return datos;
 }
+
 void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir){
 	uint32_t numero_bloque = puntero / tam_bloque;
 	t_fcb* fcb=devolver_fcb(nombre);
 
 	uint32_t bloque=fcb->bloq_inicial_archivo;
 
-	//busco en fat las pos de bloque
 	int cont=1;
 	while(cont<numero_bloque){
-		bloque=fs->fat->entradas[bloque];
+		usleep(retardo_acceso_fat*1000);
+		log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", bloque,fs->fat->entradas[bloque]);
+		bloque=fs->fat->entradas[bloque];//obtengo el bloque
 		cont++;
+
 	}
-	void* puntero_buffer=fs->bloques;
-	void* puntero_fat = puntero_buffer +(cant_bloq_swap*tam_bloque);
-	memcpy(puntero_fat+(tam_bloque*bloque),a_escribir,tam_bloque);
-	log_info(logger_file_system, "bloque a escrito de fat %u", bloque);
+
+	void* puntero_fat= fs->bloques +(cant_bloq_swap*tam_bloque);
+	int* valor_entero = (int*)puntero_fat;
+	if(puntero_fat<fs->bloques+(tam_bloque*cant_total_bloq)){
+		usleep(retardo_acceso_bloq*1000);
+		memcpy(puntero_fat+(tam_bloque*bloque),a_escribir,tam_bloque);
+		log_info(logger_file_system, "bloque a escrito de fat %u", bloque);
+	}else{
+		log_info(logger_file_system,"exceso");
+	}
 
 }
 void reemplazar_bloq_swap(int num_bloque,void *a_escribir) {
@@ -700,7 +713,7 @@ void reemplazar_bloq_swap(int num_bloque,void *a_escribir) {
 	//int *a = (int*)a_escribir;
 //	log_info(logger_file_system, "se recibio para escribir el puntero %i",*a	);
 	void* buffer_bloque=fs->bloques;
-
+	usleep(retardo_acceso_bloq*1000);
 	memcpy(buffer_bloque+(tam_bloque*num_bloque),a_escribir,tam_bloque);
 	log_info(logger_file_system, "se escribio en el bloq de swap :%u",num_bloque);
 
@@ -715,7 +728,7 @@ void escribir_bloque_swap(int puntero,void *a_escribir) {
 	//int *a = (int*)a_escribir;
 //	log_info(logger_file_system, "se recibio para escribir el puntero %i",*a	);
 	void* buffer_bloque=fs->bloques;
-
+	usleep(retardo_acceso_bloq*1000);
 	memcpy(buffer_bloque+(tam_bloque*num_bloque),a_escribir,tam_bloque);
 	log_info(logger_file_system, "se escribio en el bloq de swap :%u",num_bloque);
 
@@ -737,6 +750,7 @@ void* leer_bloque_swap(int puntero){
 	uint32_t num_bloq=puntero/tam_bloque;
 	void* datos=malloc(tam_bloque);
 	void* buffer_bloques=fs->bloques;
+	usleep(retardo_acceso_bloq*1000);
 	memcpy(datos,buffer_bloques+(tam_bloque*num_bloq),tam_bloque	);
 	return datos;
 
@@ -822,13 +836,18 @@ void levantar_fat() {
 
 	if (bloq != MAP_FAILED) {
 		log_info(logger_file_system,"El archivo FAT se ha mapeado correctamente en la memoria.");
-		fs->fat->entradas=bloq;
-		//reservo entrada inicial para boot
-		fs->fat->entradas[0] = RESERV_BOOT		;
+		if(bloq[0]==UINT32_MAX){
+			fs->fat->entradas=bloq;
+		}else{
+			fs->fat->entradas=bloq;
+			//reservo entrada inicial para boot
+			fs->fat->entradas[0] = RESERV_BOOT		;
 
-		//inicializo las entradas en 0=libre
-		for (uint32_t i = 1; i < fs->fat->tamanio_fat; i++) {
-			fs->fat->entradas[i] = 0;
+			//inicializo las entradas en 0=libre
+			for (uint32_t i = 1; i < fs->fat->tamanio_fat; i++) {
+				fs->fat->entradas[i] = 0;
+			}
+
 		}
 
 	} else {
