@@ -99,6 +99,7 @@ void reducir_tam_archivo(t_fcb* fcb_para_modif,int nuevo_tam);
 void ampliar_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes);
 void asignar_entradas_fat(t_fcb *fcb_a_guardar);
 void enviar_respuesta_truncar(int socket_cliente);
+void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir);
 //bloques
 void levantar_archivo_bloques();
 void* leer_bloque_swap(int );
