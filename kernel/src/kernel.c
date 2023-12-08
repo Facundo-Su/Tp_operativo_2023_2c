@@ -244,7 +244,6 @@ void procesar_conexion(void *conexion1){
 			tam_archivo = *tam_archivo_recibido_creado;
 			log_error(logger,"llegue a respuesta crear archivo");
 			sem_post(&contador_bloqueado_fs_fopen);
-
 			break;
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
@@ -263,6 +262,7 @@ void procesar_conexion(void *conexion1){
 	}
 	return;
 }
+
 t_archivo_pcb* buscar_archivo_pcb(char *nombre, t_pcb *pcb){
 	t_list_iterator* iterador = list_iterator_create(pcb->tabla_archivo_abierto);
 		while(list_iterator_has_next(iterador)){
@@ -524,7 +524,6 @@ void envio_page_fault_a_memoria(t_page_fault* page_fault){
 void iniciar_consola(){
 	logger_consola = log_create("./kernelConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	char* variable;
-
 	while(1){
 		log_info(logger_consola,"ingrese la operacion que deseas realizar"
 				"\n 1. iniciar Proceso"
@@ -563,12 +562,15 @@ void iniciar_consola(){
 			case '4':
 				log_info(logger,"PAUSA DE PLANIFICACIÓN");
 				detener_planificacion_corto_largo();
+				//se_detuvo =true;
 				break;
 			case '5':
 				char* valor2 = readline(">");
 				int nuevo_grado = atoi(valor2);
 				log_info(logger,"Grado Anterior: %i - Grado Actual: %i",grado_multiprogramacion_ini,nuevo_grado);
 				grado_multiprogramacion_ini = nuevo_grado;
+				sem_destroy(&grado_multiprogramacion);
+				sem_init(&grado_multiprogramacion, 0, grado_multiprogramacion_ini);
 				//modificar_grado_multiprogramacion();
 				break;
 			case '6':
@@ -601,8 +603,12 @@ void listar_proceso_estado(){
 	log_info(logger, "Estado: READY - Procesos: %s",procesos_ready);
 	char * procesos_bloqueados_recursos = listar_procesos_bloqueados();
 	char * procesos_bloqueados_archivos = listar_procesos_bloqueados_archivos();
-
-	log_info(logger, "Estado: WAITING - Procesos: %s");
+	int total_length = strlen(procesos_bloqueados_recursos) + strlen(procesos_bloqueados_archivos) + 1;
+	char *result = (char *)malloc(total_length * sizeof(char));
+	strcpy(result, procesos_bloqueados_recursos);
+	strcat(result, procesos_bloqueados_archivos);
+	log_info(logger, "Estado: WAITING - Procesos: %s",result);
+	free(result);
 	if(!list_is_empty(pcb_en_ejecucion)){
 			t_pcb * pcb =list_get(pcb_en_ejecucion,0);
 			log_info(logger, "Estado: RUNNING - Procesos: %i",pcb->pid);
@@ -611,25 +617,7 @@ void listar_proceso_estado(){
 	}
 }
 
-/*void listar_procesos(t_queue * cola,char * estado){
-	int t = queue_size(cola);
-	log_error(logger, "%i",t);
-	char * procesos;
-	if(t > 0){
-		for(int i =0 ; i<t; i++){
-			t_pcb * pcb = list_get(cola->elements, i);
-			char *buffer;S
-			sprintf(buffer, i < t - 1 ? "%d," : "%d", pcb->pid);
-			procesos = malloc(strlen(buffer) + 1);
-			strcat(procesos, buffer);
-			free(buffer);
-		}
-		log_info(logger,"Estado: %s - Procesos: %s",estado, procesos);
-	}else{
-		log_info(logger,"Estado: %s - Procesos: ", estado);
-	}
-	free(procesos);
-}*/
+
 char * listar_procesos(t_queue *cola) {
     int t = queue_size(cola);
     char *procesos = NULL;
@@ -733,7 +721,7 @@ void iniciar_recurso(){
     list_bloqueado_page_fault = queue_create();
     lista_sleep = list_create();
 	//TODO cambiar por grado init
-	sem_init(&grado_multiprogramacion, 0, 10);
+	sem_init(&grado_multiprogramacion, 0, grado_multiprogramacion_ini);
 	sem_init(&mutex_cola_new, 0, 1);
 	sem_init(&contador_ejecutando_cpu,0,1);
 	sem_init(&mutex_cola_ready,0,1);
@@ -741,6 +729,8 @@ void iniciar_recurso(){
 	sem_init(&contador_cola_ready,0,0);
 	sem_init(&proceso_desalojo,0,0);
 	sem_init(&sem_deadlock,0,0);
+	sem_init(&detener_corto,0,1);
+	sem_init(&detener_largo,0,1);
 	sem_init(&contador_bloqueado_fs_fopen,0,0);
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
     sem_init(&cont_detener_planificacion,0,0);
@@ -921,11 +911,9 @@ void agregar_a_cola_ready(t_pcb* pcb){
 	log_info(logger, "PID: %i - Estado Anterior: %s - Estado Actual: NEW",pcb->pid,estado_anterior);
 	pcb->estado=READY;
 	sem_post(&mutex_cola_ready);
-	//char * procesos = listar_procesos(cola_ready);
-	//log_info(logger, "Cola Ready %s: %s",planificador,procesos);
+	char * procesos = listar_procesos(cola_ready);
+	log_info(logger, "Cola Ready %s: %s",algoritmo,procesos);
 }
-
-
 
 t_pcb* quitar_de_cola_ready(){
 	sem_wait(&mutex_cola_ready);
@@ -936,12 +924,13 @@ t_pcb* quitar_de_cola_ready(){
 
 void planificador_largo_plazo(){
 	while(1){
-		if(detener){
-			//sem_wait(&cont_detener_planificacion);
+		if(!detener){
 			break;
 		}
 		sem_wait(&contador_agregando_new);
+		log_error(logger,"PASE EL PRIMERO");
 		sem_wait(&grado_multiprogramacion);
+		log_error(logger,"PASE EL SEGUNDO");
 		t_pcb* pcb =quitar_de_cola_new();
 		agregar_a_cola_ready(pcb);
 		sem_post(&contador_cola_ready);
@@ -966,8 +955,8 @@ void planificador_corto_plazo(){
 			break;
 		case ROUND_ROBIN:
 			if(!queue_is_empty(cola_ready)){
-			sem_wait(&contador_ejecutando_cpu);
-			de_ready_a_round_robin();
+				sem_wait(&contador_ejecutando_cpu);
+				de_ready_a_round_robin();
 			}
 			break;
 		case PRIORIDADES:
@@ -979,7 +968,7 @@ void planificador_corto_plazo(){
 
 void de_ready_a_fifo(){
 	t_pcb* pcb =quitar_de_cola_ready();
-    enviar_por_dispatch(pcb);
+	enviar_por_dispatch(pcb);
 }
 
 //TODO c
@@ -1137,7 +1126,7 @@ void obtener_configuracion(){
     ip_memoria = config_get_string_value(config, "IP_MEMORIA");
     ip_filesystem = config_get_string_value(config, "IP_FILESYSTEM");
     ip_cpu = config_get_string_value(config, "IP_CPU");
-    char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+    algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
     asignar_algoritmo(algoritmo);
 
     puerto_memoria = config_get_string_value(config, "PUERTO_MEMORIA");
