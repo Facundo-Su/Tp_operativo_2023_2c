@@ -222,6 +222,8 @@ void procesar_conexion(void* socket){
 	            	memcpy(valor_leido, memoria->espacio_usuario + (*marco *tam_pagina) + *desplazamiento, sizeof(uint32_t));
 	            	log_error(logger,"valor leido %u",*valor_leido);
 	            	enviar_registro_leido_mov_in(*valor_leido,ENVIO_MOV_IN,cliente_fd);
+	            	log_info(logger,"el valor leido es %u",*valor_leido);
+
 	            	int dir_mov_in = *marco *tam_pagina;
 	            	log_info(logger,"PID: %i- Accion: LEER - Direccion fisica: %i",marco_obtenido->pid,dir_mov_in);
 	            	break;

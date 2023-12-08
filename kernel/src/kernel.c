@@ -742,6 +742,8 @@ void iniciar_recurso(){
 	sem_init(&proceso_desalojo,0,0);
 	sem_init(&sem_deadlock,0,0);
 	sem_init(&contador_bloqueado_fs_fopen,0,0);
+	sem_init(&sem_pausa_corto_plazo,0,1);
+	sem_init(&sem_pausa_largo_plazo, 0, 1);
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
     sem_init(&cont_detener_planificacion,0,0);
     detener = false;
@@ -951,16 +953,15 @@ void planificador_largo_plazo(){
 //TODO MOTIVO DE QUE DESPUES DE INICIAR PLANIFICACION NO ME DEJA INGRESAR OTRA OPERACION
 void planificador_corto_plazo(){
 	while(1){
-		if(detener){
-			break;
-		}
-
 		sem_wait(&contador_cola_ready);
 		//sem_wait(&contador_ejecutando_cpu);
 		switch(planificador){
 		case FIFO:
 			if(!queue_is_empty(cola_ready)){
 				sem_wait(&contador_ejecutando_cpu);
+				if(detener){
+					sem_wait(&sem_pausa_corto_plazo);
+				}
 				de_ready_a_fifo();
 			}
 			break;
@@ -1113,6 +1114,7 @@ void iniciar_planificacion(){
 	detener = false;
 	pthread_t * hilo_corto_plazo;
 	pthread_t * hilo_largo_plazo;
+	sem_post(&sem_pausa_corto_plazo);
 	pthread_create(&hilo_largo_plazo,NULL,(void*) planificador_largo_plazo,NULL);
 	pthread_create(&hilo_corto_plazo,NULL,(void*) planificador_corto_plazo,NULL);
 	pthread_detach(*hilo_largo_plazo);
