@@ -692,6 +692,7 @@ void iniciar_particionamiento_memoria(){
         marco->base = desplazamiento;
         marco->is_free = true;
         marco->num_marco = i;
+        marco->pid = -1;
         list_add(memoria->marcos, marco);
         desplazamiento+= memoria->tamanio_marcos;
     }

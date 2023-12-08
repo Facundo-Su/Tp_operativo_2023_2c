@@ -118,10 +118,12 @@ sem_t contador_bloqueado_fs_fopen;
 pthread_t deadlock_hilo;
 sem_t sem_deadlock;
 sem_t sem_ok_archivo_creado;
+
 sem_t sem_pausa_corto_plazo;
 sem_t sem_pausa_largo_plazo;
 
 
+char * algoritmo;
 char *puerto_memoria;
 char *puerto_filesystem;
 char *puerto_cpu_dispatch;
@@ -130,7 +132,7 @@ int quantum;
 int grado_multiprogramacion_ini;
 t_planificador planificador;
 bool detener;
-
+bool detenido;
 int *instancias_recursos;
 int tam_archivo;
 

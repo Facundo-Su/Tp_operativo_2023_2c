@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 	int prueba;
 	prueba=abrir_archivo_fcb("pastel");
 	crear_archivo_fcb("tarta");
-  truncar_archivo("tarta", 16*4);
+  	truncar_archivo("tarta", 16*4);
 
 	for(uint32_t i=0;i<fs->fat->tamanio_fat;i++){
 		log_info(logger_file_system,"muestra la fat %i=%u",i,fs->fat->entradas[i]);
