@@ -86,6 +86,7 @@ void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques);
 int buscar_bloq_libre_swap();
 void finalizar_proceso(t_list *lista_liberar);
 t_list* iniciar_proceso(int cant_bloques);
+void reemplazar_bloq_swap(int num_bloque,void *a_escribir) ;
 
 //fat
 void truncar_archivo(char *nombre, int nuevo_tamanio_bytes);

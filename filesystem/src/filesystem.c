@@ -234,10 +234,10 @@ void* procesar_conexion(void* conexion1) {
 			break;
 		case REMPLAZAR_PAGINA:
 			lista = recibir_paquete(cliente_fd);
-			int* posicion_swap_datos_swap = list_get(lista,0);
-			void* datos_swap_retornar2 = datos_swap_retornar2 = list_get(lista,1);
+			int* posicion_swap_datos_swap2 = list_get(lista,0);
+			void* datos_swap_retornar2 = list_get(lista,1);
 
-
+			reemplazar_bloq_swap(*posicion_swap_datos_swap2,datos_swap_retornar2);
 			break;
 		case TRUNCAR_ARCHIVO:
 			lista=recibir_paquete(cliente_fd);
@@ -691,9 +691,8 @@ void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir){
 	log_info(logger_file_system, "bloque a escrito de fat %u", bloque);
 
 }
-void escribir_bloque_swap(int puntero,void *a_escribir) {
+void reemplazar_bloq_swap(int num_bloque,void *a_escribir) {
 
-	uint32_t num_bloque = puntero / tam_bloque;
 	log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
 	if(fs->bloques+(tam_bloque*num_bloque)==NULL){
 
@@ -703,9 +702,23 @@ void escribir_bloque_swap(int puntero,void *a_escribir) {
 //	log_info(logger_file_system, "se recibio para escribir el puntero %i",*a	);
 	void* buffer_bloque=fs->bloques;
 
-	memcpy(buffer_bloque,a_escribir,sizeof(int));
+	memcpy(buffer_bloque+(tam_bloque*num_bloque),a_escribir,tam_bloque);
 	log_info(logger_file_system, "se escribio en el bloq de swap :%u",num_bloque);
 
+}
+void escribir_bloque_swap(int puntero,void *a_escribir) {
+
+	uint32_t num_bloque = puntero / tam_bloque;
+	log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
+	if(fs->bloques+(tam_bloque*num_bloque)==NULL){
+		log_info(logger_file_system, "es puntero es nulo");
+	}
+	//int *a = (int*)a_escribir;
+//	log_info(logger_file_system, "se recibio para escribir el puntero %i",*a	);
+	void* buffer_bloque=fs->bloques;
+
+	memcpy(buffer_bloque+(tam_bloque*num_bloque),a_escribir,tam_bloque);
+	log_info(logger_file_system, "se escribio en el bloq de swap :%u",num_bloque);
 
 }
 void poner_bloq_swap_reservado(uint32_t num_bloque) {
