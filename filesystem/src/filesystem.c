@@ -27,17 +27,17 @@ int main(int argc, char *argv[]) {
 	//int prueba;
 	//prueba=abrir_archivo_fcb("pastel");
 	//crear_archivo_fcb("pruebatruncar");
-	int entero=16*10;
-	int* valorprueba=&entero;
+	//int entero=16*10;
+	//int* valorprueba=&entero;
 
-  	truncar_archivo("pruebatruncar", *valorprueba);
+  	//truncar_archivo("pruebatruncar", *valorprueba);
   	//truncar_archivo("pruebatruncar", 16*3);
 
 
 
-	for(uint32_t i=0;i<25;i++){
-		log_info(logger_file_system,"muestra la fat %i=%u",i,fs->fat->entradas[i]);
-	}
+//	for(uint32_t i=0;i<25;i++){
+//		log_info(logger_file_system,"muestra la fat %i=%u",i,fs->fat->entradas[i]);
+//	}
 	//log_info(logger_file_system,"salida del for"); fs->fat->tamanio_fat
     //void *prueba2=malloc(tam_bloque);
 //	*prueba2=9;
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 //	memset(buffer_bloque +(tam_bloque),marca_reservado,tam_bloque);
 //	memset(buffer_bloque+ (tam_bloque*2),marca_reservado,tam_bloque);
 
-	//iniciar_servidor_fs(puerto_escucha);
+	iniciar_servidor_fs(puerto_escucha);
 	//porbarTruncarArchivo("archivoprueba");
 	//liberar_recursos_fs();
 
