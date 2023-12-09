@@ -248,8 +248,18 @@ void procesar_conexion(void* socket){
 	            	int *dir_fisica = list_get(lista,0);
 	            	int *pid_fread = list_get(lista,1);
 					void * datos_fread = list_get(lista,2);
-					memcpy(memoria->espacio_usuario,datos_fread,memoria->tamanio_marcos);
+					memcpy(memoria->espacio_usuario+*dir_fisica,datos_fread,memoria->tamanio_marcos);
 					log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_fread,*dir_fisica);
+	            	break;
+	            case DIRECCION_FISICA:
+	            	lista = recibir_paquete(cliente_fd);
+					int *dir_fisica_escritura = list_get(lista,0);
+					void * datos_write = malloc(tam_pagina);
+					memcpy(datos_write,memoria->espacio_usuario+*dir_fisica,memoria->tamanio_marcos);
+
+					enviar_f_write_respuesta(datos_write);
+					log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_fread,*dir_fisica);
+
 	            	break;
 	            case FINALIZAR:
 	            	t_list * paquete = recibir_paquete(cliente_fd);
@@ -326,6 +336,8 @@ void procesar_conexion(void* socket){
 	    			//cargar_en_espacio_memoria(3);
 
 	    			break;
+
+
 	    		case DATOS_SWAP:
 	    			lista = lista = recibir_paquete(cliente_fd);
 	    			datos_obtenidos = list_get(lista,0);
@@ -341,6 +353,13 @@ void procesar_conexion(void* socket){
 	                break;
 	            }
 	        }
+}
+
+void enviar_f_write_respuesta(void* datos_write){
+	t_paquete* paquete = crear_paquete(ESCRIBIR_EN_MEMORIA);
+	agregar_a_paquete(paquete, datos_write, tam_pagina);
+	enviar_paquete(paquete, conexion_filesystem);
+	eliminar_paquete(paquete);
 }
 
 void cargar_en_espacio_memoria(int marco){

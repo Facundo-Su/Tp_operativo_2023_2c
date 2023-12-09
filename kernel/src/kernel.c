@@ -273,6 +273,7 @@ t_archivo_pcb* buscar_archivo_pcb(char *nombre, t_pcb *pcb){
 }
 void ejecutar_fwrite(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
 	t_archivo_pcb * archivo = buscar_archivo_pcb(nombre_archivo, pcb);
+	int puntero = archivo->puntero;
 	if(strcmp(archivo->modo,"R")==0){
 		(pcb->pid);
 		terminar_proceso(pcb);
@@ -282,17 +283,17 @@ void ejecutar_fwrite(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
 	log_info(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
 	pcb->estado = WAITING;
 	queue_push(cola_bloqueado_fs,pcb);
-	enviar_fwrite_fs(nombre_archivo, dir_fisica, pcb->pid);
+	enviar_fwrite_fs(nombre_archivo, dir_fisica,puntero);
 	list_remove(pcb_en_ejecucion,0);
 	sem_post(&contador_ejecutando_cpu);
 	sem_post(&contador_cola_ready);
 
 }
-void enviar_fwrite_fs(char *nombre,int dir_fisica,int pid){
+void enviar_fwrite_fs(char *nombre,int dir_fisica,int puntero){
 	t_paquete* paquete = crear_paquete(ESCRIBIR_ARCHIVO);
 	agregar_a_paquete(paquete, nombre, strlen(nombre) + 1);
 	agregar_a_paquete(paquete, &dir_fisica, sizeof(int));
-	agregar_a_paquete(paquete, &pid, sizeof(int));
+	agregar_a_paquete(paquete, &puntero, sizeof(int));
 	enviar_paquete(paquete, conexion_file_system);
 	eliminar_paquete(paquete);
 }

@@ -26,13 +26,19 @@ int main(int argc, char *argv[]) {
 	//TODO quitar cuando termine  de hacer pruebas
 	//int prueba;
 	//prueba=abrir_archivo_fcb("pastel");
-	//crear_archivo_fcb("tarta");
-  	//truncar_archivo("tarta", 16*4);
+	//crear_archivo_fcb("pruebatruncar");
+	int entero=16*10;
+	int* valorprueba=&entero;
 
-	//for(uint32_t i=0;i<fs->fat->tamanio_fat;i++){
-	//	log_info(logger_file_system,"muestra la fat %i=%u",i,fs->fat->entradas[i]);
-	//}
-	//log_info(logger_file_system,"salida del for");
+  	truncar_archivo("pruebatruncar", *valorprueba);
+  	//truncar_archivo("pruebatruncar", 16*3);
+
+
+
+	for(uint32_t i=0;i<25;i++){
+		log_info(logger_file_system,"muestra la fat %i=%u",i,fs->fat->entradas[i]);
+	}
+	//log_info(logger_file_system,"salida del for"); fs->fat->tamanio_fat
     //void *prueba2=malloc(tam_bloque);
 //	*prueba2=9;
 	//uint32_t* valor=9;
@@ -65,12 +71,10 @@ int main(int argc, char *argv[]) {
 //	memset(buffer_bloque +(tam_bloque),marca_reservado,tam_bloque);
 //	memset(buffer_bloque+ (tam_bloque*2),marca_reservado,tam_bloque);
 
-	iniciar_servidor_fs(puerto_escucha);
+	//iniciar_servidor_fs(puerto_escucha);
 	//porbarTruncarArchivo("archivoprueba");
-	liberar_recursos_fs();
+	//liberar_recursos_fs();
 
-
-	levantar_archivo_bloques();
 	return EXIT_SUCCESS;
 }
 void probarBloques(){
@@ -267,6 +271,7 @@ void* procesar_conexion(void* conexion1) {
 			reemplazar_bloq_swap(*posicion_swap_datos_swap2,datos_swap_retornar2);
 			break;
 		case TRUNCAR_ARCHIVO:
+
 			lista=recibir_paquete(cliente_fd);
 
 			char *nombre = list_get(lista,0);
@@ -275,11 +280,21 @@ void* procesar_conexion(void* conexion1) {
 
 			log_info(logger_file_system, "Truncar Archivo: < %s > - Tamaño: < %i >",nombre,*tamanio_nuevo);
 
-			truncar_archivo(nombre, tamanio_nuevo);
+			truncar_archivo(nombre, *tamanio_nuevo);
 			enviar_respuesta_truncar(cliente_fd);//1=OK
 			break;
 		case ESCRIBIR_ARCHIVO:
+
 			lista=recibir_paquete(cliente_fd);
+			char *nombre2 = list_get(lista,0);
+			int* direccionFisica=list_get(lista,1);
+			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
+			enviar_direccion_memoria(*direccionFisica,conexion_memoria);
+			t_list* lista2;
+			lista2=recibir_paquete(conexion_memoria);
+			int* puntero2=list_get(lista2,0);
+			//int puntero = recibir_puntero(conexion_memoria);
+			//escribir_bloque_fat(puntero, nombre, a_escribir)
 
 			break;
 		case INICIAR_PROCESO: //reserva bloques y reenvia la lista de bloques asignados
@@ -304,8 +319,8 @@ void* procesar_conexion(void* conexion1) {
 			list_destroy(bloq_a_liberar);
 			break;
 		default:
-			//log_warning(logger,
-					//"Operacion desconocida. No quieras meter la pata");
+			log_warning(logger,
+					"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
 	}
@@ -321,9 +336,15 @@ enviar_bloque_para_memoria(void* datos_swap_retornar,int cliente_fd){
 void enviar_respuesta_truncar(int socket_cliente){
 	log_error(logger_file_system,"envie respuesta truncar ");
 	t_paquete* paquete=crear_paquete(OK_TRUNCAR_ARCHIVO);
-	int valor_aux =1;
-	agregar_a_paquete(paquete, &valor_aux,sizeof(int) );
+	int valor =1;
+	agregar_a_paquete(paquete, &valor,sizeof(int) );
 	enviar_paquete(paquete, socket_cliente);
+	eliminar_paquete(paquete);
+}
+void enviar_direccion_memoria(int direccionFisica, int conexion_memoria ){
+	t_paquete* paquete=crear_paquete(DIRECCION_FISICA);
+	agregar_a_paquete(paquete,&direccionFisica,sizeof(int));
+	enviar_paquete(paquete, conexion_memoria);
 	eliminar_paquete(paquete);
 }
 t_fcb* devolver_fcb(char *nombre) {
@@ -458,7 +479,7 @@ uint32_t buscar_entrada_libre_fat() {
 		if (fs->fat->entradas[i] == 0 && fs->fat->entradas[i ]!=UINT32_MAX) {
 			log_info(logger_file_system, "se encontro la entrada %u", fs->fat->entradas[i]);
 			index_entrada_libre = i;
-			return index_entrada_libre;
+			break;
 		}
 	}
 	return index_entrada_libre;
@@ -511,39 +532,47 @@ void asignar_entradas_fat(t_fcb *fcb_guardar) {
 }
 //crear fcb; tamanio=0. Devuelve ok al finalizar. Siempre se puede crear
 void crear_archivo_fcb(char *nom_fcb) {
-	t_fcb *fcb_creado = malloc(sizeof(t_fcb));
-	char *ruta_copia = armar_ruta_fcb(nom_fcb);
-	//creo el archivo en el directorio de fcbs
-	FILE *file_fcb = txt_open_for_append(ruta_copia);
-	if (file_fcb != NULL) {
-		//inicializo las keys del archivo
-		txt_write_in_file(file_fcb, "\nNOMBRE_ARCHIVO=");
-		txt_write_in_file(file_fcb, nom_fcb);
-		txt_write_in_file(file_fcb, "\nTAMANIO_ARCHIVO=0");
+	t_fcb* existente=NULL;
+	existente=devolver_fcb(nom_fcb);
+	//log_info(logger_file_system, "archivo existente %s",existente->nombre_archivo);
+	if(existente!=NULL){
+		log_info(logger_file_system, "este archivo ya fue creado");
+	}else{
+		t_fcb *fcb_creado = malloc(sizeof(t_fcb));
+			char *ruta_copia = armar_ruta_fcb(nom_fcb);
+			//creo el archivo en el directorio de fcbs
+			FILE *file_fcb = txt_open_for_append(ruta_copia);
+			if (file_fcb != NULL) {
+				//inicializo las keys del archivo
+				txt_write_in_file(file_fcb, "\nNOMBRE_ARCHIVO=");
+				txt_write_in_file(file_fcb, nom_fcb);
+				txt_write_in_file(file_fcb, "\nTAMANIO_ARCHIVO=0");
 
-		//creo el fcb para administrarlo
-		fcb_creado = malloc(sizeof(t_fcb));
-		fcb_creado->nombre_archivo = nom_fcb;
-		fcb_creado->tamanio_archivo = 0;
+				//creo el fcb para administrarlo
+				fcb_creado = malloc(sizeof(t_fcb));
+				fcb_creado->nombre_archivo = nom_fcb;
+				fcb_creado->tamanio_archivo = 0;
 
-		//se asigna un bloque para luego truncar por ampliacion
-		uint32_t entrada = buscar_entrada_libre_fat();
-		char *string_entrada = intAString(entrada);
-		fcb_creado->bloq_inicial_archivo = entrada;
-		fs->fat->entradas[entrada] = UINT32_MAX;
+				//se asigna un bloque para luego truncar por ampliacion
+				uint32_t entrada = buscar_entrada_libre_fat();
+				char *string_entrada = intAString(entrada);
+				fcb_creado->bloq_inicial_archivo = entrada;
+				fs->fat->entradas[entrada] = UINT32_MAX;
 
-		log_info(logger_file_system, "entrada reservada en crear %u", entrada);
-		txt_write_in_file(file_fcb, "\nBLOQUE_INICIAL=");
-		txt_write_in_file(file_fcb, string_entrada);
-		txt_close_file(file_fcb);
-		list_add(fs->fcb_list, fcb_creado);
+				log_info(logger_file_system, "entrada reservada en crear %u", entrada);
+				txt_write_in_file(file_fcb, "\nBLOQUE_INICIAL=");
+				txt_write_in_file(file_fcb, string_entrada);
+				txt_close_file(file_fcb);
+				list_add(fs->fcb_list, fcb_creado);
 
-		free(ruta_copia);
+				free(ruta_copia);
 
-	} else {
-		log_info(logger_file_system, "hubo problemas creando el archivo fcb %s",
-				nom_fcb);
+			} else {
+				log_info(logger_file_system, "hubo problemas creando el archivo fcb %s",
+						nom_fcb);
+			}
 	}
+
 }
 
 void actualizar_lista_fcbs(t_list *lista_fcbs) {
@@ -566,9 +595,11 @@ void truncar_archivo(char *nombre, int nuevo_tamanio_bytes) {
 	if (fcb->tamanio_archivo < nuevo_tamanio_bytes) {
 		ampliar_tam_archivo(fcb, nuevo_tamanio_bytes);
 
-	} else {
+	} else if(fcb->tamanio_archivo>nuevo_tamanio_bytes){
 		reducir_tam_archivo(fcb, nuevo_tamanio_bytes);
 		//siempre se puede ampliar el archivo
+	}else{
+		log_info(logger_file_system,"el archivo tiene el mismo tamaño para truncar");
 	}
 	escribir_fcb_en_archivo(fcb);
 }
@@ -611,6 +642,7 @@ void ampliar_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes) {
 		;
 	}
 	fcb->tamanio_archivo = tamanio_nuevo_bytes;
+
 }
 
 void reducir_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes) {
