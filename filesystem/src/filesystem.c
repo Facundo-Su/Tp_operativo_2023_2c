@@ -24,16 +24,16 @@ int main(int argc, char *argv[]) {
 	log_info(logger_file_system,"se inicializo las estructuras de file system");
 
 	//TODO quitar cuando termine  de hacer pruebas
-	int prueba;
-	prueba=abrir_archivo_fcb("pastel");
-	crear_archivo_fcb("tarta");
-  	truncar_archivo("tarta", 16*4);
+	//int prueba;
+	//prueba=abrir_archivo_fcb("pastel");
+	//crear_archivo_fcb("tarta");
+  	//truncar_archivo("tarta", 16*4);
 
-	for(uint32_t i=0;i<fs->fat->tamanio_fat;i++){
-		log_info(logger_file_system,"muestra la fat %i=%u",i,fs->fat->entradas[i]);
-	}
-	log_info(logger_file_system,"salida del for");
-    void *prueba2=malloc(tam_bloque);
+	//for(uint32_t i=0;i<fs->fat->tamanio_fat;i++){
+	//	log_info(logger_file_system,"muestra la fat %i=%u",i,fs->fat->entradas[i]);
+	//}
+	//log_info(logger_file_system,"salida del for");
+    //void *prueba2=malloc(tam_bloque);
 //	*prueba2=9;
 	//uint32_t* valor=9;
 	//memcpy(prueba2,&valor,sizeof(uint32_t));
@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 	liberar_recursos_fs();
 
 
-	//levantar_archivo_bloques();
+	levantar_archivo_bloques();
 	return EXIT_SUCCESS;
 }
 void probarBloques(){
@@ -319,8 +319,8 @@ enviar_bloque_para_memoria(void* datos_swap_retornar,int cliente_fd){
 
 
 void enviar_respuesta_truncar(int socket_cliente){
+	log_error(logger_file_system,"envie respuesta truncar ");
 	t_paquete* paquete=crear_paquete(OK_TRUNCAR_ARCHIVO);
-
 	agregar_a_paquete(paquete, 1,sizeof(int) );
 	enviar_paquete(paquete, socket_cliente);
 	eliminar_paquete(paquete);
@@ -355,7 +355,8 @@ int recibir_entero(int socket_cliente) {
 void enviar_respuesta_crear_archivo(int cliente_fd) {
 
 	t_paquete *paquete = crear_paquete(RESPUESTA_CREAR_ARCHIVO);
-	agregar_a_paquete(paquete, 0, sizeof(int));
+	int vax= 0;
+	agregar_a_paquete(paquete, &vax, sizeof(int));
 	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);
 }

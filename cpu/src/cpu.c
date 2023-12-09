@@ -616,7 +616,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger,"PID: %i - Ejecutando F_TRUNCATE: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);
 		enviar_pcb(pcb,cliente_fd,RECIBIR_PCB);
-		enviar_f_truncate(parametro,valor_int,cliente_fd,EJECUTAR_F_WRITE);
+		enviar_f_truncate(parametro,valor_int,cliente_fd,EJECUTAR_F_TRUNCATE);
 		break;
 	case EXIT:
 		hayInterrupcion = true;

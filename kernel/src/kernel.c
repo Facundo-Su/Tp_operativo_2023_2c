@@ -162,11 +162,7 @@ void procesar_conexion(void *conexion1){
 			    char* direccion_logica_write= list_get(paquete,1);
 			    //log_info(logger, "el archivo es %s",nombre_archivo_write);
 			    //log_info(logger, "el direccion logica es %i",direccion_logica_write);
-
-				list_remove(pcb_en_ejecucion,0);
-			    sem_post(&contador_ejecutando_cpu);
-			    agregar_a_cola_ready(pcb_aux);
-			    sem_post(&contador_cola_ready);
+			    ejecutar_fwrite(nombre_archivo_write, direccion_logica_write, pcb_aux);
 			    break;
 			case PAGE_FAULT:
 				log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb_aux->pid);
@@ -224,6 +220,7 @@ void procesar_conexion(void *conexion1){
 			sem_post(&contador_cola_ready);
 			break;
 		case OK_TRUNCAR_ARCHIVO:
+			log_error(logger,"cantidad de elemento que hay en bloqueado fs es %i",queue_size(cola_bloqueado_fs));
 			t_pcb * pcb_3 = queue_pop(cola_bloqueado_fs);
 			agregar_a_cola_ready(pcb_3);
 			sem_post(&contador_cola_ready);
@@ -240,7 +237,7 @@ void procesar_conexion(void *conexion1){
 			break;
 		case RESPUESTA_CREAR_ARCHIVO:
 			paquete = recibir_paquete(cliente_fd);
-			int* tam_archivo_recibido_creado = list_get(paquete,1);
+			int* tam_archivo_recibido_creado = list_get(paquete,0);
 			tam_archivo = *tam_archivo_recibido_creado;
 			log_error(logger,"llegue a respuesta crear archivo");
 			sem_post(&contador_bloqueado_fs_fopen);
@@ -328,6 +325,7 @@ void enviar_fopen_fs(char *nombre){
 	eliminar_paquete(paquete);
 }
 void enviar_truncate_fs(char * nombre, int tamanio){
+	log_error(logger,"truncate");
 	t_paquete* paquete = crear_paquete(TRUNCAR_ARCHIVO);
 	agregar_a_paquete(paquete, nombre, strlen(nombre) + 1);
 	agregar_a_paquete(paquete, &(tamanio), sizeof(int));
