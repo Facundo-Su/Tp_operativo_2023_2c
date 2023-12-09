@@ -216,6 +216,8 @@ void* procesar_conexion(void* conexion1) {
 
 	while (1) {
 		int cod_op = recibir_operacion(cliente_fd);
+		char *nombre_a_escribir;
+		int* direccionFisica;
 		switch (cod_op) {
 		case MENSAJE:
 			recibir_mensaje(cliente_fd);
@@ -248,11 +250,14 @@ void* procesar_conexion(void* conexion1) {
 			//recibe punteto desde el cual leer
 			lista=recibir_paquete(cliente_fd);
 			char *nombre_arc = list_get(lista,0);
-			int *puntero = list_get(lista,1);
+			int *direccion = list_get(lista,1);
+			int *puntero = list_get(lista,2);
+			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
 
 			log_info(logger_file_system	, "Leer Archivo: < %s > - Puntero: < %i > - Memoria: < falta>",nombre_arc,*puntero);
 
 			void*leido=leer_archivo_bloques_fat(*puntero, nombre_arc);
+			enviar_leer_memoria(*direccion,leido,conexion_memoria);
 
 			break;
 		case DATOS_SWAP:
@@ -284,17 +289,23 @@ void* procesar_conexion(void* conexion1) {
 			enviar_respuesta_truncar(cliente_fd);//1=OK
 			break;
 		case ESCRIBIR_ARCHIVO:
-
+			//enviar_fwrite_fs(char *nombre,int dir_fisica,int puntero)
+			//TODO  revisar que este bien el manejo de conexiones.
 			lista=recibir_paquete(cliente_fd);
-			char *nombre2 = list_get(lista,0);
+			char *nombre_a_escribir = list_get(lista,0);
 			int* direccionFisica=list_get(lista,1);
+			int* puntero_escribir=list_get(lista,2);
 			conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
 			enviar_direccion_memoria(*direccionFisica,conexion_memoria);
 			t_list* lista2;
 			lista2=recibir_paquete(conexion_memoria);
-			int* puntero2=list_get(lista2,0);
+			void* contenido_a_escribir=list_get(lista2,0);
+			escribir_bloque_fat(*puntero_escribir,nombre_a_escribir,contenido_a_escribir);
+			log_info(logger_file_system, ": “Escribir Archivo: <%s> - Puntero: <%i> - Memoria: <%i>",nombre_a_escribir,*puntero_escribir,* direccionFisica);
+			//poner semaforo?
 			//int puntero = recibir_puntero(conexion_memoria);
 			//escribir_bloque_fat(puntero, nombre, a_escribir)
+
 
 			break;
 		case INICIAR_PROCESO: //reserva bloques y reenvia la lista de bloques asignados
@@ -317,6 +328,9 @@ void* procesar_conexion(void* conexion1) {
 			finalizar_proceso(bloq_a_liberar);
 			log_info(logger_file_system, "Proceso finalizado, bloq swap a liberados: < %i>",*tam_lista);
 			list_destroy(bloq_a_liberar);
+			break;
+		case ESCRIBIR_EN_MEMORIA:
+
 			break;
 		default:
 			log_warning(logger,
@@ -344,6 +358,14 @@ void enviar_respuesta_truncar(int socket_cliente){
 void enviar_direccion_memoria(int direccionFisica, int conexion_memoria ){
 	t_paquete* paquete=crear_paquete(DIRECCION_FISICA);
 	agregar_a_paquete(paquete,&direccionFisica,sizeof(int));
+	enviar_paquete(paquete, conexion_memoria);
+	eliminar_paquete(paquete);
+}
+void enviar_leer_memoria(int direccion,void*leido ,int conexion_memoria){
+	//TODO NO ES NECESARIO EL PID, modificar en memoria
+	t_paquete* paquete=crear_paquete(LEER_ARCHIVO);
+	agregar_a_paquete(paquete,&direccion,sizeof(int));
+	agregar_a_paquete(paquete,leido,tam_bloque);//tam_bloque = tam_pagina
 	enviar_paquete(paquete, conexion_memoria);
 	eliminar_paquete(paquete);
 }

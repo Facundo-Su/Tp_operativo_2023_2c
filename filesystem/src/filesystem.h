@@ -87,6 +87,7 @@ int buscar_bloq_libre_swap();
 void finalizar_proceso(t_list *lista_liberar);
 t_list* iniciar_proceso(int cant_bloques);
 void reemplazar_bloq_swap(int num_bloque,void *a_escribir) ;
+void enviar_bloques_asignados_swap(t_list * lista_asignados,int cliente_fd);
 
 //fat
 void truncar_archivo(char *nombre, int nuevo_tamanio_bytes);
@@ -109,6 +110,8 @@ uint32_t buscar_entrada_libre_fat();
 //respuestas conxiones
 void enviar_tamanio_archivo(int tamanio, int cliente_fd);
 void enviar_respuesta_crear_archivo(int);
+void enviar_direccion_memoria(int,int);
+void enviar_leer_memoria(int,void*,int);
 
 int prueba;
 
