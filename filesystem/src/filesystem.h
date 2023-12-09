@@ -105,6 +105,7 @@ void levantar_archivo_bloques();
 void* leer_bloque_swap(int );
 void enviar_bloque_para_memoria(void* ,int );
 
+uint32_t buscar_entrada_libre_fat();
 //respuestas conxiones
 void enviar_tamanio_archivo(int tamanio, int cliente_fd);
 void enviar_respuesta_crear_archivo(int);

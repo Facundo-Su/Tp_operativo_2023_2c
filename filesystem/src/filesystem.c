@@ -304,8 +304,8 @@ void* procesar_conexion(void* conexion1) {
 			list_destroy(bloq_a_liberar);
 			break;
 		default:
-			log_warning(logger,
-					"Operacion desconocida. No quieras meter la pata");
+			//log_warning(logger,
+					//"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
 	}
@@ -321,7 +321,8 @@ enviar_bloque_para_memoria(void* datos_swap_retornar,int cliente_fd){
 void enviar_respuesta_truncar(int socket_cliente){
 	log_error(logger_file_system,"envie respuesta truncar ");
 	t_paquete* paquete=crear_paquete(OK_TRUNCAR_ARCHIVO);
-	agregar_a_paquete(paquete, 1,sizeof(int) );
+	int valor_aux =1;
+	agregar_a_paquete(paquete, &valor_aux,sizeof(int) );
 	enviar_paquete(paquete, socket_cliente);
 	eliminar_paquete(paquete);
 }
@@ -457,7 +458,7 @@ uint32_t buscar_entrada_libre_fat() {
 		if (fs->fat->entradas[i] == 0 && fs->fat->entradas[i ]!=UINT32_MAX) {
 			log_info(logger_file_system, "se encontro la entrada %u", fs->fat->entradas[i]);
 			index_entrada_libre = i;
-			break;
+			return index_entrada_libre;
 		}
 	}
 	return index_entrada_libre;

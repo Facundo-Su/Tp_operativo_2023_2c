@@ -240,7 +240,7 @@ void procesar_conexion(void *conexion1){
 			int* tam_archivo_recibido_creado = list_get(paquete,0);
 			tam_archivo = *tam_archivo_recibido_creado;
 			log_error(logger,"llegue a respuesta crear archivo");
-			sem_post(&contador_bloqueado_fs_fopen);
+			sem_post(&sem_ok_archivo_creado);
 			break;
 		case FINALIZAR:
 			paquete = recibir_paquete(cliente_fd);
