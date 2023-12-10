@@ -119,7 +119,6 @@ void iniciar_servidor_memoria(char *puerto) {
     log_info(logger, "Servidor listo para recibir al cliente");
 
     generar_conexion_fs();
-
     while (1) {
         int cliente_fd = esperar_cliente(memoria_fd);
 		pthread_t atendiendo;
@@ -246,19 +245,21 @@ void procesar_conexion(void* socket){
 	            case LEER_ARCHIVO:
 	            	lista = recibir_paquete(cliente_fd);
 	            	int *dir_fisica = list_get(lista,0);
-	            	int *pid_fread = list_get(lista,1);
-					void * datos_fread = list_get(lista,2);
+					void * datos_fread = list_get(lista,1);
+	            	int *pid_fread = list_get(lista,2);
 					memcpy(memoria->espacio_usuario+*dir_fisica,datos_fread,memoria->tamanio_marcos);
 					log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_fread,*dir_fisica);
-	            	break;
+	            	enviar_f_read_respuesta();
+					break;
 	            case DIRECCION_FISICA:
 	            	lista = recibir_paquete(cliente_fd);
 					int *dir_fisica_escritura = list_get(lista,0);
+					int* pid_dir_fis = list_get(lista,1);
+	            	log_error(logger,"el valor recibido de escritura es %i",*dir_fisica_escritura);
 					void * datos_write = malloc(tam_pagina);
-					memcpy(datos_write,memoria->espacio_usuario+*dir_fisica,memoria->tamanio_marcos);
-
+					memcpy(datos_write,memoria->espacio_usuario+*dir_fisica_escritura,memoria->tamanio_marcos);
 					enviar_f_write_respuesta(datos_write);
-					log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_fread,*dir_fisica);
+					log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_dir_fis,*dir_fisica_escritura);
 
 	            	break;
 	            case FINALIZAR:
@@ -353,6 +354,15 @@ void procesar_conexion(void* socket){
 	                break;
 	            }
 	        }
+}
+
+void enviar_f_read_respuesta(){
+	t_paquete* paquete = crear_paquete(ESCRIBIR_EN_MEMORIA);
+	int var =1;
+	agregar_a_paquete(paquete, &var, sizeof(int));
+	enviar_paquete(paquete, conexion_filesystem);
+	eliminar_paquete(paquete);
+
 }
 
 void enviar_f_write_respuesta(void* datos_write){

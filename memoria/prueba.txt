@@ -1,4 +1,5 @@
-SET AX 1
-SET BX 2
-SET AX 3
+F_OPEN consolas W
+F_SEEK consolas 0
+F_WRITE consolas 0
+F_CLOSE consolas
 EXIT

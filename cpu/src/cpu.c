@@ -458,7 +458,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger,"PID: %i - Ejecutando JNZ: %s - %s",pcb->pid,parametro,parametro2);
 		registro_aux = devolver_registro(parametro);
 		valor_uint1 = obtener_valor(registro_aux);
-		if(valor_uint1 ==0){
+		if(valor_uint1 !=0){
 			int valorEntero = atoi(parametro2);
 			pcb->contexto->pc =valorEntero;
 		}

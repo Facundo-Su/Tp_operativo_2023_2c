@@ -55,6 +55,7 @@ void procesar_conexion(void *conexion1){
 			break;
 		case RECIBIR_PCB:
 			paquete = recibir_paquete(cliente_fd);
+			log_warning(logger,"el cliente que me contacto es %i",cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
 			t_pcb* pcb_aux2=list_get(pcb_en_ejecucion,0);
 			pcb_aux->tabla_archivo_abierto =pcb_aux2->tabla_archivo_abierto;
@@ -162,7 +163,7 @@ void procesar_conexion(void *conexion1){
 			    char* direccion_logica_write= list_get(paquete,1);
 			    //log_info(logger, "el archivo es %s",nombre_archivo_write);
 			    //log_info(logger, "el direccion logica es %i",direccion_logica_write);
-			    ejecutar_fwrite(nombre_archivo_write, direccion_logica_write, pcb_aux);
+			    ejecutar_fwrite(nombre_archivo_write, *direccion_logica_write, pcb_aux);
 			    break;
 			case PAGE_FAULT:
 				log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb_aux->pid);
@@ -283,17 +284,19 @@ void ejecutar_fwrite(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
 	log_info(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
 	pcb->estado = WAITING;
 	queue_push(cola_bloqueado_fs,pcb);
-	enviar_fwrite_fs(nombre_archivo, dir_fisica,puntero);
-	list_remove(pcb_en_ejecucion,0);
-	sem_post(&contador_ejecutando_cpu);
-	sem_post(&contador_cola_ready);
+	enviar_fwrite_fs(nombre_archivo, dir_fisica,puntero,pcb->pid);
+	//TODO descomente esto y funciona
+	//list_remove(pcb_en_ejecucion,0);
+	//sem_post(&contador_ejecutando_cpu);
+	//sem_post(&contador_cola_ready);
 
 }
-void enviar_fwrite_fs(char *nombre,int dir_fisica,int puntero){
+void enviar_fwrite_fs(char *nombre,int dir_fisica,int puntero,int pid_asdas){
 	t_paquete* paquete = crear_paquete(ESCRIBIR_ARCHIVO);
 	agregar_a_paquete(paquete, nombre, strlen(nombre) + 1);
 	agregar_a_paquete(paquete, &dir_fisica, sizeof(int));
 	agregar_a_paquete(paquete, &puntero, sizeof(int));
+	agregar_a_paquete(paquete, &pid_asdas, sizeof(int));
 	enviar_paquete(paquete, conexion_file_system);
 	eliminar_paquete(paquete);
 }
@@ -304,9 +307,9 @@ void ejecutar_fread(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
 	queue_push(cola_bloqueado_fs,pcb);
 	pcb->estado = WAITING;
 	enviar_fread_fs(nombre_archivo, dir_fisica, archivo->puntero, pcb->pid);
-	list_remove(pcb_en_ejecucion,0);
-	sem_post(&contador_ejecutando_cpu);
-	sem_post(&contador_cola_ready);
+	//list_remove(pcb_en_ejecucion,0);
+	//sem_post(&contador_ejecutando_cpu);
+	//sem_post(&contador_cola_ready);
 
 }
 void enviar_fread_fs(char *nombre,int dir_fisica,int puntero,int pid){

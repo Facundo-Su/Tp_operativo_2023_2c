@@ -66,6 +66,13 @@ int retardo_acceso_bloq;
 int retardo_acceso_fat;
 
 
+
+sem_t sem_cont_escritura;
+sem_t sem_cont_lectura;
+int conexion_memoria;
+void* aux_escritura;
+
+
 //metodos de FS
 void inicializar_fat();
 
@@ -110,10 +117,13 @@ uint32_t buscar_entrada_libre_fat();
 //respuestas conxiones
 void enviar_tamanio_archivo(int tamanio, int cliente_fd);
 void enviar_respuesta_crear_archivo(int);
-void enviar_direccion_memoria(int,int);
-void enviar_leer_memoria(int,void*,int);
+void enviar_direccion_memoria(int,int,int);
+void enviar_leer_memoria(int,void*,int,int);
 
 int prueba;
+
+int* conexiones;
+int contador;
 
 void obtener_configuracion();
 void terminar_programa();
