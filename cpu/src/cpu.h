@@ -52,6 +52,8 @@ sem_t contador_recibiendoArchivo;
 sem_t contador_instruccion;
 sem_t contador_esperando_mov;
 sem_t contador_marco_obtenido;
+sem_t respuesta_ok_mov_out;
+sem_t respuesta_ok_mov_in;
 
 int marco_obtenido;
 

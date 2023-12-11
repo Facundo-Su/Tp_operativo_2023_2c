@@ -35,6 +35,8 @@ void iniciar_recurso(){
 	sem_init(&contador_esperando_mov,0,0);
 	instruccion_a_realizar= malloc(sizeof(t_instruccion));
 	sem_init(&contador_marco_obtenido,0,0);
+	sem_init(&respuesta_ok_mov_in,0,0);
+	sem_init(&respuesta_ok_mov_out,0,0);
 	logger_consola_cpu = log_create("./cpuConsola.log", "consola", 1, LOG_LEVEL_INFO);
 	//sem_init(&instruccion_ejecutando, 0,1);
 }
@@ -109,7 +111,7 @@ void procesar_conexion(void *conexion1){
 			//TODO
 			//preguntar porque si lo meto dentro de una funcion no me reconoce
 		case RECIBIR_PCB:
-			//log_info(logger, "Estoy por recibir un PCB");
+			log_info(logger, "Estoy por recibir un PCB");
 			t_list * paquete = recibir_paquete(cliente_fd);
 			pcb = desempaquetar_pcb(paquete);
 			//recibir_pcb(cliente_fd);
@@ -144,6 +146,15 @@ void procesar_conexion(void *conexion1){
 			//log_info(logger, "el valor del marco es %i",marco_obtenido);
 			sem_post(&contador_marco_obtenido);
 
+			break;
+		case RESPUESTA_MOV_IN:
+			paquete1= recibir_paquete(cliente_fd);
+			sem_post(&respuesta_ok_mov_in);
+			break;
+
+		case RESPUESTA_MOV_OUT:
+			paquete1= recibir_paquete(cliente_fd);
+			sem_post(&respuesta_ok_mov_out);
 			break;
 		case -1:
 			log_error(logger, "el cliente se desconecto. Terminando servidor");
@@ -423,6 +434,9 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 	char* parametro2="";
 	uint32_t valor_uint1;
 	uint32_t valor_uint2;
+	 uint32_t valor_destino;
+	 uint32_t valor_origen;
+	 uint32_t resultado;
 	int valor_int;
 	switch(instrucciones->nombre){
 	case SET:
@@ -442,7 +456,46 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger,"PID: %i - Ejecutando SUB: %s - %s",pcb->pid,parametro,parametro2);
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
-		restar(pcb, registro_aux, registro_aux2);
+		log_error(logger,"el valor de cx es : %i, el valor de ax es %i",registro_aux,registro_aux2);
+		//restar(pcb,registro_aux ,registro_aux2);
+
+
+
+		    if (registro_aux == AX) {
+		    	valor_destino = pcb->contexto->registros_cpu->ax;
+		    } else if (registro_aux == BX) {
+		    	valor_destino = pcb->contexto->registros_cpu->bx;
+		    } else if (registro_aux == CX) {
+		    	valor_destino = pcb->contexto->registros_cpu->cx;
+		    	 log_error(logger,"el valor del destino  %u ",pcb->contexto->registros_cpu->cx);
+		    } else if (registro_aux == DX) {
+		    	valor_destino = pcb->contexto->registros_cpu->dx;
+		    }
+
+		    if (registro_aux2 == AX) {
+		    	valor_origen = pcb->contexto->registros_cpu->ax;
+		    	log_error(logger,"el valor del ORIGEN  %u ",pcb->contexto->registros_cpu->ax);
+		    } else if (registro_aux2 == BX) {
+		    	valor_origen = pcb->contexto->registros_cpu->bx;
+		    } else if (registro_aux2 == CX) {
+		    	valor_origen = pcb->contexto->registros_cpu->cx;
+		    } else if (registro_aux2 == DX) {
+		    	valor_origen = pcb->contexto->registros_cpu->dx;
+		    }
+
+		    uint32_t resultado = valor_destino - valor_origen;
+		    if (registro_aux == AX) {
+		    	pcb->contexto->registros_cpu->ax = resultado;
+		    } else if (registro_aux == BX) {
+		    	pcb->contexto->registros_cpu->bx = resultado;
+		    } else if (registro_aux == CX) {
+		    	pcb->contexto->registros_cpu->cx = resultado;
+		    } else if (registro_aux == DX) {
+		    	pcb->contexto->registros_cpu->dx = resultado;
+		    }
+		    log_error(logger,"el valor del destino  %u - valor de origen %u es = %u",valor_destino,valor_origen,resultado);
+
+
 		break;
 	case SUM:
 		parametro= list_get(instrucciones->parametros,0);
@@ -450,7 +503,41 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger,"PID: %i - Ejecutando SUM: %s - %s",pcb->pid,parametro,parametro2);
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
-		sumar(registro_aux, registro_aux2);
+
+		 uint32_t valor_destino;
+		 uint32_t valor_origen;
+
+		    if (registro_aux == AX) {
+		    	valor_destino = pcb->contexto->registros_cpu->ax;
+		    } else if (registro_aux == BX) {
+		    	valor_destino = pcb->contexto->registros_cpu->bx;
+		    } else if (registro_aux == CX) {
+		    	valor_destino = pcb->contexto->registros_cpu->cx;
+		    } else if (registro_aux == DX) {
+		    	valor_destino = pcb->contexto->registros_cpu->dx;
+		    }
+
+		    if (registro_aux2 == AX) {
+		    	valor_origen = pcb->contexto->registros_cpu->ax;
+		    	log_error(logger,"el valor del ORIGEN  %u ",pcb->contexto->registros_cpu->ax);
+		    } else if (registro_aux2 == BX) {
+		    	valor_origen = pcb->contexto->registros_cpu->bx;
+		    } else if (registro_aux2 == CX) {
+		    	valor_origen = pcb->contexto->registros_cpu->cx;
+		    } else if (registro_aux2 == DX) {
+		    	valor_origen = pcb->contexto->registros_cpu->dx;
+		    }
+
+		    resultado = valor_destino + valor_origen;
+		    if (registro_aux == AX) {
+		    	pcb->contexto->registros_cpu->ax = resultado;
+		    } else if (registro_aux == BX) {
+		    	pcb->contexto->registros_cpu->bx = resultado;
+		    } else if (registro_aux == CX) {
+		    	pcb->contexto->registros_cpu->cx = resultado;
+		    } else if (registro_aux == DX) {
+		    	pcb->contexto->registros_cpu->dx = resultado;
+		    }
 		break;
 	case JNZ:
 		parametro = list_get(instrucciones->parametros,0);
@@ -507,6 +594,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 			valor_uint1 = (uint32_t) registro_por_mov;
 			setear(registro_aux, valor_uint1);
 			int dir_fisica = traducido->marco* tamanio_pagina + traducido->desplazamiento;
+			//sem_wait(&respuesta_ok_mov_in);
 			log_info(logger, "PID: %i - Acción: LEER - Dirección Física: %i - Valor: %u",pcb->pid,dir_fisica,valor_uint1);
 		}
 		break;
@@ -531,6 +619,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 			int dir_fisica2 = traducido2->marco* tamanio_pagina + traducido2->desplazamiento;
 			log_info(logger, "PID: %i - Acción: ESCRIBIR - Dirección Física: %i - Valor: %u",pcb->pid,dir_fisica2,valor_uint1);
 			enviar_traduccion_mov_out(traducido2, ENVIO_MOV_OUT, valor_uint1);
+			//sem_wait(&respuesta_ok_mov_out);
 		}
 		break;
 	case F_OPEN:
@@ -586,7 +675,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		}
 		break;
 	case F_WRITE:
-		//hayInterrupcion = true;
+		hayInterrupcion = true;
 		parametro= list_get(instrucciones->parametros,0);
 		parametro = strtok(parametro, "\n");
 		parametro2= list_get(instrucciones->parametros,1);
@@ -655,6 +744,7 @@ void enviar_pagina_a_kernel(t_traduccion* traducido ,op_code operacion , int cli
 }
 
 void setear(t_estrucutra_cpu pos, uint32_t valor) {
+
     switch(pos) {
         case AX: pcb->contexto->registros_cpu->ax = valor; break;
         case BX: pcb->contexto->registros_cpu->bx = valor; break;
@@ -774,22 +864,69 @@ void sumar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
 
 
 void restar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
-    uint32_t valor_destino = obtener_valor(destino);
-    uint32_t valor_origen = obtener_valor(origen);
-    uint32_t resultado = valor_destino - valor_origen;  // Ensure underflow handling if needed
-    setear(destino, resultado);
+
+
+    uint32_t valor_destino;
+    uint32_t valor_origen;
+
+    if (destino == AX) {
+    	valor_destino = pcb->contexto->registros_cpu->ax;
+    } else if (destino == BX) {
+    	valor_destino = pcb->contexto->registros_cpu->bx;
+    } else if (destino == CX) {
+    	valor_destino = pcb->contexto->registros_cpu->cx;
+    	 log_error(logger,"el valor del destino  %u ",pcb->contexto->registros_cpu->cx);
+    } else if (destino == DX) {
+    	valor_destino = pcb->contexto->registros_cpu->dx;
+    }
+
+    if (origen == AX) {
+    	valor_origen = pcb->contexto->registros_cpu->ax;
+    	log_error(logger,"el valor del ORIGEN  %u ",pcb->contexto->registros_cpu->ax);
+    } else if (origen == BX) {
+    	valor_origen = pcb->contexto->registros_cpu->bx;
+    } else if (origen == CX) {
+    	valor_origen = pcb->contexto->registros_cpu->cx;
+    } else if (origen == DX) {
+    	valor_origen = pcb->contexto->registros_cpu->dx;
+    }
+
+    uint32_t resultado = valor_destino - valor_origen;
+    if (destino == AX) {
+    	pcb->contexto->registros_cpu->ax = resultado;
+    } else if (destino == BX) {
+    	pcb->contexto->registros_cpu->bx = resultado;
+    } else if (destino == CX) {
+    	pcb->contexto->registros_cpu->cx = resultado;
+    } else if (destino == DX) {
+    	pcb->contexto->registros_cpu->dx = resultado;
+    }
+    log_error(logger,"el valor del destino  %u - valor de origen %u es = %u",valor_destino,valor_origen,resultado);
+    //setear(destino, resultado);
 }
 
 
 uint32_t obtener_valor(t_estrucutra_cpu pos) {
+	log_error(logger,"el valor a elejir es %i",pos);
+	uint32_t valor_retorno=0;
     switch(pos) {
-        case AX: return  pcb->contexto->registros_cpu->ax;
-        case BX: return  pcb->contexto->registros_cpu->bx;
-        case CX: return  pcb->contexto->registros_cpu->cx;
-        case DX: return  pcb->contexto->registros_cpu->dx;
+        case AX:
+        	valor_retorno =pcb->contexto->registros_cpu->ax;
+        	break;
+        case BX:
+        	valor_retorno =pcb->contexto->registros_cpu->bx;
+        	break;
+        case CX:
+        	valor_retorno =pcb->contexto->registros_cpu->cx;
+        	break;
+        case DX:
+        	valor_retorno =pcb->contexto->registros_cpu->dx;
+        	break;
         default: //log_info(logger, "Registro no reconocido");
         	return 0;
+
     }
+	return valor_retorno;
 }
 
 

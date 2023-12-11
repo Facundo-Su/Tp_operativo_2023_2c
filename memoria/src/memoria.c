@@ -225,6 +225,7 @@ void procesar_conexion(void* socket){
 
 	            	int dir_mov_in = *marco *tam_pagina;
 	            	log_info(logger,"PID: %i- Accion: LEER - Direccion fisica: %i",marco_obtenido->pid,dir_mov_in);
+	            	//enviar_respuesta(cliente_fd,RESPUESTA_MOV_IN);
 	            	break;
 	            case ENVIO_MOV_OUT:
 	            	lista = recibir_paquete(cliente_fd);
@@ -241,6 +242,7 @@ void procesar_conexion(void* socket){
 	            	t_pagina* pagina_mov_out = obtener_pagina(*pid_out, *pagina_out);
 	            	pagina_mov_out->m=1;
 	            	log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_out,dir_mov_out);
+	            	//enviar_respuesta(cliente_fd,RESPUESTA_MOV_OUT);
 	            	break;
 	            case LEER_ARCHIVO:
 	            	lista = recibir_paquete(cliente_fd);
@@ -354,6 +356,14 @@ void procesar_conexion(void* socket){
 	                break;
 	            }
 	        }
+}
+
+void enviar_respuesta(int cliente_fd,op_code operacion){
+	t_paquete* paquete = crear_paquete(operacion);
+	int var =1;
+	agregar_a_paquete(paquete, &var, sizeof(int));
+	enviar_paquete(paquete, conexion_filesystem);
+	eliminar_paquete(paquete);
 }
 
 void enviar_f_read_respuesta(){

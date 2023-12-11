@@ -311,7 +311,7 @@ void* procesar_conexion(void* conexion1) {
 			//poner semaforo?
 			//int puntero = recibir_puntero(conexion_memoria);
 			//escribir_bloque_fat(puntero, nombre, a_escribir)
-			//enviar_kernel_ok_escritura(cliente_fd);
+			enviar_kernel_ok_escritura(cliente_fd);
 
 			break;
 		case INICIAR_PROCESO: //reserva bloques y reenvia la lista de bloques asignados
@@ -431,7 +431,7 @@ void enviar_respuesta_crear_archivo(int cliente_fd) {
 void enviar_tamanio_archivo(int tamanio, int cliente_fd) {
 
 	t_paquete *paquete = crear_paquete(RESPUESTA_ABRIR_ARCHIVO);
-
+	log_error(logger_file_system,"el tamanio que envie es %i",tamanio);
 	agregar_a_paquete(paquete, &tamanio, sizeof(int));
 	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);

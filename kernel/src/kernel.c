@@ -55,7 +55,6 @@ void procesar_conexion(void *conexion1){
 			break;
 		case RECIBIR_PCB:
 			paquete = recibir_paquete(cliente_fd);
-			log_warning(logger,"el cliente que me contacto es %i",cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
 			t_pcb* pcb_aux2=list_get(pcb_en_ejecucion,0);
 			pcb_aux->tabla_archivo_abierto =pcb_aux2->tabla_archivo_abierto;
@@ -118,7 +117,7 @@ void procesar_conexion(void *conexion1){
 			    paquete = recibir_paquete(cliente_fd);
 			    char* nombre_archivo = list_get(paquete,0);
 			    char* modo_apertura = list_get(paquete,1);
-			    //log_info(logger, "el archivo es %s",nombre_archivo);
+			    log_info(logger, "el archivo es %s",nombre_archivo);
 			   // log_info(logger, "el modo del archivo es %s",modo_apertura);
 			    ejecutar_fopen(nombre_archivo, modo_apertura, pcb_aux);
 
@@ -232,6 +231,7 @@ void procesar_conexion(void *conexion1){
 			sem_post(&contador_cola_ready);
 			break;
 		case OK_FWRITE:
+			log_error(logger,"el pcb esta la respuesta");
 			t_pcb * pcb_5 = queue_pop(cola_bloqueado_fs);
 			agregar_a_cola_ready(pcb_5);
 			sem_post(&contador_cola_ready);
@@ -285,10 +285,12 @@ void ejecutar_fwrite(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
 	pcb->estado = WAITING;
 	queue_push(cola_bloqueado_fs,pcb);
 	enviar_fwrite_fs(nombre_archivo, dir_fisica,puntero,pcb->pid);
+	//sem_wait(&sem_f_write);
+	log_info(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
 	//TODO descomente esto y funciona
-	//list_remove(pcb_en_ejecucion,0);
-	//sem_post(&contador_ejecutando_cpu);
-	//sem_post(&contador_cola_ready);
+	list_remove(pcb_en_ejecucion,0);
+	sem_post(&contador_ejecutando_cpu);
+	sem_post(&contador_cola_ready);
 
 }
 void enviar_fwrite_fs(char *nombre,int dir_fisica,int puntero,int pid_asdas){
@@ -351,6 +353,7 @@ t_archivo * buscar_en_tabla_archivo_general(char* nombre){
 	enviar_fopen_fs(nombre);
 
 	sem_wait(&contador_bloqueado_fs_fopen);
+	log_error(logger,"volviste a ejecutar");
 
     if(tam_archivo==-1){
     	enviar_fcreate(nombre);
@@ -384,6 +387,7 @@ void enviar_fcreate(char* nombre){
 
 void ejecutar_fopen(char* nombre_archivo, char* modo_apertura, t_pcb* pcb) {
     t_archivo* archivo = buscar_en_tabla_archivo_general(nombre_archivo);
+    log_warning(logger,"el nombre del archivo que encontre es : %s",archivo->nombre_archivo);
     if (strcmp(modo_apertura, "R") == 0) {
         if (archivo->lock_escritura_activo) {
         	pcb->estado = WAITING;
@@ -728,6 +732,7 @@ void iniciar_recurso(){
 	sem_init(&sem_pausa_largo_plazo, 0, 1);
     pthread_mutex_init(&mutex_lista_ejecucion, 0);
     sem_init(&cont_detener_planificacion,0,0);
+    sem_init(&sem_f_write,0,0);
     detener = false;
     tabla_archivo_general = list_create();
     sem_init(&sem_ok_archivo_creado,0,0);
@@ -910,9 +915,12 @@ void agregar_a_cola_ready(t_pcb* pcb){
 }
 
 t_pcb* quitar_de_cola_ready(){
+	//TODO
+	log_warning(logger,"cantidad_elemento en cola ready es %i",queue_size(cola_ready));
 	sem_wait(&mutex_cola_ready);
 	t_pcb* pcb=queue_pop(cola_ready);
 	sem_post(&mutex_cola_ready);
+	log_warning(logger,"cantidad_elemento en cola ready es %i",queue_size(cola_ready));
 	return pcb;
 }
 
