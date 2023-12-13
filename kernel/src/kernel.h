@@ -15,7 +15,7 @@
 t_log* logger;
 t_config* config;
 int conexion_memoria;
-int conexion_file_system;
+//int conexion_file_system;
 int conexion_cpu;
 int conexion_cpu_interrupt;
 char ** recursos_config;
@@ -78,6 +78,19 @@ typedef struct{
 	int puntero;
 	char * modo;
 }t_archivo_pcb;
+
+typedef struct{
+	char * nombre_archivo;
+	int direccion_fisica;
+	int socket_fs;
+	t_pcb* pcb_aux;
+}t_escritura_enviar_fs;
+
+typedef struct{
+	char * nombre_archivo;
+	int tamanio;
+	t_pcb* pcb_truncate;
+}t_truncate_manejar;
 
 t_list * tabla_archivo_general;
 
@@ -212,10 +225,15 @@ t_pcb * encontrar_pcb(int );
 void envio_page_fault_a_memoria(t_page_fault* );
 char* estado_a_string(t_estado );
 void ejecutar_fopen(char*, char*, t_pcb *);
-void enviar_truncate_fs(char * , int );
+void enviar_truncate_fs(char * , int,int );
 t_archivo * buscar_en_tabla_archivo_general(char*);
 char * listar_procesos_bloqueados_archivos();
 
+void ejecutar_fwrite(t_escritura_enviar_fs*);
+void ejecutar_truncate(t_truncate_manejar* );
+
+
+void validar_buffer(int );
 
 #endif /* KERNEL_H_ */
 

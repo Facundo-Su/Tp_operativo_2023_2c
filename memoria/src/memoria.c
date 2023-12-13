@@ -189,8 +189,8 @@ void procesar_conexion(void* socket){
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
-					//char *ruta = "./prueba.txt";
-					char *ruta = obtener_ruta(aux);
+					char *ruta = "./prueba.txt";
+					//char *ruta = obtener_ruta(aux);
 	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
 	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 //	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
@@ -260,7 +260,7 @@ void procesar_conexion(void* socket){
 	            	log_error(logger,"el valor recibido de escritura es %i",*dir_fisica_escritura);
 					void * datos_write = malloc(tam_pagina);
 					memcpy(datos_write,memoria->espacio_usuario+*dir_fisica_escritura,memoria->tamanio_marcos);
-					enviar_f_write_respuesta(datos_write);
+					enviar_f_write_respuesta(datos_write,cliente_fd);
 					log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_dir_fis,*dir_fisica_escritura);
 
 	            	break;
@@ -375,10 +375,10 @@ void enviar_f_read_respuesta(){
 
 }
 
-void enviar_f_write_respuesta(void* datos_write){
+void enviar_f_write_respuesta(void* datos_write,int cliente_fd){
 	t_paquete* paquete = crear_paquete(ESCRIBIR_EN_MEMORIA);
 	agregar_a_paquete(paquete, datos_write, tam_pagina);
-	enviar_paquete(paquete, conexion_filesystem);
+	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);
 }
 

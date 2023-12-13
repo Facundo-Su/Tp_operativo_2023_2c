@@ -456,7 +456,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		log_info(logger,"PID: %i - Ejecutando SUB: %s - %s",pcb->pid,parametro,parametro2);
 		registro_aux = devolver_registro(parametro);
 		registro_aux2 = devolver_registro(parametro2);
-		log_error(logger,"el valor de cx es : %i, el valor de ax es %i",registro_aux,registro_aux2);
 		//restar(pcb,registro_aux ,registro_aux2);
 
 
@@ -493,7 +492,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		    } else if (registro_aux == DX) {
 		    	pcb->contexto->registros_cpu->dx = resultado;
 		    }
-		    log_error(logger,"el valor del destino  %u - valor de origen %u es = %u",valor_destino,valor_origen,resultado);
 
 
 		break;
@@ -519,7 +517,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 
 		    if (registro_aux2 == AX) {
 		    	valor_origen = pcb->contexto->registros_cpu->ax;
-		    	log_error(logger,"el valor del ORIGEN  %u ",pcb->contexto->registros_cpu->ax);
 		    } else if (registro_aux2 == BX) {
 		    	valor_origen = pcb->contexto->registros_cpu->bx;
 		    } else if (registro_aux2 == CX) {
@@ -907,7 +904,6 @@ void restar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
 
 
 uint32_t obtener_valor(t_estrucutra_cpu pos) {
-	log_error(logger,"el valor a elejir es %i",pos);
 	uint32_t valor_retorno=0;
     switch(pos) {
         case AX:

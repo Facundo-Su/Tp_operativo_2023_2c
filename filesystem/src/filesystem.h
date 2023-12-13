@@ -51,9 +51,27 @@ typedef struct{
 	t_swap* array_swap;
 }t_FS;
 
+
+typedef struct{
+	char* nombre;
+	int direccion_fisica;
+	int puntero_escribir;
+	int pid_escribir;
+	int socket;
+}t_estructura_f_write;
+
+typedef struct{
+	char* nombre;
+	int socket;
+}t_estructura_f_open;
+
+
+
+void manejo_fwrite(t_estructura_f_write* );
+
+
 t_FS *fs;
 char* ruta_fcbs;
-int conexion_memoria;
 char *ip_memoria;
 char *puerto_memoria;
 char *puerto_escucha;
@@ -112,6 +130,7 @@ void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir);
 void levantar_archivo_bloques();
 void* leer_bloque_swap(int );
 void enviar_bloque_para_memoria(void* ,int );
+void* procesar_conexion2(void* );
 
 uint32_t buscar_entrada_libre_fat();
 //respuestas conxiones
@@ -133,5 +152,10 @@ void* connection_handler(void* socket_conexion);
 int iniciar_servidor_file_system(char*);
 
 void * procesar_conexion(void*);
+
+
+void manejo_fopen(t_estructura_f_open * );
+
+
 
 #endif /* SRC_FILESYSTEM_H_ */

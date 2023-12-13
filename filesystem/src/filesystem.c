@@ -211,8 +211,10 @@ void obtener_configuracion() {
 
 }
 
+
+
 // cada hilo creado ejecuta connection_handler
-void* procesar_conexion(void* conexion1) {
+void* procesar_conexion2(void* conexion1) {
 	t_list *lista;
 	int *conexion = (int*)conexion1;
 	int cliente_fd = *conexion;
@@ -234,12 +236,14 @@ void* procesar_conexion(void* conexion1) {
 		case ABRIR_ARCHIVO:
 			t_list* nose = recibir_paquete(cliente_fd);
 			char *nombre_nose = list_get(nose,0);
+			int* socket = list_get(nose,1);
 			log_info(logger_file_system, "llegue %i vez ",prueba);
 			prueba++;
 			log_info(logger_file_system, "Abrir Archivo: <%s>",nombre_nose);
-
 			int tamanio_archivo = abrir_archivo_fcb(nombre_nose);
 			enviar_tamanio_archivo(tamanio_archivo, cliente_fd);
+
+
 			break;
 		case CREAR_ARCHIVO:
 			lista=recibir_paquete(cliente_fd);
@@ -301,17 +305,18 @@ void* procesar_conexion(void* conexion1) {
 			int* direccionFisica=list_get(lista,1);
 			int* puntero_escribir=list_get(lista,2);
 			int* pid_escribir_archivo = list_get(lista,3);
-			conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
-			enviar_direccion_memoria(*direccionFisica,conexion_memoria,* pid_escribir_archivo);
-			sem_wait(&sem_cont_escritura);
+			int* socket_kernel = list_get(lista,4);
 
-			escribir_bloque_fat(*puntero_escribir,nombre_a_escribir,aux_escritura);
-			log_info(logger_file_system, ": “Escribir Archivo: <%s> - Puntero: <%i> - Memoria: <%i>",nombre_a_escribir,*puntero_escribir,* direccionFisica);
-			log_error(logger_file_system,"llegue hasta aca");
-			//poner semaforo?
-			//int puntero = recibir_puntero(conexion_memoria);
-			//escribir_bloque_fat(puntero, nombre, a_escribir)
-			enviar_kernel_ok_escritura(cliente_fd);
+			t_estructura_f_write *a = malloc(sizeof(t_estructura_f_write));
+			a->direccion_fisica= *direccionFisica;
+			a->nombre =nombre_a_escribir;
+			a->pid_escribir= *pid_escribir_archivo;
+			a->socket =*socket_kernel;
+
+		    pthread_t hilo_atender;
+		    pthread_create(&hilo_atender, NULL,manejo_fwrite, a);
+		    pthread_detach(hilo_atender);
+
 
 			break;
 		case INICIAR_PROCESO: //reserva bloques y reenvia la lista de bloques asignados
@@ -339,11 +344,6 @@ void* procesar_conexion(void* conexion1) {
 			lista = recibir_paquete(cliente_fd);
 			sem_post(&sem_cont_lectura);
 			break;
-		case ESCRIBIR_EN_MEMORIA:
-			lista = recibir_paquete(cliente_fd);
-			aux_escritura = list_get(lista,0);
-			sem_post(&sem_cont_escritura);
-			break;
 		default:
 			log_warning(logger,
 					"Operacion desconocida. No quieras meter la pata");
@@ -352,8 +352,192 @@ void* procesar_conexion(void* conexion1) {
 	}
 }
 
+
+
+// cada hilo creado ejecuta connection_handler
+void* procesar_conexion(void* conexion1) {
+	t_list *lista;
+	int *conexion = (int*)conexion1;
+	int cliente_fd = *conexion;
+
+	//while (1) {
+		int cod_op = recibir_operacion(cliente_fd);
+		char *nombre_a_escribir;
+		int* direccionFisica;
+		switch (cod_op) {
+		case MENSAJE:
+			recibir_mensaje(cliente_fd);
+			enviar_mensaje("saludo desde file system", cliente_fd);
+			break;
+		case PAQUETE:
+			lista = recibir_paquete(cliente_fd);
+			log_info(logger, "Me un paquete");
+
+			break;
+		case ABRIR_ARCHIVO:
+			t_list* nose = recibir_paquete(cliente_fd);
+			char *nombre_nose = list_get(nose,0);
+			int* socket = list_get(nose,1);
+			log_info(logger_file_system, "llegue %i vez ",prueba);
+			prueba++;
+			log_info(logger_file_system, "Abrir Archivo: <%s>",nombre_nose);
+			int tamanio_archivo = abrir_archivo_fcb(nombre_nose);
+			enviar_tamanio_archivo(tamanio_archivo, cliente_fd);
+
+
+			break;
+		case CREAR_ARCHIVO:
+			lista=recibir_paquete(cliente_fd);
+			char* nombre_a_crear=list_get(lista,0);
+
+			log_info(logger_file_system, "Crear Archivo: <%s>",nombre_a_crear);
+			crear_archivo_fcb(nombre_a_crear);
+			enviar_respuesta_crear_archivo(cliente_fd);
+			break;
+		case LEER_ARCHIVO:
+			//recibe punteto desde el cual leer
+			lista=recibir_paquete(cliente_fd);
+			char *nombre_arc = list_get(lista,0);
+			int *direccion = list_get(lista,1);
+			int *puntero = list_get(lista,2);
+			int *pid_f_read = list_get(lista,3);
+			log_info(logger_file_system	, "Leer Archivo: < %s > - Puntero: < %i > - Memoria: <%i>",nombre_arc,*puntero,*direccionFisica);
+			conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
+			void*leido=leer_archivo_bloques_fat(*puntero, nombre_arc);
+			enviar_leer_memoria(*direccion,leido,conexion_memoria,*pid_f_read);
+			sem_wait(&sem_cont_lectura);
+
+
+
+			break;
+		case DATOS_SWAP:
+			lista = recibir_paquete(cliente_fd);
+			int* posicion_swap_datos_swap = list_get(lista,0);
+			void* datos_swap_retornar = malloc(tam_bloque);
+
+			datos_swap_retornar=leer_bloque_swap(*posicion_swap_datos_swap);
+			enviar_bloque_para_memoria(datos_swap_retornar,cliente_fd);
+			break;
+		case REMPLAZAR_PAGINA:
+			lista = recibir_paquete(cliente_fd);
+			int* posicion_swap_datos_swap2 = list_get(lista,0);
+			void* datos_swap_retornar2 = list_get(lista,1);
+
+			reemplazar_bloq_swap(*posicion_swap_datos_swap2,datos_swap_retornar2);
+			break;
+		case TRUNCAR_ARCHIVO:
+
+			lista=recibir_paquete(cliente_fd);
+
+			char *nombre = list_get(lista,0);
+
+			int *tamanio_nuevo = list_get(lista,1);
+
+			log_info(logger_file_system, "Truncar Archivo: < %s > - Tamaño: < %i >",nombre,*tamanio_nuevo);
+
+			truncar_archivo(nombre, *tamanio_nuevo);
+			enviar_respuesta_truncar(cliente_fd);//1=OK
+			break;
+		case ESCRIBIR_ARCHIVO:
+			//enviar_fwrite_fs(char *nombre,int dir_fisica,int puntero)
+			//TODO  revisar que este bien el manejo de conexiones.
+			log_info(logger_file_system, "=============================");
+			lista=recibir_paquete(cliente_fd);
+			char *nombre_a_escribir = list_get(lista,0);
+			int* direccionFisica=list_get(lista,1);
+			int* puntero_escribir=list_get(lista,2);
+			int* pid_escribir_archivo = list_get(lista,3);
+			int* socket_kernel = list_get(lista,4);
+
+			t_estructura_f_write *a = malloc(sizeof(t_estructura_f_write));
+			a->direccion_fisica= *direccionFisica;
+			a->nombre =nombre_a_escribir;
+			a->pid_escribir= *pid_escribir_archivo;
+			a->socket =*socket_kernel;
+
+//		    pthread_t hilo_atender;
+//		    pthread_create(&hilo_atender, NULL,manejo_fwrite, a);
+//		    pthread_detach(hilo_atender);
+
+
+			int conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
+
+			enviar_direccion_memoria(*direccionFisica,conexion_memoria,*pid_escribir_archivo);
+			int cop;
+			recv(conexion_memoria, &cop, sizeof(cop), 0);
+			log_info(logger,"recibi el codigo de operacion %i",cop);
+			t_list* lista=list_create();
+			lista= recibir_paquete(conexion_memoria);
+			void* auxiliar = list_get(lista,0);
+
+			escribir_bloque_fat(*puntero_escribir,nombre_a_escribir,auxiliar);
+			log_info(logger_file_system, ": “Escribir Archivo: <%s> - Puntero: <%i> - Memoria: <%i>",nombre_a_escribir,*puntero_escribir,*direccionFisica);
+			log_error(logger_file_system,"el codigo socket es %i",cliente_fd);
+			//poner semaforo?
+			//int puntero = recibir_puntero(conexion_memoria);
+			//escribir_bloque_fat(puntero, nombre, a_escribir)
+			//usleep(5000000);
+			enviar_kernel_ok_escritura(cliente_fd);
+
+
+			break;
+		case INICIAR_PROCESO: //reserva bloques y reenvia la lista de bloques asignados
+			lista = recibir_paquete(cliente_fd);
+			int *cant_bloq = list_get(lista,0);
+			log_info(logger_file_system, "Cantidad de bloques swap a reservar %i",*cant_bloq);
+			t_list *lista_asignados = iniciar_proceso(*cant_bloq);
+			enviar_bloques_asignados_swap(lista_asignados,cliente_fd);
+			break;
+		case FINALIZAR_PROCESO:
+			lista=recibir_paquete(cliente_fd);
+			int* tam_lista=list_get(lista,0);
+			t_list* bloq_a_liberar=list_create();
+
+			for(int i=1;i< *tam_lista;i++){
+				int *bloq=list_get(lista,i);
+				list_add(bloq_a_liberar,	*bloq);
+			}
+
+			finalizar_proceso(bloq_a_liberar);
+			log_info(logger_file_system, "Proceso finalizado, bloq swap a liberados: < %i>",*tam_lista);
+			list_destroy(bloq_a_liberar);
+			break;
+		case RESPUESTA_F_READ:
+			lista = recibir_paquete(cliente_fd);
+			sem_post(&sem_cont_lectura);
+			break;
+		default:
+			log_warning(logger,
+					"Operacion desconocida. No quieras meter la pata");
+			break;
+		}
+	//}
+}
+
+void manejo_fwrite(t_estructura_f_write* estruct){
+
+	int conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
+
+	enviar_direccion_memoria(estruct->direccion_fisica,conexion_memoria,estruct->pid_escribir);
+	int cop;
+	recv(conexion_memoria, &cop, sizeof(cop), 0);
+	log_info(logger,"recibi el codigo de operacion %i",cop);
+	t_list* lista=list_create();
+	lista= recibir_paquete(conexion_memoria);
+	void* auxiliar = list_get(lista,0);
+
+	escribir_bloque_fat(estruct->puntero_escribir,estruct->nombre,auxiliar);
+	log_info(logger_file_system, ": “Escribir Archivo: <%s> - Puntero: <%i> - Memoria: <%i>",estruct->nombre,estruct->puntero_escribir,estruct->direccion_fisica);
+	log_error(logger_file_system,"el codigo socket es %i",estruct->socket);
+	//poner semaforo?
+	//int puntero = recibir_puntero(conexion_memoria);
+	//escribir_bloque_fat(puntero, nombre, a_escribir)
+	//usleep(5000000);
+	enviar_kernel_ok_escritura(estruct->socket);
+}
+
 void enviar_kernel_ok_escritura(int cliente_fd){
-	log_error(logger,"llegue hasta aca");
+	log_error(logger,"llegue hasta aca el socket es %i",cliente_fd);
 	t_paquete *paquete = crear_paquete(OK_FWRITE);
 	int valor = 1;
 	agregar_a_paquete(paquete, &valor, sizeof(int));
@@ -432,6 +616,7 @@ void enviar_tamanio_archivo(int tamanio, int cliente_fd) {
 
 	t_paquete *paquete = crear_paquete(RESPUESTA_ABRIR_ARCHIVO);
 	log_error(logger_file_system,"el tamanio que envie es %i",tamanio);
+	log_error(logger_file_system,"el socket que envie es %i",cliente_fd);
 	agregar_a_paquete(paquete, &tamanio, sizeof(int));
 	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);
@@ -454,6 +639,14 @@ void enviar_bloques_asignados_swap(t_list *lista_asignados, int socket_cliente) 
 void iniciar_servidor_fs(char *puerto) {
 	int fs_fd = iniciar_servidor(puerto);
 	log_info(logger_file_system, "Servidor listo para recibir al cliente");
+
+
+	int cliente_fd = esperar_cliente(fs_fd);
+
+	pthread_t atendiendo2;
+	pthread_create(&atendiendo2, NULL, (void*) procesar_conexion2,(void*) &cliente_fd);
+	pthread_detach(atendiendo2);
+
 
 	while (1) {
 		int cliente_fd = esperar_cliente(fs_fd);
