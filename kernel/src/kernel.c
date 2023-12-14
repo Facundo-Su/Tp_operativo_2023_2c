@@ -60,7 +60,7 @@ void procesar_conexion(void *conexion1){
 			pcb_aux->tabla_archivo_abierto =pcb_aux2->tabla_archivo_abierto;
 
 			//log_info(logger,"recibi el pcb");
-			log_pcb_info(pcb_aux);
+			//log_pcb_info(pcb_aux);
 			recv(cliente_fd,&cod_op,sizeof(op_code),0);
 			switch(cod_op){
 			case EJECUTAR_SLEEP:
@@ -229,6 +229,18 @@ void procesar_conexion(void *conexion1){
 			sem_post(&contador_cola_ready);
 			sem_post(&contador_ejecutando_cpu);
 			sem_post(&proceso_desalojo);
+			break;
+
+		case ENVIAR_FINALIZAR:
+			log_info(logger, "fINALIZE");
+			paquete = recibir_paquete(cliente_fd);
+			pcb_aux = desempaquetar_pcb(paquete);
+			terminar_proceso(pcb_aux);
+
+			log_info(logger, "Finaliza el proceso %i - Motivo: SUCCESS",pcb_aux->pid);
+
+			break;
+
 			break;
 		case RESPUESTA_ABRIR_ARCHIVO:
 			paquete = recibir_paquete(cliente_fd);
@@ -643,6 +655,7 @@ void ejecutar_fclose(char* nombre_archivo, t_pcb* pcb) {
         t_pcb* pcb_bloqueado = queue_pop(archivo->cola_bloqueados);
         agregar_a_cola_ready(pcb_bloqueado);
         sem_post(&contador_cola_ready);
+        sem_post(&contador_ejecutando_cpu);
     }
 
     if (archivo->contador_lectura == 0 && !archivo->lock_escritura_activo && queue_is_empty(archivo->cola_bloqueados)) {
@@ -766,8 +779,10 @@ void iniciar_consola(){
 				char* valor = readline(">");
 				int valorNumero = atoi(valor);
 				t_pcb * pcb_finalizar = encontrar_pcb(valorNumero);
-				terminar_proceso(pcb_finalizar);
-				log_info(logger, "Finaliza el proceso %i - Motivo: SUCCESS",pcb_finalizar->pid);
+				if(pcb_finalizar != NULL){
+					terminar_proceso(pcb_finalizar);
+					log_info(logger, "Finaliza el proceso %i - Motivo: SUCCESS",pcb_finalizar->pid);
+				}
 				break;
 			case '3':
 				log_info(logger,"INICIO DE PLANIFICACIÓN");
@@ -1151,7 +1166,7 @@ void planificador_corto_plazo(){
 				de_ready_a_fifo();
 			}
 			break;
-		case ROUND_ROBIN:
+		case RR:
 			if(!queue_is_empty(cola_ready)){
 				sem_wait(&contador_ejecutando_cpu);
 				de_ready_a_round_robin();
@@ -1198,7 +1213,9 @@ void de_ready_a_prioridades(){
 void de_ready_a_round_robin(){
 
 	de_ready_a_fifo();
+	log_error(logger,"capo desalohja");
 	usleep(quantum *1000);
+
 	enviar_mensaje_instrucciones("interrumpido por quantum",conexion_cpu_interrupt,ENVIAR_DESALOJAR);
 }
 
@@ -1210,6 +1227,8 @@ void de_ready_a_prioridades(){
     list_sort(cola_ready->elements,comparador_prioridades);
     t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
 
+	log_error(logger,"llegue aca");
+
     if(list_is_empty(pcb_en_ejecucion)){
     	sem_wait(&contador_ejecutando_cpu);
         list_sort(cola_ready->elements,comparador_prioridades);
@@ -1218,6 +1237,7 @@ void de_ready_a_prioridades(){
     		t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
     		//t_pcb* pcb_axu_comparador = queue_pop(cola_ready);
     		if(pcb_aux->prioridad>pcb_a_comparar_prioridad->prioridad){
+    			log_error(logger,"llegue aca");
     	        enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_DESALOJAR);
     	        sem_wait(&proceso_desalojo);
     	        sem_post(&contador_cola_ready);
@@ -1347,8 +1367,8 @@ void obtener_configuracion(){
 void asignar_algoritmo(char *algoritmo){
 	if (strcmp(algoritmo, "FIFO") == 0) {
 		planificador = FIFO;
-	} else if (strcmp(algoritmo, "ROUND_ROBIN") == 0) {
-		planificador = ROUND_ROBIN;
+	} else if (strcmp(algoritmo, "RR") == 0) {
+		planificador = RR;
 	}else if(strcmp(algoritmo, "PRIORIDADES")==0){
 		planificador = PRIORIDADES;
 	}else{
@@ -1591,7 +1611,8 @@ t_pcb * encontrar_pcb(int pid){
 	}
 	t_pcb * running = buscar_lista(pid, pcb_en_ejecucion);
 	if(running!=NULL){
-		return running;
+		enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_FINALIZAR);
+		return NULL;
 	}
 	t_pcb * sleep = buscar_lista(pid, lista_sleep);
 	if(sleep != NULL){

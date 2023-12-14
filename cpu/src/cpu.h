@@ -47,6 +47,7 @@ t_instruccion* instruccion_a_realizar;
 
 t_pcb* pcb;
 bool hay_desalojo;
+bool hay_finalizar;
 
 sem_t contador_recibiendoArchivo;
 sem_t contador_instruccion;

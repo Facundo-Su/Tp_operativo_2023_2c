@@ -30,6 +30,7 @@ int main(int argc, char* argv[]) {
 void iniciar_recurso(){
 	hay_desalojo=false;
 	recibi_archivo=false;
+	hay_finalizar=false;
 	hayInterrupcion = false;
 	sem_init(&contador_instruccion, 0,0);
 	sem_init(&contador_esperando_mov,0,0);
@@ -61,7 +62,11 @@ void iniciar_servidor_interrupt(char * puerto){
 			case ENVIAR_DESALOJAR:
 				recibir_mensaje(cliente_fd);
 				hay_desalojo = true;
-				//log_info(logger, "Instruccion DESALOJAR");
+				log_error(logger, "Instruccion DESALOJAR");
+				break;
+			case ENVIAR_FINALIZAR:
+				recibir_mensaje(cliente_fd);
+				hay_finalizar= true;
 				break;
 			case -1:
 				log_error(logger, "el cliente se desconecto. Terminando servidor");
@@ -116,6 +121,7 @@ void procesar_conexion(void *conexion1){
 			pcb = desempaquetar_pcb(paquete);
 			//recibir_pcb(cliente_fd);
 			hayInterrupcion = false;
+			hay_finalizar = false;
 			hay_desalojo= false;
 			//log_pcb_info(pcb);
 			ejecutar_ciclo_de_instruccion(cliente_fd);
@@ -370,6 +376,11 @@ void ejecutar_ciclo_de_instruccion(int cliente_fd){
 //pide a memoria
 
 	while(!hayInterrupcion){
+		if(hay_finalizar){
+			enviar_pcb(pcb,cliente_fd,ENVIAR_FINALIZAR);
+			return;
+		}
+
 		if(hay_desalojo){
 			enviar_pcb(pcb,cliente_fd,ENVIAR_DESALOJAR);
 			return;

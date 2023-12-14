@@ -116,6 +116,7 @@ void enviar_mensaje_instrucciones(char* mensaje, int socket_cliente,op_code oper
 	send(socket_cliente, a_enviar, bytes, 0);
 
 	free(a_enviar);
+
 	eliminar_paquete(paquete);
 }
 

@@ -28,7 +28,7 @@ bool detener;
 
 typedef enum{
 	FIFO,
-	ROUND_ROBIN,
+	RR,
 	PRIORIDADES
 }t_planificador;
 
