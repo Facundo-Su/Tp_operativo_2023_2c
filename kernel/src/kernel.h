@@ -235,12 +235,12 @@ void ejecutar_fopen(char*, char*, t_pcb *);
 void enviar_truncate_fs(char * , int,int );
 t_archivo * buscar_en_tabla_archivo_general(char*);
 char * listar_procesos_bloqueados_archivos();
-
+t_archivo_pcb* buscar_archivo_pcb(char *, t_pcb *);
 void ejecutar_fwrite(t_escritura_enviar_fs*);
 void ejecutar_truncate(t_truncate_manejar* );
 void ejecutar_fread(t_lectura_enviar_fs* );
-
-
+void liberar_archivos(t_pcb * );
+void ejecutar_fseek(char *  ,int ,t_pcb * );
 void validar_buffer(int );
 
 #endif /* KERNEL_H_ */
