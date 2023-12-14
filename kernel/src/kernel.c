@@ -143,13 +143,31 @@ void procesar_conexion(void *conexion1){
 			    break;
 
 			case EJECUTAR_F_READ:
-			    //log_info(logger, "me llegó la instrucción ejecutar fread del CPU");
+			    log_info(logger, "me llegó la instrucción ejecutar fread del CPU");
 			    // Agrega aquí la lógica para ejecutar la operación F_READ
 			    paquete = recibir_paquete(cliente_fd);
 
 			    char* nombre_archivo_f_read = list_get(paquete,0);
 			    int* dir_fisica= list_get(paquete,1);
-			    ejecutar_fread(nombre_archivo,*dir_fisica,pcb_aux);
+
+			    t_lectura_enviar_fs* aux_read= malloc(sizeof(t_lectura_enviar_fs));
+
+
+			    aux_read->nombre_archivo = nombre_archivo;
+			    aux_read->direccion_fisica = *dir_fisica;
+			    aux_read->pcb_aux = pcb_aux;
+
+				pthread_t hilo_fread;
+				pthread_create(&hilo_fread,NULL,ejecutar_fread,aux_read);
+				pthread_detach(hilo_fread);
+
+
+
+
+
+
+
+
 			    break;
 
 			case EJECUTAR_F_WRITE:
@@ -178,7 +196,7 @@ void procesar_conexion(void *conexion1){
 				paquete2 = recibir_paquete(cliente_fd);
 				int *nro_pagina = list_get(paquete2,0);
 				log_info(logger,"Page Fault PID: %i - Pagina: %i",pcb_aux->pid,*nro_pagina);
-				t_page_fault * page_aux = malloc(sizeof(page_aux));
+				t_page_fault * page_aux = malloc(sizeof(t_page_fault));
 				page_aux->nro_pag= *nro_pagina;
 				page_aux->pid_enviar = pcb_aux->pid;
 				page_aux->operacion=PAGE_FAULT;
@@ -269,15 +287,15 @@ void procesar_conexion(void *conexion1){
 }
 
 void ejecutar_truncate(t_truncate_manejar* aux){
-
+    sem_post(&contador_ejecutando_cpu);
+	list_remove(pcb_en_ejecucion,0);
 
 	int conex_fs_aux = crear_conexion(ip_filesystem, puerto_filesystem);
 
 	 enviar_truncate_fs(aux->nombre_archivo,aux->tamanio,conex_fs_aux);
-	int cod_op_aux = recibir_operacion(conex_fs_aux);
-	t_list* lista_aux2=list_create();
-	lista_aux2= recibir_paquete(conexion_memoria);
-	list_destroy(lista_aux2);
+	int cop;
+	recv(conex_fs_aux, &cop, sizeof(cop), 0);
+	log_info(logger,"recibi el codigo de operacion %i",cop);
 	close(conex_fs_aux);
 
     log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",aux->pcb_truncate->pid);
@@ -287,9 +305,10 @@ void ejecutar_truncate(t_truncate_manejar* aux){
 
     t_archivo* archivo= buscar_en_tabla_archivo_general(aux->nombre_archivo);
     archivo->tamanio = aux->tamanio;
+	t_pcb * pcb_5 = queue_pop(cola_bloqueado_fs);
+	agregar_a_cola_ready(pcb_5);
 
-	list_remove(pcb_en_ejecucion,0);
-    sem_post(&contador_ejecutando_cpu);
+
     sem_post(&contador_cola_ready);
 }
 
@@ -306,7 +325,8 @@ t_archivo_pcb* buscar_archivo_pcb(char *nombre, t_pcb *pcb){
 		return NULL;
 }
 void ejecutar_fwrite(t_escritura_enviar_fs *escrit_aux){
-
+	sem_post(&contador_ejecutando_cpu);
+	list_remove(pcb_en_ejecucion,0);
 	t_archivo_pcb * archivo = buscar_archivo_pcb(escrit_aux->nombre_archivo,escrit_aux-> pcb_aux);
 
 	int puntero = archivo->puntero;
@@ -319,8 +339,8 @@ void ejecutar_fwrite(t_escritura_enviar_fs *escrit_aux){
 	log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",escrit_aux-> pcb_aux->pid);
 	log_info(logger ,"PID: %i - Bloqueado por: %s",escrit_aux-> pcb_aux->pid,escrit_aux->nombre_archivo);
 	escrit_aux-> pcb_aux->estado = WAITING;
-	queue_push(cola_bloqueado_fs,escrit_aux-> pcb_aux);
 
+	queue_push(cola_bloqueado_fs,escrit_aux-> pcb_aux);
 
     int conex_fs_aux = crear_conexion(ip_filesystem, puerto_filesystem);
 	enviar_fwrite_fs(escrit_aux->nombre_archivo,escrit_aux->direccion_fisica,puntero,escrit_aux-> pcb_aux->pid,conex_fs_aux);
@@ -334,13 +354,12 @@ void ejecutar_fwrite(t_escritura_enviar_fs *escrit_aux){
 	close(conex_fs_aux);
 
 	//sem_wait(&sem_f_write);
-	log_info(logger ,"PID: %i - Bloqueado por: %s",escrit_aux-> pcb_aux->pid,escrit_aux->nombre_archivo);
-	//TODO descomente esto y funciona
+		//TODO descomente esto y funciona
 	t_pcb * pcb_5 = queue_pop(cola_bloqueado_fs);
 	agregar_a_cola_ready(pcb_5);
 	//close(escrit_aux->socket_fs);
-	list_remove(pcb_en_ejecucion,0);
-	sem_post(&contador_ejecutando_cpu);
+
+
 	sem_post(&contador_cola_ready);
 
 }
@@ -355,13 +374,55 @@ void enviar_fwrite_fs(char *nombre,int dir_fisica,int puntero,int pid_asdas,int 
 	enviar_paquete(paquete, socket);
 	eliminar_paquete(paquete);
 }
-void ejecutar_fread(char* nombre_archivo,int dir_fisica, t_pcb* pcb){
-	t_archivo_pcb * archivo = buscar_archivo_pcb(nombre_archivo, pcb);
-	log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb->pid);
-	log_info(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
-	queue_push(cola_bloqueado_fs,pcb);
-	pcb->estado = WAITING;
-	enviar_fread_fs(nombre_archivo, dir_fisica, archivo->puntero, pcb->pid);
+void ejecutar_fread(t_lectura_enviar_fs* aux){
+	sem_post(&contador_ejecutando_cpu);
+	t_archivo_pcb * archivo = buscar_archivo_pcb(aux->nombre_archivo, aux->pcb_aux);
+
+
+
+	log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",aux->pcb_aux->pid);
+	log_info(logger ,"PID: %i - Bloqueado por: %s",aux->pcb_aux->pid,aux->nombre_archivo);
+	aux->pcb_aux->estado = WAITING;
+
+	queue_push(cola_bloqueado_fs,aux->pcb_aux);
+
+
+
+    int conex_fs_aux = crear_conexion(ip_filesystem, puerto_filesystem);
+
+    enviar_fread_fs(aux->nombre_archivo, aux->direccion_fisica, archivo->puntero, aux->pcb_aux->pid,conex_fs_aux);
+	log_error(logger,"esperando conexion del scoket %i",conex_fs_aux);
+	int cop;
+	recv(conex_fs_aux, &cop, sizeof(cop), 0);
+	log_info(logger,"recibi el codigo de operacion %i",cop);
+	t_list* lista_aux2=list_create();
+	lista_aux2= recibir_paquete(conex_fs_aux);
+	list_destroy(lista_aux2);
+	close(conex_fs_aux);
+
+	//sem_wait(&sem_f_write);
+		//TODO descomente esto y funciona
+	t_pcb * pcb_5 = queue_pop(cola_bloqueado_fs);
+	agregar_a_cola_ready(pcb_5);
+	//close(escrit_aux->socket_fs);
+	list_remove(pcb_en_ejecucion,0);
+
+	sem_post(&contador_cola_ready);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	//list_remove(pcb_en_ejecucion,0);
 	//sem_post(&contador_ejecutando_cpu);
 	//sem_post(&contador_cola_ready);
@@ -405,6 +466,8 @@ t_archivo * buscar_en_tabla_archivo_general(char* nombre){
 		t_archivo* archivo = (t_archivo*)list_iterator_next(iterador);
 		if(strcmp(nombre,archivo->nombre_archivo) == 0){
 			log_error(logger,"encontre el archivo");
+		    log_error(logger,"EL NOMBRE QUE ENCONTRE ES %s ",archivo->nombre_archivo);
+			list_iterator_destroy(iterador);
 				return archivo;
 		}
 	}
@@ -434,15 +497,14 @@ t_archivo * buscar_en_tabla_archivo_general(char* nombre){
 	archivo->lock_escritura_activo = false;
 	archivo->tamanio= *tamanio_archivo;
 
-    if(tamanio_archivo==-1){
+    if(*tamanio_archivo==-1){
         int conex_fs_aux = crear_conexion(ip_filesystem, puerto_filesystem);
 
     	enviar_fcreate(nombre,conex_fs_aux);
 
-    	int cod_op_aux = recibir_operacion(conexion_memoria);
-    	t_list* lista_aux2=list_create();
-    	lista_aux2= recibir_paquete(conex_fs_aux);
-    	list_destroy(lista_aux2);
+    	int cop_aux_w;
+    	recv(conex_fs_aux, &cop_aux_w, sizeof(cop), 0);
+    	log_info(logger,"recibi el codigo de operacion %i",cop_aux_w);
     	close(conex_fs_aux);
     	archivo->tamanio= 0;
     }
@@ -549,14 +611,20 @@ void ejecutar_fclose(char* nombre_archivo, t_pcb* pcb) {
 
     eliminar_entrada_pcb(pcb, archivo->nombre_archivo);
 
-    if (archivo->contador_lectura == 0 && !archivo->lock_escritura_activo && queue_is_empty(archivo->cola_bloqueados)) {
-        eliminar_entrada_tabla_general(archivo->nombre_archivo);
-    }
-    enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
     if (!queue_is_empty(archivo->cola_bloqueados)) {
+        log_error(logger,"me llego hasta aca en close -------------");
         t_pcb* pcb_bloqueado = queue_pop(archivo->cola_bloqueados);
         agregar_a_cola_ready(pcb_bloqueado);
     }
+
+    if (archivo->contador_lectura == 0 && !archivo->lock_escritura_activo && queue_is_empty(archivo->cola_bloqueados)) {
+        eliminar_entrada_tabla_general(archivo->nombre_archivo);
+    }
+
+    enviar_pcb(pcb,conexion_cpu,RECIBIR_PCB);
+
+
+    log_error(logger,"me llego hasta aca en close");
 }
 bool archivo_abierto_para_lectura(t_archivo* archivo, t_pcb* pcb) {
     for (int i = 0; i < list_size(pcb->tabla_archivo_abierto); i++) {
@@ -594,14 +662,18 @@ void eliminar_entrada_pcb (t_pcb * pcb, char * nombre){
 }
 void eliminar_entrada_tabla_general (char * nombre){
 	t_list_iterator* iterador = list_iterator_create(tabla_archivo_general);
+	log_info(logger,"cantidad de elemento que hay en tabla general es %i ",list_size(tabla_archivo_general));
 		while(list_iterator_has_next(iterador)){
 			t_archivo* archivo = (t_archivo*)list_iterator_next(iterador);
 			if(strcmp(nombre,archivo->nombre_archivo) == 0){
 				list_remove_element(tabla_archivo_general,archivo);
 				queue_destroy(archivo->cola_bloqueados);
 				pthread_rwlock_destroy(&(archivo->lock));
+			    log_error(logger,"me llego hasta aca en close========");
 				free(archivo);
+				return;
 			}
+		    log_error(logger,"me llego hasta aca no encontre todavia en close");
 		}
 		list_iterator_destroy(iterador);
 }
@@ -961,17 +1033,6 @@ void crear_pcb(int prioridad){
 	t_contexto_ejecucion* contexto = crear_contexto();
 	pcb->contexto =contexto;
 	pcb->tabla_archivo_abierto = list_create();
-
-	t_archivo_pcb* aux =malloc(sizeof(t_archivo_pcb));
-	aux->nombre="robins";
-	aux->puntero = 0;
-
-	t_archivo_pcb* aux2 =malloc(sizeof(t_archivo_pcb));
-	aux2->nombre="libroam2";
-	aux2->puntero = 2;
-	list_add(pcb->tabla_archivo_abierto,aux);
-	list_add(pcb->tabla_archivo_abierto,aux2);
-
 	contador_pid++;
 	//log_pcb_info(pcb);
 	log_info(logger_consola,"Se crea el proceso %i en NEW",pcb->pid);

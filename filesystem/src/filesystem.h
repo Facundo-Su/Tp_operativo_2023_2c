@@ -137,7 +137,7 @@ uint32_t buscar_entrada_libre_fat();
 void enviar_tamanio_archivo(int tamanio, int cliente_fd);
 void enviar_respuesta_crear_archivo(int);
 void enviar_direccion_memoria(int,int,int);
-void enviar_leer_memoria(int,void*,int,int);
+void enviar_leer_memoria(int,void*,int,int,int);
 
 int prueba;
 
@@ -156,6 +156,6 @@ void * procesar_conexion(void*);
 
 void manejo_fopen(t_estructura_f_open * );
 
-
+void enviar_kernel_ok_lectura(int );
 
 #endif /* SRC_FILESYSTEM_H_ */

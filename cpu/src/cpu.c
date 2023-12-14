@@ -655,6 +655,7 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 		parametro = strtok(parametro, "\n");
+		valor_int = atoi(parametro2);
 		t_traduccion* traducido3 = mmu_traducir(valor_int);
 		log_info(logger,"PID: %i - Ejecutando F_READ: %s-%s",pcb->pid,parametro,parametro2);
 		valor_int = atoi(parametro2);

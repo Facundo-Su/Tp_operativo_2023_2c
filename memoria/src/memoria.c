@@ -189,8 +189,8 @@ void procesar_conexion(void* socket){
 					int* size = list_get(valorRecibido,1);
 					int* prioridad = list_get(valorRecibido,2);
 					int* pid = list_get(valorRecibido,3);
-					char *ruta = "./prueba.txt";
-					//char *ruta = obtener_ruta(aux);
+					//char *ruta = "./prueba.txt";
+					char *ruta = obtener_ruta(aux);
 	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
 	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
 //	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
@@ -247,11 +247,17 @@ void procesar_conexion(void* socket){
 	            case LEER_ARCHIVO:
 	            	lista = recibir_paquete(cliente_fd);
 	            	int *dir_fisica = list_get(lista,0);
-					void * datos_fread = list_get(lista,1);
+					void * datos_fread = malloc(tam_pagina);
+					datos_fread = list_get(lista,1);
 	            	int *pid_fread = list_get(lista,2);
+	            	int marco_f_read = *dir_fisica/tam_pagina;
 					memcpy(memoria->espacio_usuario+*dir_fisica,datos_fread,memoria->tamanio_marcos);
 					log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_fread,*dir_fisica);
-	            	enviar_f_read_respuesta();
+
+					t_pagina* pagina_f_read= obtener_pagina_en_marco(marco_f_read, *pid_fread);
+					pagina_f_read->m=1;
+
+	            	enviar_f_read_respuesta(cliente_fd);
 					break;
 	            case DIRECCION_FISICA:
 	            	lista = recibir_paquete(cliente_fd);
@@ -261,7 +267,7 @@ void procesar_conexion(void* socket){
 					void * datos_write = malloc(tam_pagina);
 					memcpy(datos_write,memoria->espacio_usuario+*dir_fisica_escritura,memoria->tamanio_marcos);
 					enviar_f_write_respuesta(datos_write,cliente_fd);
-					log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_dir_fis,*dir_fisica_escritura);
+					log_info(logger,"PID: %i- Accion: LEER - Direccion fisica: %i",*pid_dir_fis,*dir_fisica_escritura);
 
 	            	break;
 	            case FINALIZAR:
@@ -366,11 +372,11 @@ void enviar_respuesta(int cliente_fd,op_code operacion){
 	eliminar_paquete(paquete);
 }
 
-void enviar_f_read_respuesta(){
+void enviar_f_read_respuesta(int cliente_fd){
 	t_paquete* paquete = crear_paquete(ESCRIBIR_EN_MEMORIA);
 	int var =1;
 	agregar_a_paquete(paquete, &var, sizeof(int));
-	enviar_paquete(paquete, conexion_filesystem);
+	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);
 
 }

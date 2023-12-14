@@ -253,22 +253,22 @@ void* procesar_conexion2(void* conexion1) {
 			crear_archivo_fcb(nombre_a_crear);
 			enviar_respuesta_crear_archivo(cliente_fd);
 			break;
-		case LEER_ARCHIVO:
-			//recibe punteto desde el cual leer
-			lista=recibir_paquete(cliente_fd);
-			char *nombre_arc = list_get(lista,0);
-			int *direccion = list_get(lista,1);
-			int *puntero = list_get(lista,2);
-			int *pid_f_read = list_get(lista,3);
-			log_info(logger_file_system	, "Leer Archivo: < %s > - Puntero: < %i > - Memoria: <%i>",nombre_arc,*puntero,*direccionFisica);
-			conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
-			void*leido=leer_archivo_bloques_fat(*puntero, nombre_arc);
-			enviar_leer_memoria(*direccion,leido,conexion_memoria,*pid_f_read);
-			sem_wait(&sem_cont_lectura);
+//		case LEER_ARCHIVO:
+//			//recibe punteto desde el cual leer
+//			lista=recibir_paquete(cliente_fd);
+//			char *nombre_arc = list_get(lista,0);
+//			int *direccion = list_get(lista,1);
+//			int *puntero = list_get(lista,2);
+//			int *pid_f_read = list_get(lista,3);
+//			log_info(logger_file_system	, "Leer Archivo: < %s > - Puntero: < %i > - Memoria: <%i>",nombre_arc,*puntero,*direccionFisica);
+//			conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
+//			void*leido=leer_archivo_bloques_fat(*puntero, nombre_arc);
+//			enviar_leer_memoria(*direccion,leido,conexion_memoria,*pid_f_read);
+//			sem_wait(&sem_cont_lectura);
+//
 
 
-
-			break;
+		//	break;
 		case DATOS_SWAP:
 			lista = recibir_paquete(cliente_fd);
 			int* posicion_swap_datos_swap = list_get(lista,0);
@@ -293,7 +293,6 @@ void* procesar_conexion2(void* conexion1) {
 			int *tamanio_nuevo = list_get(lista,1);
 
 			log_info(logger_file_system, "Truncar Archivo: < %s > - Tamaño: < %i >",nombre,*tamanio_nuevo);
-
 			truncar_archivo(nombre, *tamanio_nuevo);
 			enviar_respuesta_truncar(cliente_fd);//1=OK
 			break;
@@ -401,11 +400,25 @@ void* procesar_conexion(void* conexion1) {
 			int *direccion = list_get(lista,1);
 			int *puntero = list_get(lista,2);
 			int *pid_f_read = list_get(lista,3);
+
 			log_info(logger_file_system	, "Leer Archivo: < %s > - Puntero: < %i > - Memoria: <%i>",nombre_arc,*puntero,*direccionFisica);
 			conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
+			int conexion_memoria_leer= crear_conexion(ip_memoria, puerto_memoria);
+
 			void*leido=leer_archivo_bloques_fat(*puntero, nombre_arc);
-			enviar_leer_memoria(*direccion,leido,conexion_memoria,*pid_f_read);
-			sem_wait(&sem_cont_lectura);
+
+			enviar_leer_memoria(*direccion,leido,conexion_memoria,*pid_f_read,conexion_memoria_leer);
+
+			int cop;
+			recv(conexion_memoria_leer, &cop, sizeof(cop), 0);
+			log_info(logger,"recibi el codigo de operacion %i",cop);
+			t_list* lista=list_create();
+			log_error(logger_file_system,"llegue hasta aca el socket es %i",cliente_fd);
+			lista= recibir_paquete(conexion_memoria_leer);
+			close(conexion_memoria_leer);
+			log_error(logger_file_system,"el codigo socket es %i",cliente_fd);
+
+			enviar_kernel_ok_lectura(cliente_fd);
 
 
 
@@ -449,11 +462,11 @@ void* procesar_conexion(void* conexion1) {
 			int* pid_escribir_archivo = list_get(lista,3);
 			int* socket_kernel = list_get(lista,4);
 
-			t_estructura_f_write *a = malloc(sizeof(t_estructura_f_write));
-			a->direccion_fisica= *direccionFisica;
-			a->nombre =nombre_a_escribir;
-			a->pid_escribir= *pid_escribir_archivo;
-			a->socket =*socket_kernel;
+//			t_estructura_f_write *a = malloc(sizeof(t_estructura_f_write));
+//			a->direccion_fisica= *direccionFisica;
+//			a->nombre =nombre_a_escribir;
+//			a->pid_escribir= *pid_escribir_archivo;
+//			a->socket =*socket_kernel;
 
 //		    pthread_t hilo_atender;
 //		    pthread_create(&hilo_atender, NULL,manejo_fwrite, a);
@@ -463,16 +476,18 @@ void* procesar_conexion(void* conexion1) {
 			int conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
 
 			enviar_direccion_memoria(*direccionFisica,conexion_memoria,*pid_escribir_archivo);
-			int cop;
-			recv(conexion_memoria, &cop, sizeof(cop), 0);
-			log_info(logger,"recibi el codigo de operacion %i",cop);
-			t_list* lista=list_create();
-			lista= recibir_paquete(conexion_memoria);
-			void* auxiliar = list_get(lista,0);
+			int cop2;
+			recv(conexion_memoria, &cop2, sizeof(cop), 0);
+			log_info(logger,"recibi el codigo de operacion %i",cop2);
+			t_list* lista2=list_create();
+			log_error(logger_file_system,"el codigo socket es %i",cliente_fd);
+			lista2= recibir_paquete(conexion_memoria);
+			void* auxiliar = list_get(lista2,0);
+			close(conexion_memoria);
 
 			escribir_bloque_fat(*puntero_escribir,nombre_a_escribir,auxiliar);
 			log_info(logger_file_system, ": “Escribir Archivo: <%s> - Puntero: <%i> - Memoria: <%i>",nombre_a_escribir,*puntero_escribir,*direccionFisica);
-			log_error(logger_file_system,"el codigo socket es %i",cliente_fd);
+
 			//poner semaforo?
 			//int puntero = recibir_puntero(conexion_memoria);
 			//escribir_bloque_fat(puntero, nombre, a_escribir)
@@ -545,6 +560,15 @@ void enviar_kernel_ok_escritura(int cliente_fd){
 	eliminar_paquete(paquete);
 }
 
+void enviar_kernel_ok_lectura(int cliente_fd){
+	log_error(logger_file_system,"llegue hasta aca el socket es %i",cliente_fd);
+	t_paquete *paquete = crear_paquete(OK_FREAD);
+	int valor = 1;
+	agregar_a_paquete(paquete, &valor, sizeof(int));
+	enviar_paquete(paquete, cliente_fd);
+	eliminar_paquete(paquete);
+}
+
 enviar_bloque_para_memoria(void* datos_swap_retornar,int cliente_fd){
 	t_paquete* paquete=crear_paquete(DATOS_SWAP);
 	agregar_a_paquete(paquete, datos_swap_retornar,tam_bloque);
@@ -568,13 +592,13 @@ void enviar_direccion_memoria(int direccionFisica, int conexion_memoria ,int pid
 	enviar_paquete(paquete, conexion_memoria);
 	eliminar_paquete(paquete);
 }
-void enviar_leer_memoria(int direccion,void*leido ,int conexion_memoria,int pid_f_read){
+void enviar_leer_memoria(int direccion,void*leido ,int conexion_memoria,int pid_f_read,int cliente_fd){
 	//TODO NO ES NECESARIO EL PID, modificar en memoria
 	t_paquete* paquete=crear_paquete(LEER_ARCHIVO);
 	agregar_a_paquete(paquete,&direccion,sizeof(int));
 	agregar_a_paquete(paquete,leido,tam_bloque);//tam_bloque = tam_pagina
 	agregar_a_paquete(paquete, &pid_f_read, sizeof(int));
-	enviar_paquete(paquete, conexion_memoria);
+	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);
 }
 t_fcb* devolver_fcb(char *nombre) {

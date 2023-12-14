@@ -88,6 +88,13 @@ typedef struct{
 
 typedef struct{
 	char * nombre_archivo;
+	int direccion_fisica;
+	t_pcb* pcb_aux;
+}t_lectura_enviar_fs;
+
+
+typedef struct{
+	char * nombre_archivo;
 	int tamanio;
 	t_pcb* pcb_truncate;
 }t_truncate_manejar;
@@ -231,6 +238,7 @@ char * listar_procesos_bloqueados_archivos();
 
 void ejecutar_fwrite(t_escritura_enviar_fs*);
 void ejecutar_truncate(t_truncate_manejar* );
+void ejecutar_fread(t_lectura_enviar_fs* );
 
 
 void validar_buffer(int );
