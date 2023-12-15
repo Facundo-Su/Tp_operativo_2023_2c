@@ -246,7 +246,7 @@ void procesar_conexion(void* socket){
 	            	t_pagina* pagina_mov_out = obtener_pagina(*pid_out, *pagina_out);
 	            	pagina_mov_out->m=1;
 	            	log_info(logger,"PID: %i- Accion: ESCRIBIR - Direccion fisica: %i",*pid_out,dir_mov_out);
-	            	//enviar_respuesta(cliente_fd,RESPUESTA_MOV_OUT);
+	            	enviar_respuesta(cliente_fd,RESPUESTA_MOV_OUT);
 	            	break;
 	            case LEER_ARCHIVO:
 	            	lista = recibir_paquete(cliente_fd);

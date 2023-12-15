@@ -181,7 +181,8 @@ void procesar_conexion(void *conexion1){
 
 void transformar_en_instrucciones(char* auxiliar){
 	instruccion_a_realizar->parametros= list_create();
-	int cantidad_parametros;
+	int cantidad_parametros=0;
+	log_error(logger,"el valor recibido es %s",auxiliar);
 	char** instruccion_parseada = parsear_instruccion(auxiliar);
 
 	        if (strcmp(instruccion_parseada[0], "SET") == 0) {
