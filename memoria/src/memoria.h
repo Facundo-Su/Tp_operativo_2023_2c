@@ -20,7 +20,7 @@ int contador_fifo;
 void * bloque;
 sem_t contador_espera_cargar;
 void* datos_obtenidos;
-
+sem_t enviar_pagina;
 t_list* lista_swap;
 
 

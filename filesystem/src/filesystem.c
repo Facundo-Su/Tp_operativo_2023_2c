@@ -273,16 +273,16 @@ void* procesar_conexion2(void* conexion1) {
 			lista = recibir_paquete(cliente_fd);
 			int* posicion_swap_datos_swap = list_get(lista,0);
 			void* datos_swap_retornar = malloc(tam_bloque);
-
 			datos_swap_retornar=leer_bloque_swap(*posicion_swap_datos_swap);
 			enviar_bloque_para_memoria(datos_swap_retornar,cliente_fd);
 			break;
 		case REMPLAZAR_PAGINA:
 			lista = recibir_paquete(cliente_fd);
 			int* posicion_swap_datos_swap2 = list_get(lista,0);
-			void* datos_swap_retornar2 = list_get(lista,1);
-
+			void* datos_swap_retornar2 = malloc(tam_bloque);
+			datos_swap_retornar2 = list_get(lista,1);
 			reemplazar_bloq_swap(*posicion_swap_datos_swap2,datos_swap_retornar2);
+			enviar_mensaje_instrucciones("remplaxo_pagina",conexion_memoria,REMPLAZAR_PAGINA);
 			break;
 		case TRUNCAR_ARCHIVO:
 
@@ -438,7 +438,6 @@ void* procesar_conexion(void* conexion1) {
 			lista = recibir_paquete(cliente_fd);
 			int* posicion_swap_datos_swap2 = list_get(lista,0);
 			void* datos_swap_retornar2 = list_get(lista,1);
-
 			reemplazar_bloq_swap(*posicion_swap_datos_swap2,datos_swap_retornar2);
 			break;
 		case TRUNCAR_ARCHIVO:
@@ -1003,6 +1002,7 @@ void* leer_archivo_bloques_fat(int puntero, char *nombre) {
 
 void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir){
 	uint32_t numero_bloque = puntero / tam_bloque;
+	log_warning(logger,"NUMERO DE BLOQUE %u",numero_bloque);
 	t_fcb* fcb=devolver_fcb(nombre);
 
 	uint32_t bloque=fcb->bloq_inicial_archivo;
@@ -1020,7 +1020,7 @@ void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir){
 	int* valor_entero = (int*)puntero_fat;
 	if(puntero_fat<fs->bloques+(tam_bloque*cant_total_bloq)){
 		usleep(retardo_acceso_bloq*1000);
-		memcpy(puntero_fat+(tam_bloque*bloque),a_escribir,tam_bloque);
+		memcpy(*puntero_fat+(tam_bloque*bloque),a_escribir,tam_bloque);
 		//log_info(logger_file_system, "bloque a escrito de fat %u", bloque);
 		log_info(logger_file_system,"Acceso Bloque - Archivo: <%s> - Bloque Archivo: <%u> - Bloque FS: <%u>",nombre,numero_bloque,bloque);
 	}else{
@@ -1030,7 +1030,8 @@ void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir){
 }
 void reemplazar_bloq_swap(int num_bloque,void *a_escribir) {
 
-
+	log_warning(logger_file_system, "se escribio en el bloq de swap :%u",num_bloque);
+	log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
 	if(fs->bloques+(tam_bloque*num_bloque)==NULL){
 
 		log_info(logger_file_system, "es puntero es nulo");
@@ -1040,7 +1041,6 @@ void reemplazar_bloq_swap(int num_bloque,void *a_escribir) {
 	void* buffer_bloque=fs->bloques;
 	usleep(retardo_acceso_bloq*1000);
 	memcpy(buffer_bloque+(tam_bloque*num_bloque),a_escribir,tam_bloque);
-	log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
 	//log_info(logger_file_system, "se escribio en el bloq de swap :%u",num_bloque);
 
 }
@@ -1062,7 +1062,7 @@ void escribir_bloque_swap(int puntero,void *a_escribir) {
 }
 void poner_bloq_swap_reservado(uint32_t num_bloque) {
 	//log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
-	int marca_reservado=0;
+	int marca_reservado=64;
 	if(fs->bloques+(tam_bloque*num_bloque)==NULL){
 
 		log_info(logger_file_system, "puntero swap es nulo");
