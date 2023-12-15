@@ -1093,7 +1093,7 @@ void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques) {
 
 		log_warning(logger_file_system," bloque a asignar %i",index_bloq);
 		fs->array_swap[index_bloq].libre = false;
-		poner_bloq_swap_reservado(index_bloq);//pone 0 en el bloq archivo
+		poner_bloq_swap_reservado(index_bloq);//pone 0 en el bloq archivo TODO ESTABA COMENTADO
 		list_add(bloques_asignados, index_bloq);
 	}
 
