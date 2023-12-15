@@ -446,8 +446,8 @@ int obtener_marco(int pid, int pagina){
           return valor_comparar == pid;
     }
     t_tabla_paginas* tabla_pagina = list_find(memoria->lista_tabla_paginas, encontrar_tabla_pagina);
-
-    log_info(logger,"la cantidad de pagina quye hay es %i",list_size(tabla_pagina->paginas));
+    // MATI FIJATE ACA TODO
+    //log_info(logger,"la cantidad de pagina quye hay es %i",list_size(tabla_pagina->paginas));
 
     if (tabla_pagina != NULL) {
             // Se encontró un elemento que cumple con la condición
@@ -701,7 +701,7 @@ void enviar_fs_finalizar(t_list* lista_pos_swap){
 	int cantidad_pagina = list_size(lista_pos_swap);
 	agregar_a_paquete(paquete, &cantidad_pagina, sizeof(int));
 	for(int i=0;i<cantidad_pagina;i++){
-		int valor = list_get(lista_pos_swap,0);
+		int valor = list_get(lista_pos_swap,i);
 		agregar_a_paquete(paquete, &valor, sizeof(int));
 	}
 	enviar_paquete(paquete, conexion_filesystem);

@@ -251,7 +251,7 @@ void procesar_conexion(void *conexion1){
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
 			terminar_proceso(pcb_aux);
-			log_info(logger, "Finaliza el proceso %i - Motivo: SUCCES",pcb_aux->pid);
+			log_warning(logger, "Finaliza el proceso %i - Motivo: SUCCES",pcb_aux->pid);
 			break;
 
 		case -1:
