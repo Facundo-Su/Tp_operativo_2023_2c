@@ -1020,7 +1020,7 @@ void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir){
 	int* valor_entero = (int*)puntero_fat;
 	if(puntero_fat<fs->bloques+(tam_bloque*cant_total_bloq)){
 		usleep(retardo_acceso_bloq*1000);
-		memcpy(*puntero_fat+(tam_bloque*bloque),a_escribir,tam_bloque);
+		memcpy(puntero_fat+(tam_bloque*bloque)+numero_bloque * tam_bloque,a_escribir,tam_bloque);
 		//log_info(logger_file_system, "bloque a escrito de fat %u", bloque);
 		log_info(logger_file_system,"Acceso Bloque - Archivo: <%s> - Bloque Archivo: <%u> - Bloque FS: <%u>",nombre,numero_bloque,bloque);
 	}else{
