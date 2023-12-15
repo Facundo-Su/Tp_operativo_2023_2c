@@ -199,10 +199,13 @@ void procesar_conexion(void* socket){
 
 	                cargar_lista_instruccion(ruta,size,prioridad,*pid);
 	                crear_proceso(*pid, *size);
-
-
-
 	                break;
+	    		case FINALIZAR_PROGRAMA:
+	    			recibir_mensaje(cliente_fd);
+	    			enviar_mensaje_instrucciones("finalizar",conexion_filesystem,FINALIZAR_PROGRAMA);
+	    			terminar_programa(conexion_filesystem,logger,config);
+	    			exit(1);
+	    			break;
 	            case MANDAME_PAGINA:
 	            	recibir_mensaje(cliente_fd);
 	            	enviar_tam_pagina(tam_pagina, cliente_fd);
@@ -449,17 +452,12 @@ int obtener_marco(int pid, int pagina){
     if (tabla_pagina != NULL) {
             // Se encontró un elemento que cumple con la condición
             t_pagina* pagina_encontrado = list_get(tabla_pagina->paginas,pagina);
-            log_info(logger,"el presencia de la pagina es%i",pagina_encontrado->p);
             if(pagina_encontrado->p ==1){
-                log_warning(logger, "Se encontraron la en el marco PID %i........marco %i", tabla_pagina->pid,pagina_encontrado->num_marco);
             	return pagina_encontrado->num_marco;
-
             }else{
             	return -1;
             }
         } else {
-            // No se encontraron instrucciones que cumplan con la condición
-            log_info(logger, "No se encontraron la pagina para el PID %i", pid);
             return -1;
         }
 
@@ -499,7 +497,6 @@ void enviar_tam_pagina(int tam , int cliente_fd){
 
 void cargar_lista_instruccion(char *ruta, int size, int prioridad, int pid) {
     t_instrucciones* instruccion = malloc(sizeof(t_instruccion));
-    log_info(logger_consola_memoria, "%i SSSSSSSSSSSSSSSS", pid);
     instruccion->pid = pid;
     instruccion->instrucciones = list_create();
     FILE* archivo = fopen(ruta, "r");
@@ -792,9 +789,11 @@ void asignar_marco(int pid, int nro_pagina){
 			pagina->num_marco = i;
 			pagina->p=1;
 			contador_fifo++;
+			log_error(logger,"MARCO %i",i);
 			//actualizar_tablas(pid,i,nro_pagina);
 		}else{
 			int nro_marco_remplazado = ejecutar_algoritmo();
+			actualizar_marcos_lru();
 			marco = list_get(memoria->marcos,nro_marco_remplazado);
 			t_pagina * pagina2 = obtener_pagina_en_marco(marco->num_marco, marco->pid);
 			log_info(logger,"REEMPLAZO - Marco: %i - Page Out: %i-%i - Page In: %i-%i",marco->num_marco,marco->pid,pagina2->num_pagina,pid, nro_pagina);
@@ -808,7 +807,7 @@ void asignar_marco(int pid, int nro_pagina){
 			pagina2->p=0;
 			pagina2->m=0;
 			pagina2->num_marco =-1;
-
+			log_error(logger,"MARCO %i",nro_marco_remplazado);
 			marco->pid = pid;
 			marco->llegada_fifo =contador_fifo;
 			marco->last_time_lru =0;
@@ -897,7 +896,6 @@ bool pagina_esta_en_memoria(int pid, int nro_pagina){
 }
 void actualizar_marcos_lru(){
 	t_list_iterator* iterador = list_iterator_create(memoria->marcos);
-	int j =0;
 	while(list_iterator_has_next(iterador)){
 		t_marco * marco = (t_marco*)list_iterator_next(iterador);
 		if(!marco->is_free){
@@ -952,10 +950,12 @@ int ejecutar_fifo(){
 int ejecutar_lru(){
 	t_list_iterator* iterador = list_iterator_create(memoria->marcos);
 	int tiempo = 0;
-	int nro_marco;
+	int nro_marco =-1;
 	while(list_iterator_has_next(iterador)){
 		t_marco * marco = (t_marco*)list_iterator_next(iterador);
+		log_error(logger, "a comparar marco %i tiempo lru : %i ",marco->num_marco,marco->last_time_lru);
 		if(!marco->is_free && (marco->last_time_lru > tiempo)){
+			log_error(logger, "marco %i tiempo lru : %i ",marco->num_marco,marco->last_time_lru);
 			tiempo = marco->last_time_lru;
 			nro_marco = marco->num_marco;
 		}

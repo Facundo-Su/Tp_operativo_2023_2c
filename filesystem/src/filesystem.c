@@ -192,6 +192,7 @@ void obtener_configuracion() {
 	ruta_fcbs=malloc(strlen(aux_fcb)+2);
 	strcpy(ruta_fcbs,aux_fcb);
 	strcat(ruta_fcbs,"/");
+	log_info(logger_file_system,"ruta : %s",ruta_fcbs);
 
 
 	ruta_bloques = config_get_string_value(config_file_system, "PATH_BLOQUES");
@@ -342,6 +343,10 @@ void* procesar_conexion2(void* conexion1) {
 		case RESPUESTA_F_READ:
 			lista = recibir_paquete(cliente_fd);
 			sem_post(&sem_cont_lectura);
+			break;
+		case FINALIZAR_PROGRAMA:
+			recibir_mensaje(cliente_fd);
+			exit(1);
 			break;
 		default:
 			log_warning(logger,

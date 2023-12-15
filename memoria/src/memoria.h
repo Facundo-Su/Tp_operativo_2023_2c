@@ -112,5 +112,6 @@ t_pagina * obtener_pagina(int,int );
 void generar_conexion_fs();
 void procesar_conexion_prueba(void *);
 t_pagina * obtener_pagina_en_marco(int ,int );
+int ejecutar_lru();
 #endif /* KERNEL_H_ */
 

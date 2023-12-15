@@ -127,6 +127,10 @@ void procesar_conexion(void *conexion1){
 			ejecutar_ciclo_de_instruccion(cliente_fd);
 
 			break;
+		case FINALIZAR_PROGRAMA:
+			recibir_mensaje(cliente_fd);
+			exit(1);
+			break;
 		case CPU_ENVIA_A_MEMORIA:
 			enviar_mensaje("hola capo", conexion_memoria);
 			break;
