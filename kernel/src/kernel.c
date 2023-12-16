@@ -56,7 +56,7 @@ void procesar_conexion(void *conexion1){
 			pcb_aux->tabla_archivo_abierto =pcb_aux2->tabla_archivo_abierto;
 
 			//log_info(logger,"recibi el pcb");
-			//log_pcb_info(pcb_aux);
+			log_pcb_info(pcb_aux);
 			recv(cliente_fd,&cod_op,sizeof(op_code),0);
 			switch(cod_op){
 			case EJECUTAR_SLEEP:
@@ -108,6 +108,9 @@ void procesar_conexion(void *conexion1){
 			    paquete = recibir_paquete(cliente_fd);
 			    char* nombre_archivo = list_get(paquete,0);
 			    char* modo_apertura = list_get(paquete,1);
+			    if(pcb_aux->tabla_archivo_abierto == NULL){
+			    	log_error(logger,"el archivo no existe");
+			    }
 			    ejecutar_fopen(nombre_archivo, modo_apertura, pcb_aux);
 
 			    break;
@@ -641,6 +644,7 @@ void *ejecutar_sleep(void *arg) {
     return NULL;
 }
 void ejecutar_fseek(char * nombre ,int posicion,t_pcb * pcb){
+	log_warning(logger,"el pcb es %i",pcb->pid);
 	t_list_iterator* iterador = list_iterator_create(pcb->tabla_archivo_abierto);
 	while(list_iterator_has_next(iterador)){
 		t_archivo_pcb* archivo = (t_archivo_pcb*)list_iterator_next(iterador);

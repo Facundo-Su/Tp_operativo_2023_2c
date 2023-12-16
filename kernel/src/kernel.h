@@ -20,7 +20,7 @@ int conexion_cpu;
 int conexion_cpu_interrupt;
 char ** recursos_config;
 char ** instancias_recursos_config;
-
+sem_t mutex_kernel;
 
 
 //estructura de algoritmo
