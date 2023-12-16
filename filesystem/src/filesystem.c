@@ -1038,7 +1038,7 @@ void escribir_bloque_swap(int puntero,void *a_escribir) {
 }
 void poner_bloq_swap_reservado(uint32_t num_bloque) {
 	//log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
-	int marca_reservado=64;
+	int marca_reservado=0;
 
 	void* buffer_bloque=fs->bloques;
 	usleep(retardo_acceso_bloq*1000);
