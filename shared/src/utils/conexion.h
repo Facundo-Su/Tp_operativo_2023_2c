@@ -118,7 +118,7 @@ typedef struct{
 	int pid;
 	int prioridad;
 	t_contexto_ejecucion* contexto;
-	t_list* tabla_archivo_abierto;
+	//t_list* tabla_archivo_abierto;
 	t_estado estado;
 }t_pcb;
 

@@ -14,6 +14,7 @@ int main(int argc, char **argv){
     iniciar_recurso();
 	generar_conexion();
     lista_recursos = list_create();
+    cola_ready = queue_create();
     int i =0;
     while(recursos_config[i]!=NULL){
     	t_recurso* recurso = malloc(sizeof(t_recurso));
@@ -52,9 +53,9 @@ void procesar_conexion(void *conexion1){
 		case RECIBIR_PCB:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
-			t_pcb* pcb_aux2=list_get(pcb_en_ejecucion,0);
-			pcb_aux->tabla_archivo_abierto =pcb_aux2->tabla_archivo_abierto;
-
+//			t_pcb* pcb_aux=list_get(pcb_en_ejecucion,0);
+//			pcb_aux->contexto = pcb_aux2->contexto;
+//			pcb_aux->estado = pcb_aux2->estado;
 			//log_info(logger,"recibi el pcb");
 			//log_pcb_info(pcb_aux);
 			recv(cliente_fd,&cod_op,sizeof(op_code),0);
@@ -62,15 +63,15 @@ void procesar_conexion(void *conexion1){
 			case EJECUTAR_SLEEP:
 				paquete = recibir_paquete(cliente_fd);
 				int *tiempo = list_get(paquete,0);
-				list_remove(pcb_en_ejecucion,0);
-				sem_post(&contador_ejecutando_cpu);
-				sem_post(&contador_cola_ready);
 				pthread_t hilo_sleep;
 				t_datos_sleep *datos = malloc(sizeof(t_datos_sleep));
 				log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb_aux->pid);
 				log_info(logger,"PID: %i - Bloqueado por: SLEEP",pcb_aux->pid);
 				pcb_aux->estado = WAITING;
 				list_add(lista_sleep,pcb_aux);
+				list_remove(pcb_en_ejecucion,0);
+				sem_post(&contador_ejecutando_cpu);
+				sem_post(&contador_cola_ready);
 				datos->pcb = pcb_aux;
 				datos->tiempo = *tiempo;
 				pthread_create(&hilo_sleep, NULL, ejecutar_sleep, datos);
@@ -304,21 +305,22 @@ void ejecutar_truncate(t_truncate_manejar* aux){
     log_info(logger ,"PID: %i - Bloqueado por: %s",aux->pcb_truncate->pid,aux->nombre_archivo);
     aux->pcb_truncate->estado = WAITING;
     queue_push(cola_bloqueado_fs,aux->pcb_truncate);
-    list_remove(pcb_en_ejecucion,0);
-    sem_post(&contador_ejecutando_cpu);
+
     t_archivo* archivo= buscar_en_tabla_archivo_general(aux->nombre_archivo);
     archivo->tamanio = aux->tamanio;
 	t_pcb * pcb_5 = queue_pop(cola_bloqueado_fs);
 	agregar_a_cola_ready(pcb_5);
     sem_post(&contador_cola_ready);
+    list_remove(pcb_en_ejecucion,0);
+    sem_post(&contador_ejecutando_cpu);
 }
 
 t_archivo_pcb* buscar_archivo_pcb(char *nombre, t_pcb *pcb){
-	t_list_iterator* iterador = list_iterator_create(pcb->tabla_archivo_abierto);
+	t_list_iterator* iterador = list_iterator_create(tabla_archivos_abiertos_pcb);
 		while(list_iterator_has_next(iterador)){
 			t_archivo_pcb* archivo = (t_archivo_pcb*)list_iterator_next(iterador);
-			log_info(logger ,"%s",archivo->nombre);
-			if(strcmp(nombre,archivo->nombre) == 0){
+			//log_info(logger ,"%s",archivo->nombre);
+			if((strcmp(nombre,archivo->nombre) == 0) && pcb->pid == archivo->pid){
 					list_iterator_destroy(iterador);
 					return archivo;
 			}
@@ -342,8 +344,6 @@ void ejecutar_fwrite(t_escritura_enviar_fs *escrit_aux){
 		log_info(logger ,"PID: %i - Bloqueado por: %s",escrit_aux-> pcb_aux->pid,escrit_aux->nombre_archivo);
 		escrit_aux-> pcb_aux->estado = WAITING;
 		queue_push(cola_bloqueado_fs,escrit_aux-> pcb_aux);
-		list_remove(pcb_en_ejecucion,0);
-		sem_post(&contador_ejecutando_cpu);
 		int conex_fs_aux = crear_conexion(ip_filesystem, puerto_filesystem);
 		enviar_fwrite_fs(escrit_aux->nombre_archivo,escrit_aux->direccion_fisica,puntero,escrit_aux-> pcb_aux->pid,conex_fs_aux);
 		int cop;
@@ -357,10 +357,12 @@ void ejecutar_fwrite(t_escritura_enviar_fs *escrit_aux){
 			//TODO descomente esto y funciona
 		t_pcb * pcb_5 = queue_pop(cola_bloqueado_fs);
 		agregar_a_cola_ready(pcb_5);
+		sem_post(&contador_cola_ready);
+		list_remove(pcb_en_ejecucion,0);
+		sem_post(&contador_ejecutando_cpu);
 	//close(escrit_aux->socket_fs);
 
 
-		sem_post(&contador_cola_ready);
 	}
 
 }
@@ -384,8 +386,7 @@ void ejecutar_fread(t_lectura_enviar_fs* aux){
 	aux->pcb_aux->estado = WAITING;
 
 	queue_push(cola_bloqueado_fs,aux->pcb_aux);
-	list_remove(pcb_en_ejecucion,0);
-	sem_post(&contador_ejecutando_cpu);
+
 
 
     int conex_fs_aux = crear_conexion(ip_filesystem, puerto_filesystem);
@@ -404,6 +405,8 @@ void ejecutar_fread(t_lectura_enviar_fs* aux){
 	agregar_a_cola_ready(pcb_5);
 	//close(escrit_aux->socket_fs);
 	sem_post(&contador_cola_ready);
+	list_remove(pcb_en_ejecucion,0);
+	sem_post(&contador_ejecutando_cpu);
 	//list_remove(pcb_en_ejecucion,0);
 	//sem_post(&contador_ejecutando_cpu);
 	//sem_post(&contador_cola_ready);
@@ -504,7 +507,8 @@ void crear_entrada_archivo_pcb(char * nombre,char * modo_apertura,t_pcb * pcb){
 	archivo->nombre = nombre;
 	archivo->modo= modo_apertura;
 	archivo->puntero = 0;
-	list_add(pcb->tabla_archivo_abierto, archivo);
+	archivo->pid = pcb->pid;
+	list_add(tabla_archivos_abiertos_pcb, archivo);
 }
 
 void enviar_fcreate(char* nombre,int socket){
@@ -541,12 +545,12 @@ void ejecutar_fopen(char* nombre_archivo, char* modo_apertura, t_pcb* pcb) {
 			log_info(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
 			log_error(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
 			queue_push(archivo->cola_bloqueados  ,pcb);
+			sem_post(&contador_cola_ready);
 			pcb->contexto->pc--;
 			if(!list_is_empty(pcb_en_ejecucion)){
 				list_remove(pcb_en_ejecucion,0);
 			}
 			sem_post(&contador_ejecutando_cpu);
-			sem_post(&contador_cola_ready);
         } else {
             pthread_rwlock_wrlock(&(archivo->lock));
             archivo->lock_escritura_activo = true;
@@ -574,7 +578,6 @@ void ejecutar_fclose(char* nombre_archivo, t_pcb* pcb) {
         t_pcb* pcb_bloqueado = queue_pop(archivo->cola_bloqueados);
         agregar_a_cola_ready(pcb_bloqueado);
         sem_post(&contador_cola_ready);
-        sem_post(&contador_ejecutando_cpu);
     }
 
     if (archivo->contador_lectura == 0 && !archivo->lock_escritura_activo && queue_is_empty(archivo->cola_bloqueados)) {
@@ -584,10 +587,10 @@ void ejecutar_fclose(char* nombre_archivo, t_pcb* pcb) {
 
 }
 bool archivo_abierto_para_lectura(t_archivo* archivo, t_pcb* pcb) {
-    for (int i = 0; i < list_size(pcb->tabla_archivo_abierto); i++) {
-        t_archivo_pcb* archivo_pcb = list_get(pcb->tabla_archivo_abierto, i);
+    for (int i = 0; i < list_size(tabla_archivos_abiertos_pcb); i++) {
+        t_archivo_pcb* archivo_pcb = list_get(tabla_archivos_abiertos_pcb, i);
         if (strcmp(archivo_pcb->nombre, archivo->nombre_archivo) == 0 &&
-        		strcmp(archivo_pcb->modo, "R") == 0){
+        		strcmp(archivo_pcb->modo, "R") == 0 && pcb->pid == archivo_pcb->pid){
             return true;
         }
     }
@@ -595,25 +598,25 @@ bool archivo_abierto_para_lectura(t_archivo* archivo, t_pcb* pcb) {
 }
 
 bool archivo_abierto_para_escritura(t_archivo* archivo, t_pcb* pcb) {
-    for (int i = 0; i < list_size(pcb->tabla_archivo_abierto); i++) {
-        t_archivo_pcb* archivo_pcb = list_get(pcb->tabla_archivo_abierto, i);
+    for (int i = 0; i < list_size(tabla_archivos_abiertos_pcb); i++) {
+        t_archivo_pcb* archivo_pcb = list_get(tabla_archivos_abiertos_pcb, i);
         if (strcmp(archivo_pcb->nombre, archivo->nombre_archivo) == 0 &&
-        		strcmp(archivo_pcb->modo,"W") == 0){
+        		strcmp(archivo_pcb->modo,"W") == 0 && pcb->pid == archivo_pcb->pid){
             return true;
         }
     }
     return false;
 }
 void eliminar_entrada_pcb (t_pcb * pcb, char * nombre){
-	t_list_iterator* iterador = list_iterator_create(pcb->tabla_archivo_abierto);
+	t_list_iterator* iterador = list_iterator_create(tabla_archivos_abiertos_pcb);
 	t_archivo_pcb* aux;
 		while(list_iterator_has_next(iterador)){
 			t_archivo_pcb* archivo = (t_archivo_pcb*)list_iterator_next(iterador);
-			if(strcmp(nombre,archivo->nombre) == 0){
+			if(strcmp(nombre,archivo->nombre) == 0 && pcb->pid == archivo->pid){
 				aux = archivo;
 			}
 		}
-		list_remove_element(pcb->tabla_archivo_abierto,aux);
+		list_remove_element(tabla_archivos_abiertos_pcb,aux);
 		free(aux);
 		list_iterator_destroy(iterador);
 }
@@ -641,10 +644,11 @@ void *ejecutar_sleep(void *arg) {
     return NULL;
 }
 void ejecutar_fseek(char * nombre ,int posicion,t_pcb * pcb){
-	t_list_iterator* iterador = list_iterator_create(pcb->tabla_archivo_abierto);
+	//log_info(logger,"%i",list_size(pcb->tabla_archivo_abierto));
+	t_list_iterator* iterador = list_iterator_create(tabla_archivos_abiertos_pcb);
 	while(list_iterator_has_next(iterador)){
 		t_archivo_pcb* archivo = (t_archivo_pcb*)list_iterator_next(iterador);
-		if(strcmp(nombre,archivo->nombre) == 0){
+		if(strcmp(nombre,archivo->nombre) == 0 && pcb->pid == archivo->pid){
 			archivo->puntero = posicion;
 			//log_error(logger, "%i", archivo->puntero);
 		}
@@ -846,16 +850,16 @@ char * listar_procesos_bloqueados_archivos(){
 void iniciar_recurso(){
 	lista_pcb=list_create();
 	cola_new = queue_create();
-	cola_ready = queue_create();
 	cola_bloqueado_fs = queue_create();
 	pcb_en_ejecucion = list_create();
     lista_recursos_pcb = list_create();
     list_bloqueado_page_fault = queue_create();
     lista_sleep = list_create();
+    tabla_archivos_abiertos_pcb = list_create();
 	//TODO cambiar por grado init
 	sem_init(&grado_multiprogramacion, 0, grado_multiprogramacion_ini);
 	sem_init(&mutex_cola_new, 0, 1);
-	sem_init(&contador_ejecutando_cpu,0,1);
+	sem_init(&contador_ejecutando_cpu,0,0);
 	sem_init(&mutex_cola_ready,0,1);
 	sem_init(&contador_agregando_new,0,0);
 	sem_init(&contador_cola_ready,0,0);
@@ -922,7 +926,7 @@ void crear_pcb(int prioridad){
 	pcb->prioridad = prioridad;
 	t_contexto_ejecucion* contexto = crear_contexto();
 	pcb->contexto =contexto;
-	pcb->tabla_archivo_abierto = list_create();
+	//pcb->tabla_archivo_abierto = list_create();
 	contador_pid++;
 	//log_pcb_info(pcb);
 	log_info(logger_consola,"Se crea el proceso %i en NEW",pcb->pid);
@@ -1004,18 +1008,17 @@ void planificador_corto_plazo(){
 		//sem_wait(&contador_ejecutando_cpu);
 		switch(planificador){
 		case FIFO:
-			if(!queue_is_empty(cola_ready)){
+			//if(!queue_is_empty(cola_ready)){
 				sem_wait(&contador_ejecutando_cpu);
 				de_ready_a_fifo();
-			}
+			//}
 			break;
 		case RR:
-			if(!queue_is_empty(cola_ready)){
 				sem_wait(&contador_ejecutando_cpu);
 				de_ready_a_round_robin();
-			}
 			break;
 		case PRIORIDADES:
+
 			de_ready_a_prioridades();
 			break;
 		}
@@ -1038,23 +1041,21 @@ void de_ready_a_round_robin(){
 
 
 void de_ready_a_prioridades(){
-
 	if(!queue_is_empty(cola_ready)){
-
-    list_sort(cola_ready->elements,comparador_prioridades);
+		list_sort(cola_ready->elements,comparador_prioridades);
     t_pcb* pcb_a_comparar_prioridad = queue_peek(cola_ready);
 
     if(list_is_empty(pcb_en_ejecucion)){
-    	sem_wait(&contador_ejecutando_cpu);
         list_sort(cola_ready->elements,comparador_prioridades);
+        sem_wait(&contador_ejecutando_cpu);
 		de_ready_a_fifo();
     }else{
     		t_pcb* pcb_aux = list_get(pcb_en_ejecucion,0);
     		if(pcb_aux->prioridad>pcb_a_comparar_prioridad->prioridad){
     	        enviar_mensaje_instrucciones("kernel a interrupt", conexion_cpu_interrupt,ENVIAR_DESALOJAR);
     	        sem_wait(&proceso_desalojo);
-    	        sem_post(&contador_cola_ready);
     		}
+    		sem_wait(&cola_ready);
 		}
     }
 }
@@ -1094,7 +1095,7 @@ t_contexto_ejecucion* obtener_contexto(char* archivo){
 
 
 void liberarMemoriaPcb(t_pcb* pcbABorrar){
-		list_destroy(pcbABorrar->tabla_archivo_abierto);
+		//list_destroy(pcbABorrar->tabla_archivo_abierto);
 		free(pcbABorrar->contexto);
 		free(pcbABorrar);
 }
@@ -1105,6 +1106,7 @@ void iniciar_planificacion(){
 	pthread_t * hilo_corto_plazo;
 	pthread_t * hilo_largo_plazo;
 	sem_post(&sem_pausa_corto_plazo);
+	sem_post(&contador_ejecutando_cpu);
 //	if(detenido){
 //		sem_post(&contador_agregando_new);
 //		sem_post(&contador_ejecutando_cpu);
@@ -1384,7 +1386,6 @@ void terminar_proceso(t_pcb * pcb){
 	if(!list_is_empty(pcb_en_ejecucion)){
 		list_remove(pcb_en_ejecucion,0);
 	}
-	sem_post(&contador_cola_ready);
 	sem_post(&contador_ejecutando_cpu);
 	sem_post(&grado_multiprogramacion);
 }

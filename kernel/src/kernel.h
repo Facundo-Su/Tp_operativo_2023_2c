@@ -77,6 +77,7 @@ typedef struct{
 	char*nombre;
 	int puntero;
 	char * modo;
+	int pid;
 }t_archivo_pcb;
 
 typedef struct{
@@ -118,7 +119,7 @@ t_queue* cola_ejecucion;
 t_list *lista_recursos;
 t_queue * cola_bloqueado_fs;
 t_list * pcb_en_ejecucion;
-
+t_list * tabla_archivos_abiertos_pcb;
 
 
 //SEMAFORO=================================================================================================

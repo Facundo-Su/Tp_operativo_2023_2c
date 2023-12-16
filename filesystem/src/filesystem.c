@@ -407,13 +407,11 @@ void* procesar_conexion(void* conexion1) {
 			int *pid_f_read = list_get(lista,3);
 
 			log_info(logger_file_system	, "Leer Archivo: < %s > - Puntero: < %i > - Memoria: <%i>",nombre_arc,*puntero,*direccionFisica);
-			conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
 			int conexion_memoria_leer= crear_conexion(ip_memoria, puerto_memoria);
 
 			void*leido=leer_archivo_bloques_fat(*puntero, nombre_arc);
 
-			enviar_leer_memoria(*direccion,leido,conexion_memoria,*pid_f_read,conexion_memoria_leer);
-
+			enviar_leer_memoria(*direccion,leido,*pid_f_read,conexion_memoria_leer);
 			int cop;
 			recv(conexion_memoria_leer, &cop, sizeof(cop), 0);
 			log_info(logger,"recibi el codigo de operacion %i",cop);
@@ -597,7 +595,7 @@ void enviar_direccion_memoria(int direccionFisica, int conexion_memoria ,int pid
 	enviar_paquete(paquete, conexion_memoria);
 	eliminar_paquete(paquete);
 }
-void enviar_leer_memoria(int direccion,void*leido ,int conexion_memoria,int pid_f_read,int cliente_fd){
+void enviar_leer_memoria(int direccion,void*leido,int pid_f_read,int cliente_fd){
 	//TODO NO ES NECESARIO EL PID, modificar en memoria
 	t_paquete* paquete=crear_paquete(LEER_ARCHIVO);
 	agregar_a_paquete(paquete,&direccion,sizeof(int));
