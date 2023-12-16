@@ -65,6 +65,11 @@ typedef struct{
 	int socket;
 }t_estructura_f_open;
 
+typedef struct{
+	int cant_bloque;
+	int cliente_fd;
+}t_iniciar_proceso;
+
 
 
 void manejo_fwrite(t_estructura_f_write* );
@@ -96,7 +101,7 @@ void inicializar_fat();
 
 void inicializar_fcb();
 void inicializar_fs();
-
+void iniciar_proceso2(t_iniciar_proceso * );
 
 t_fcb* devolver_fcb(char* nombre);
 char* recibir_nombre_archivo(int socket_cliente);

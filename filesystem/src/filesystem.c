@@ -322,8 +322,13 @@ void* procesar_conexion2(void* conexion1) {
 			lista = recibir_paquete(cliente_fd);
 			int *cant_bloq = list_get(lista,0);
 			log_info(logger_file_system, "Cantidad de bloques swap a reservar %i",*cant_bloq);
-			t_list *lista_asignados = iniciar_proceso(*cant_bloq);
-			enviar_bloques_asignados_swap(lista_asignados,cliente_fd);
+			t_iniciar_proceso* iniciar= malloc(sizeof(t_iniciar_proceso));
+			iniciar->cant_bloque =*cant_bloq;
+			iniciar->cliente_fd = cliente_fd;
+
+			pthread_t hilo_iniciar_proceso;
+		    pthread_create(&hilo_iniciar_proceso, NULL,iniciar_proceso2, iniciar);
+		    pthread_detach(hilo_iniciar_proceso);
 			break;
 		case FINALIZAR_PROCESO:
 			lista=recibir_paquete(cliente_fd);
@@ -355,6 +360,10 @@ void* procesar_conexion2(void* conexion1) {
 	}
 }
 
+void iniciar_proceso2(t_iniciar_proceso * iniciar){
+	t_list *lista_asignados = iniciar_proceso(iniciar->cant_bloque);
+	enviar_bloques_asignados_swap(lista_asignados,iniciar->cliente_fd);
+}
 
 
 // cada hilo creado ejecuta connection_handler

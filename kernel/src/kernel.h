@@ -21,17 +21,18 @@ int conexion_cpu_interrupt;
 char ** recursos_config;
 char ** instancias_recursos_config;
 sem_t mutex_kernel;
-
+t_list* tabla_archivos_abiertos_pcb;
 
 //estructura de algoritmo
 bool detener;
+sem_t semaforo_quantum;
 
 typedef enum{
 	FIFO,
 	RR,
 	PRIORIDADES
 }t_planificador;
-
+void *interrupcion_quantum();
 typedef struct{
 	t_pcb * pcb;
 	int tiempo;
@@ -71,12 +72,14 @@ typedef struct{
 	pthread_rwlock_t lock;
 	t_queue* cola_bloqueados;
 	int tamanio;
+
 }t_archivo;
 
 typedef struct{
 	char*nombre;
 	int puntero;
 	char * modo;
+	int pid;
 }t_archivo_pcb;
 
 typedef struct{

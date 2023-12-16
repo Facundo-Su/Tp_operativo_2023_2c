@@ -359,12 +359,6 @@ void log_pcb_info(t_pcb* pcb_aux) {
         log_info(logger, "    BX: %u", pcb_aux->contexto->registros_cpu->bx);
         log_info(logger, "    CX: %u", pcb_aux->contexto->registros_cpu->cx);
         log_info(logger, "    DX: %u", pcb_aux->contexto->registros_cpu->dx);
-        if(!pcb_aux->tabla_archivo_abierto ==NULL){
-        	 log_warning(logger," la cantidad de tabla que abrio es %i",list_size(pcb_aux->tabla_archivo_abierto));
-        }else{
-        	log_error(logger,"la lista me la chorrearon");
-        }
-
         /*int c= list_size(pcb_aux->recursos);
         log_info(logger, "Recursos:");
         for(int i=0; i<c;i++){
