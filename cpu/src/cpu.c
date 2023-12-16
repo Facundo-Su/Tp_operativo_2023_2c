@@ -8,13 +8,11 @@ int main(int argc, char* argv[]) {
 	config = cargar_config(rutaConfig);
 
     logger = log_create("./cpu.log", "CPU", true, LOG_LEVEL_INFO);
-    log_info(logger, "Soy la cpu!");
 
     //iniciar configuraciones
 	 obtener_configuracion();
 	 iniciar_recurso();
 	//iniciar_consola();
-	log_info(logger_consola_cpu, "se inicio el servidor\n");
 	pthread_t servidor_interrupt;
 	pthread_t servidor_dispatch;
 	pthread_create(&servidor_interrupt,NULL,(void*)iniciar_servidor_interrupt,(void *) puerto_escucha_interrupt);
@@ -44,7 +42,7 @@ void iniciar_recurso(){
 
 void iniciar_servidor_interrupt(char * puerto){
 	int cpu_interrupt_fd = iniciar_servidor(puerto);
-	log_info(logger, "Servidor listo para recibir al cliente");
+
 
 	int cliente_fd = esperar_cliente(cpu_interrupt_fd);
 		t_list* lista;
@@ -62,18 +60,17 @@ void iniciar_servidor_interrupt(char * puerto){
 			case ENVIAR_DESALOJAR:
 				recibir_mensaje(cliente_fd);
 				hay_desalojo = true;
-				log_error(logger, "Instruccion DESALOJAR");
 				break;
 			case ENVIAR_FINALIZAR:
 				recibir_mensaje(cliente_fd);
 				hay_finalizar= true;
 				break;
 			case -1:
-				log_error(logger, "el cliente se desconecto. Terminando servidor");
+
 				close(cliente_fd);
 				return;
 			default:
-				log_warning(logger,"Operacion desconocida. No quieras meter la pata");
+				//log_warning(logger,"Operacion desconocida. No quieras meter la pata");
 				break;
 			}
 		}
@@ -116,7 +113,6 @@ void procesar_conexion(void *conexion1){
 			//TODO
 			//preguntar porque si lo meto dentro de una funcion no me reconoce
 		case RECIBIR_PCB:
-			log_info(logger, "Estoy por recibir un PCB");
 			t_list * paquete = recibir_paquete(cliente_fd);
 			pcb = desempaquetar_pcb(paquete);
 			//recibir_pcb(cliente_fd);
@@ -167,12 +163,12 @@ void procesar_conexion(void *conexion1){
 			sem_post(&respuesta_ok_mov_out);
 			break;
 		case -1:
-			log_error(logger, "el cliente se desconecto. Terminando servidor");
+			//log_error(logger, "el cliente se desconecto. Terminando servidor");
 			close(cliente_fd);
 			return;
 		default:
 			//log_info(logger,"hola pepe");
-			log_warning(logger,"Operacion desconocida. No quieras meter la pata");
+			//log_warning(logger,"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
 	}
@@ -182,7 +178,7 @@ void procesar_conexion(void *conexion1){
 void transformar_en_instrucciones(char* auxiliar){
 	instruccion_a_realizar->parametros= list_create();
 	int cantidad_parametros=0;
-	log_error(logger,"el valor recibido es %s",auxiliar);
+
 	char** instruccion_parseada = parsear_instruccion(auxiliar);
 
 	        if (strcmp(instruccion_parseada[0], "SET") == 0) {
@@ -315,10 +311,10 @@ void obtener_configuracion(){
 void iniciar_servidor_cpu(char *puerto){
 
 	int cpu_fd = iniciar_servidor(puerto);
-	log_info(logger, "Servidor listo para recibir al cliente");
+
 	generar_conexion_memoria();
 
-	log_info(logger, "genere conexion con memoria");
+
 
 	while(1){
 	    int cliente_fd = esperar_cliente(cpu_fd);
@@ -329,7 +325,6 @@ void iniciar_servidor_cpu(char *puerto){
 }
 
 void generar_conexion_memoria(){
-	log_info(logger_consola_cpu, "generar conexion con memoria\n");
 	pthread_t conexion_memoria_hilo_cpu;
 	conexion_memoria = crear_conexion(ip_memoria, puerto_memoria);
 	pthread_create(&conexion_memoria_hilo_cpu,NULL,(void*) procesar_conexion,(void *)&conexion_memoria);
@@ -482,14 +477,12 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		    	valor_destino = pcb->contexto->registros_cpu->bx;
 		    } else if (registro_aux == CX) {
 		    	valor_destino = pcb->contexto->registros_cpu->cx;
-		    	 log_error(logger,"el valor del destino  %u ",pcb->contexto->registros_cpu->cx);
 		    } else if (registro_aux == DX) {
 		    	valor_destino = pcb->contexto->registros_cpu->dx;
 		    }
 
 		    if (registro_aux2 == AX) {
 		    	valor_origen = pcb->contexto->registros_cpu->ax;
-		    	log_error(logger,"el valor del ORIGEN  %u ",pcb->contexto->registros_cpu->ax);
 		    } else if (registro_aux2 == BX) {
 		    	valor_origen = pcb->contexto->registros_cpu->bx;
 		    } else if (registro_aux2 == CX) {
@@ -637,7 +630,6 @@ void decode(t_instruccion* instrucciones,int cliente_fd){
 		break;
 	case F_OPEN:
 		hayInterrupcion = true;
-		log_info(logger_consola_cpu,"entendi el mensaje F_OPEN");
 		parametro= list_get(instrucciones->parametros,0);
 		parametro2= list_get(instrucciones->parametros,1);
 		parametro = strtok(parametro, "\n");
@@ -889,14 +881,14 @@ void restar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
     	valor_destino = pcb->contexto->registros_cpu->bx;
     } else if (destino == CX) {
     	valor_destino = pcb->contexto->registros_cpu->cx;
-    	 log_error(logger,"el valor del destino  %u ",pcb->contexto->registros_cpu->cx);
+    	 //log_error(logger,"el valor del destino  %u ",pcb->contexto->registros_cpu->cx);
     } else if (destino == DX) {
     	valor_destino = pcb->contexto->registros_cpu->dx;
     }
 
     if (origen == AX) {
     	valor_origen = pcb->contexto->registros_cpu->ax;
-    	log_error(logger,"el valor del ORIGEN  %u ",pcb->contexto->registros_cpu->ax);
+    	//log_error(logger,"el valor del ORIGEN  %u ",pcb->contexto->registros_cpu->ax);
     } else if (origen == BX) {
     	valor_origen = pcb->contexto->registros_cpu->bx;
     } else if (origen == CX) {
@@ -915,7 +907,7 @@ void restar(t_estrucutra_cpu destino, t_estrucutra_cpu origen) {
     } else if (destino == DX) {
     	pcb->contexto->registros_cpu->dx = resultado;
     }
-    log_error(logger,"el valor del destino  %u - valor de origen %u es = %u",valor_destino,valor_origen,resultado);
+    //log_error(logger,"el valor del destino  %u - valor de origen %u es = %u",valor_destino,valor_origen,resultado);
     //setear(destino, resultado);
 }
 
@@ -948,9 +940,9 @@ void iterator(char* value) {
 }
 
 void imprimir_valores_registros(t_registro_cpu* registros) {
-    log_info(logger, "Valor de AX: %u", registros->ax);
-    log_info(logger, "Valor de BX: %u", registros->bx);
-    log_info(logger, "Valor de CX: %u", registros->cx);
-    log_info(logger, "Valor de DX: %u", registros->dx);
+//    log_info(logger, "Valor de AX: %u", registros->ax);
+//    log_info(logger, "Valor de BX: %u", registros->bx);
+//    log_info(logger, "Valor de CX: %u", registros->cx);
+//    log_info(logger, "Valor de DX: %u", registros->dx);
 }
 

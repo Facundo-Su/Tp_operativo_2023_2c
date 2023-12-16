@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
 
     logger = log_create("memoria.log", "Memoria", 1, LOG_LEVEL_DEBUG);
 
-    log_info(logger, "Soy el Memoria!");
+    //log_info(logger, "Soy el Memoria!");
 
     //iniciar_consola();
 	iniciar_servidor_memoria(puerto_escucha);
@@ -49,15 +49,15 @@ void iniciar_consola(){
 		valor = readline("<");
 		switch (*valor) {
 			case '1':
-				log_info(logger_consola_memoria, "generar conexion con filesystem\n");
+				//log_info(logger_consola_memoria, "generar conexion con filesystem\n");
 				conexion_filesystem = crear_conexion(ip_file_system, puerto_filesystem);
 				break;
 			case '2':
-				log_info(logger_consola_memoria, "enviar mensaje a memoria\n");
+				//log_info(logger_consola_memoria, "enviar mensaje a memoria\n");
 				enviar_mensaje("memoria a fylesystem", conexion_filesystem);
 				break;
 			case '3':
-				log_info(logger_consola_memoria, "se inicio el servidor\n");
+				//log_info(logger_consola_memoria, "se inicio el servidor\n");
 				pthread_t hilo_aux;
 				pthread_create(&hilo_aux,NULL,(void*) iniciar_servidor_memoria,(void*)puerto_escucha);
 
@@ -68,8 +68,8 @@ void iniciar_consola(){
 				FILE * archivo = fopen(ruta,"r");
 
 				t_list* lista_aux_prueba =leer_pseudocodigo(archivo);
-				log_info(logger_consola_memoria, "hola\n");
-				log_info(logger_consola_memoria,"el resultado final de la lista es %i",list_size(lista_aux_prueba));
+//				log_info(logger_consola_memoria, "hola\n");
+//				log_info(logger_consola_memoria,"el resultado final de la lista es %i",list_size(lista_aux_prueba));
 
 				t_instruccion * inst_prueba = list_get(lista_aux_prueba,0);
 				char* valor_prueba = list_get(inst_prueba->parametros,0);
@@ -77,7 +77,7 @@ void iniciar_consola(){
 				//log_info(logger_consola_memoria,"el pid es ");
 				break;
 			default:
-				log_info(logger_consola_memoria,"no corresponde a ninguno");
+				//log_info(logger_consola_memoria,"no corresponde a ninguno");
 				exit(2);
 		}
 		free(valor);
@@ -110,14 +110,14 @@ void asignar_algoritmo(char *algoritmo_config){
 	} else if (strcmp(algoritmo_config, "LRU") == 0) {
 		algoritmo = LRU;
 	}else{
-		log_error(logger, "El algoritmo no es valido");
+		//log_error(logger, "El algoritmo no es valido");
 	}
 }
 
 void iniciar_servidor_memoria(char *puerto) {
 
     int memoria_fd = iniciar_servidor(puerto);
-    log_info(logger, "Servidor listo para recibir al cliente");
+   // log_info(logger, "Servidor listo para recibir al cliente");
 
     generar_conexion_fs();
     while (1) {
@@ -130,7 +130,7 @@ void iniciar_servidor_memoria(char *puerto) {
 }
 
 void generar_conexion_fs(){
-	log_info(logger, "generar conexion con fs\n");
+	//log_info(logger, "generar conexion con fs\n");
 	pthread_t conexion_memoria_hilo_cpu;
 	conexion_filesystem = crear_conexion(ip_file_system, puerto_filesystem);
 	pthread_create(&conexion_memoria_hilo_cpu,NULL,(void*) procesar_conexion,(void *)&conexion_filesystem);
@@ -172,12 +172,12 @@ void procesar_conexion(void* socket){
 	            switch (cod_op) {
 	            case MENSAJE:
 	                recibir_mensaje(cliente_fd);
-	                log_info(logger,"hola como estas capo");
+	              //  log_info(logger,"hola como estas capo");
 	                enviar_mensaje("hola", cliente_fd);
 	                break;
 	            case PAQUETE:
 	                lista = recibir_paquete(cliente_fd);
-	                log_info(logger, "Me llegaron los siguientes valores:\n");
+	               // log_info(logger, "Me llegaron los siguientes valores:\n");
 	                list_iterate(lista, (void*) iterator);
 	                break;
 	            case INICIAR_PROCESO:
@@ -193,9 +193,9 @@ void procesar_conexion(void* socket){
 					int* pid = list_get(valorRecibido,3);
 					//char *ruta = "./prueba.txt";
 					char *ruta = obtener_ruta(aux);
-	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
-	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
-//	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
+//	                log_info(logger, "Me llegaron los siguientes valores de ruta: %s",ruta);
+//	                log_info(logger, "Me llegaron los siguientes valores de size: %i",*size);
+////	                log_info(logger, "Me llegaron los siguientes valores de prioridad: %i",*prioridad);
 //	                log_info(logger, "Me llegaron los siguientes valores de pid: %i",*pid);
 
 	                cargar_lista_instruccion(ruta,size,prioridad,*pid);
@@ -224,9 +224,9 @@ void procesar_conexion(void* socket){
 	            	//asignar_marco(pid, *nro_pag_mov_in);
 	            	uint32_t *valor_leido =malloc(sizeof(uint32_t));
 	            	memcpy(valor_leido, memoria->espacio_usuario + (*marco *tam_pagina) + *desplazamiento, sizeof(uint32_t));
-	            	log_error(logger,"valor leido %u",*valor_leido);
+	            	//log_error(logger,"valor leido %u",*valor_leido);
 	            	enviar_registro_leido_mov_in(*valor_leido,ENVIO_MOV_IN,cliente_fd);
-	            	log_info(logger,"el valor leido es %u",*valor_leido);
+	            	//log_info(logger,"el valor leido es %u",*valor_leido);
 
 	            	int dir_mov_in = *marco *tam_pagina;
 	            	log_info(logger,"PID: %i- Accion: LEER - Direccion fisica: %i",marco_obtenido->pid,dir_mov_in);
@@ -271,7 +271,7 @@ void procesar_conexion(void* socket){
 	            	lista = recibir_paquete(cliente_fd);
 					int *dir_fisica_escritura = list_get(lista,0);
 					int* pid_dir_fis = list_get(lista,1);
-	            	log_error(logger,"el valor recibido de escritura es %i",*dir_fisica_escritura);
+	            	//log_error(logger,"el valor recibido de escritura es %i",*dir_fisica_escritura);
 					void * datos_write = malloc(tam_pagina);
 					memcpy(datos_write,memoria->espacio_usuario+*dir_fisica_escritura,memoria->tamanio_marcos);
 					enviar_f_write_respuesta(datos_write,cliente_fd);
@@ -307,7 +307,7 @@ void procesar_conexion(void* socket){
 
 	            	}
 	            	int valor= list_get(lista_swap,0);
-	            	log_error(logger,"el valor de swap en el direccion 0 es %i",valor);
+	            	//log_error(logger,"el valor de swap en el direccion 0 es %i",valor);
 	            	sem_post(&sem_reserva_swap);
 
 	            	break;
@@ -347,7 +347,7 @@ void procesar_conexion(void* socket){
 	    			//enviar_paquete(paquete, cliente_fd);
 	    			break;
 	    		case PAGE_FAULT:
-	    			log_info(logger,"LLEGUE PAGUE FAULT");
+	    			//log_info(logger,"LLEGUE PAGUE FAULT");
 	    			lista = recibir_paquete(cliente_fd);
 	    			int* nro_pagina = list_get(lista,0);
 	    			int* pid_page_fault = list_get(lista,1);
@@ -367,11 +367,11 @@ void procesar_conexion(void* socket){
 
 	    			break;
 	            case -1:
-	                log_error(logger, "El cliente se desconectó. Terminando servidor");
+	                //log_error(logger, "El cliente se desconectó. Terminando servidor");
 	                close(cliente_fd);
 	                return; // Salir del bucle interno para esperar un nuevo cliente
 	            default:
-	                log_warning(logger, "Operación desconocida. No quieras meter la pata");
+	               // log_warning(logger, "Operación desconocida. No quieras meter la pata");
 	                break;
 	            }
 	        }
@@ -404,7 +404,7 @@ void enviar_f_write_respuesta(void* datos_write,int cliente_fd){
 void cargar_en_espacio_memoria(int marco){
 
 	sem_wait(&contador_espera_cargar);
-	log_error(logger, "cargo datos en pagina");
+	//log_error(logger, "cargo datos en pagina");
 	memcpy(memoria->espacio_usuario + (marco * tam_pagina), &datos_obtenidos, sizeof(datos_obtenidos));
 	//log_info(logger,"datos cargados");
 	free(datos_obtenidos);
@@ -439,12 +439,12 @@ void modificar_tabla_pagina(int pid , int nro_pagina){
 
 	    if (tabla_pagina != NULL) {
 	            // Se encontró un elemento que cumple con la condición
-	            log_info(logger, "Se encontraron la talba de pagina para el PID %i", pid);
+	           // log_info(logger, "Se encontraron la talba de pagina para el PID %i", pid);
 	            t_pagina* pagina = list_get(tabla_pagina->paginas,nro_pagina);
 	            pagina->m=1;
 	        } else {
 	            // No se encontraron instrucciones que cumplan con la condición
-	            log_info(logger, "No se encontraron la pagina para el PID %i", pid);
+	            //log_info(logger, "No se encontraron la pagina para el PID %i", pid);
 	        }
 }
 
@@ -513,7 +513,7 @@ void cargar_lista_instruccion(char *ruta, int size, int prioridad, int pid) {
     FILE* archivo = fopen(ruta, "r");
 
     if (archivo == NULL) {
-        log_error(logger_consola_memoria, "El archivo %s no pudo ser abierto.", ruta);
+        //log_error(logger_consola_memoria, "El archivo %s no pudo ser abierto.", ruta);
         free(instruccion);  // Liberar la memoria asignada a instruccion
     } else {
         t_list* auxiliar = leer_pseudocodigo(archivo);
@@ -524,8 +524,8 @@ void cargar_lista_instruccion(char *ruta, int size, int prioridad, int pid) {
         t_instrucciones* instruuu = list_get(lista_instrucciones, 0);
         int cantidad2 = list_size(lista_instrucciones);
 
-        log_info(logger_consola_memoria, "La lista total total de general es %i", cantidad2);
-        log_info(logger_consola_memoria, "El valor de la pid primero es %i", instruuu->pid);
+        //log_info(logger_consola_memoria, "La lista total total de general es %i", cantidad2);
+       // log_info(logger_consola_memoria, "El valor de la pid primero es %i", instruuu->pid);
         fclose(archivo);
     }
 }
@@ -543,18 +543,18 @@ t_list* leer_pseudocodigo(FILE* pseudocodigo){
     // Recorro el archivo de pseudocodigo y parseo las instrucciones
     while (getline(&instruccion, &len, pseudocodigo) != -1){
 
-    	log_info(logger_consola_memoria,"el valor es %s" ,instruccion);
+    	//log_info(logger_consola_memoria,"el valor es %s" ,instruccion);
     	char* valor_remplazo = strdup(instruccion);
         list_add(instrucciones_del_pcb,valor_remplazo);
         char *instruc_aux_nose23 = list_get(instrucciones_del_pcb,j);
         j++;
-        log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose23);
+       // log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose23);
     }
 
     char *instruc_aux_nose = list_get(instrucciones_del_pcb,0);
-    log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose);
+   // log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose);
     char *instruc_aux_nose2 = list_get(instrucciones_del_pcb,1);
-    log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose2);
+    //log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose2);
     //char *instruc_aux_nose3 = list_get(instrucciones_del_pcb,2);
     //log_info(logger_consola_memoria,"el instruccion es  %s",instruc_aux_nose3);
     return instrucciones_del_pcb;
@@ -576,13 +576,13 @@ void realizar_proceso_finalizar(int pid){
 
     if (instrucciones != NULL) {
         // Se encontró un elemento que cumple con la condición
-        log_info(logger, "Se encontraron instrucciones para el PID %i", pid);
-        log_info(logger, "Cantidad de instrucciones: %i", list_size(instrucciones->instrucciones));
+//        log_info(logger, "Se encontraron instrucciones para el PID %i", pid);
+//        log_info(logger, "Cantidad de instrucciones: %i", list_size(instrucciones->instrucciones));
 
         // Luego puedes realizar las operaciones que necesites con 'instrucciones'
     } else {
         // No se encontraron instrucciones que cumplan con la condición
-        log_info(logger, "No se encontraron instrucciones para el PID %i", pid);
+        //log_info(logger, "No se encontraron instrucciones para el PID %i", pid);
     }
 }
 
@@ -664,7 +664,7 @@ t_list * crear_paginas(int paginas_necesarias){
 		pagina->p =0;
 		pagina->num_pagina = c;
 		int pos_swap_obtenido =list_get(lista_swap,c);
-		log_error(logger,"asigne al pos swap  %i",pos_swap_obtenido);
+		//log_error(logger,"asigne al pos swap  %i",pos_swap_obtenido);
 		pagina->pos_en_swap = pos_swap_obtenido;
 		list_add(paginas,pagina);
 	}
@@ -674,7 +674,7 @@ t_list * crear_paginas(int paginas_necesarias){
 
 void enviar_fs_reservar_swap(int paginas_necesarias){
 	t_paquete* paquete = crear_paquete(INICIAR_PROCESO);
-	log_error(logger,"el pagina que te envie es %i",paginas_necesarias);
+	//log_error(logger,"el pagina que te envie es %i",paginas_necesarias);
 	agregar_a_paquete(paquete, &paginas_necesarias, sizeof(int));
 	enviar_paquete(paquete, conexion_filesystem);
 	eliminar_paquete(paquete);
@@ -806,10 +806,10 @@ void asignar_marco(int pid, int nro_pagina){
 			pagina->num_marco = i;
 			pagina->p=1;
 			contador_fifo++;
-			log_error(logger,"PAGINA :%i BLOQUE %i:",nro_pagina, pagina->pos_en_swap);
+			//log_error(logger,"PAGINA :%i BLOQUE %i:",nro_pagina, pagina->pos_en_swap);
 			//actualizar_tablas(pid,i,nro_pagina);
 		}else{
-			log_error(logger,"PAGINA :%i BLOQUE :",nro_pagina, pagina->pos_en_swap);
+			//log_error(logger,"PAGINA :%i BLOQUE :",nro_pagina, pagina->pos_en_swap);
 			int nro_marco_remplazado = ejecutar_algoritmo();
 			actualizar_marcos_lru();
 			marco = list_get(memoria->marcos,nro_marco_remplazado);
@@ -826,7 +826,7 @@ void asignar_marco(int pid, int nro_pagina){
 			pagina2->p=0;
 			pagina2->m=0;
 			pagina2->num_marco =-1;
-			log_error(logger,"MARCO %i",nro_marco_remplazado);
+			//log_error(logger,"MARCO %i",nro_marco_remplazado);
 			marco->pid = pid;
 			marco->llegada_fifo =contador_fifo;
 			marco->last_time_lru =0;
@@ -848,7 +848,6 @@ void asignar_marco(int pid, int nro_pagina){
 }
 
 void solicitar_swap_en_memoria(int pos_swap){
-	log_error(logger, "pido datos swappp");
 	t_paquete* paquete = crear_paquete(DATOS_SWAP);
 	agregar_a_paquete(paquete, &pos_swap, sizeof(int));
 	enviar_paquete(paquete, conexion_filesystem);
@@ -860,7 +859,7 @@ void liberar_marcos(int pid){
 	while(list_iterator_has_next(iterador)){
 		t_marco * marco = (t_marco*)list_iterator_next(iterador);
 		if(marco->pid == pid){
-			log_error(logger,"LIBERA EL MARCO %i",marco->num_marco);
+			//log_error(logger,"LIBERA EL MARCO %i",marco->num_marco);
 			marco->is_free = true;
 			marco->pid =-1;
 			marco->llegada_fifo =0;
@@ -905,7 +904,7 @@ bool pagina_esta_en_memoria(int pid, int nro_pagina){
         //log_info(logger_consola_memoria,"comparando pid %i",marco->pid);
         //log_info(logger_consola_memoria,"comparando el pid %i",pid);
 		if(marco->pid == pid && (marco->num_marco == pagina->num_marco)&& pagina->p == 1){
-			log_info(logger,"Encontre la pagina");
+
 			return true;
 		}
 	}
@@ -972,9 +971,9 @@ int ejecutar_lru(){
 	int nro_marco =-1;
 	while(list_iterator_has_next(iterador)){
 		t_marco * marco = (t_marco*)list_iterator_next(iterador);
-		log_error(logger, "a comparar marco %i tiempo lru : %i ",marco->num_marco,marco->last_time_lru);
+		//log_error(logger, "a comparar marco %i tiempo lru : %i ",marco->num_marco,marco->last_time_lru);
 		if(!marco->is_free && (marco->last_time_lru > tiempo)){
-			log_error(logger, "marco %i tiempo lru : %i ",marco->num_marco,marco->last_time_lru);
+			//log_error(logger, "marco %i tiempo lru : %i ",marco->num_marco,marco->last_time_lru);
 			tiempo = marco->last_time_lru;
 			nro_marco = marco->num_marco;
 		}

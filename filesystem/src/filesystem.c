@@ -13,18 +13,18 @@ int main(int argc, char *argv[]) {
 	logger_file_system = log_create("./filesystem.log", "FILESYSTEM", true,
 			LOG_LEVEL_INFO);
 
-	log_info(logger_file_system, "Soy el filesystem!");
+	//log_info(logger_file_system, "Soy el filesystem!");
 	conexiones = malloc(sizeof(int)*3);
 	sem_init(&sem_cont_escritura,0,0);
 	sem_init(&sem_cont_lectura, 0, 0);
 	config_file_system = cargar_config(ruta_config);
 	obtener_configuracion();
-	log_info(logger_file_system, "se cargo la configuracion");
+	//log_info(logger_file_system, "se cargo la configuracion");
 	int contador =0;
 
 	inicializar_fs();
 
-	log_info(logger_file_system,"se inicializo las estructuras de file system");
+	//log_info(logger_file_system,"se inicializo las estructuras de file system");
 
 	//TODO quitar cuando termine  de hacer pruebas
 	//int prueba;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 	return EXIT_SUCCESS;
 }
 void probarBloques(){
-	log_info(logger_file_system,"se inicializo las estructuras de file system");
+	//log_info(logger_file_system,"se inicializo las estructuras de file system");
 	int var= 23;
 	memcpy(fs->bloques,&var,sizeof(int));
 	var=45;
@@ -92,10 +92,10 @@ void probarBloques(){
 	memcpy(fs->bloques + sizeof(int)*3, &var, sizeof(int));
 	var=69;
 	memcpy(fs->bloques + sizeof(int)*4, &var, sizeof(int));
-	log_info(logger_file_system, "puntero bloques : %p",fs->bloques);
-	log_info(logger_file_system, "valor de bloques en 0 : %c",*((int *)fs->bloques));
-	log_info(logger_file_system, "valor de bloques en 1 : %c",*((int *)fs->bloques+1));
-	log_info(logger_file_system, "valor de bloques en 2 : %c",*((int *)fs->bloques+2));
+//	log_info(logger_file_system, "puntero bloques : %p",fs->bloques);
+//	log_info(logger_file_system, "valor de bloques en 0 : %c",*((int *)fs->bloques));
+//	log_info(logger_file_system, "valor de bloques en 1 : %c",*((int *)fs->bloques+1));
+//	log_info(logger_file_system, "valor de bloques en 2 : %c",*((int *)fs->bloques+2));
 	void* aux_final=fs->bloques+ (tam_bloque*cant_total_bloq);
 	memcpy(aux_final,&var,1);
 }
@@ -104,25 +104,16 @@ void porbarTruncarArchivo(char *nombre) {
 
 	//truncar_archivo("unoMas", tam_bloque*2);
 	for (int i = 0; i < 20; i++) {
-		log_info(logger_file_system, "%i =%u", i, fs->fat->entradas[i]);
+		//log_info(logger_file_system, "%i =%u", i, fs->fat->entradas[i]);
 	}
 
 	truncar_archivo(nombre, tam_bloque * 6);
 
-	for (int i = 0; i < 20; i++) {
-		log_info(logger_file_system, "ampliado %i =%u", i,
-				fs->fat->entradas[i]);
-	}
+
 	truncar_archivo(nombre, tam_bloque * 3);
-	for (int i = 0; i < 20; i++) {
-		log_info(logger_file_system, "reducido %i =%u", i,
-				fs->fat->entradas[i]);
-	}
+
 	truncar_archivo(nombre, tam_bloque * 7);
-	for (int i = 0; i < 20; i++) {
-		log_info(logger_file_system, "amplicar otra vez %i =%u", i,
-				fs->fat->entradas[i]);
-	}
+
 }
 
 void liberar_fcb(t_fcb *fcb) {
@@ -173,7 +164,7 @@ void inicializar_fs() {
 	fs = malloc(sizeof(t_FS));
 	fs->fcb_list = list_create();
 	levantar_fcbs();
-	log_info(logger_file_system, "Se levanto el archivo FCBs");
+	//log_info(logger_file_system, "Se levanto el archivo FCBs");
 	levantar_archivo_bloques();
 	 inicializar_fat();
 
@@ -230,16 +221,16 @@ void* procesar_conexion2(void* conexion1) {
 			break;
 		case PAQUETE:
 			lista = recibir_paquete(cliente_fd);
-			log_info(logger, "Me un paquete");
+			//log_info(logger, "Me un paquete");
 
 			break;
 		case ABRIR_ARCHIVO:
 			t_list* nose = recibir_paquete(cliente_fd);
 			char *nombre_nose = list_get(nose,0);
 			int* socket = list_get(nose,1);
-			log_info(logger_file_system, "llegue %i vez ",prueba);
+			//log_info(logger_file_system, "llegue %i vez ",prueba);
 			prueba++;
-			log_info(logger_file_system, "Abrir Archivo: <%s>",nombre_nose);
+			log_info(logger_file_system, "Abrir Archivo: %s",nombre_nose);
 			int tamanio_archivo = abrir_archivo_fcb(nombre_nose);
 			enviar_tamanio_archivo(tamanio_archivo, cliente_fd);
 
@@ -249,7 +240,7 @@ void* procesar_conexion2(void* conexion1) {
 			lista=recibir_paquete(cliente_fd);
 			char* nombre_a_crear=list_get(lista,0);
 
-			log_info(logger_file_system, "Crear Archivo: <%s>",nombre_a_crear);
+			log_info(logger_file_system, "Crear Archivo: %s",nombre_a_crear);
 			crear_archivo_fcb(nombre_a_crear);
 			enviar_respuesta_crear_archivo(cliente_fd);
 			break;
@@ -292,7 +283,7 @@ void* procesar_conexion2(void* conexion1) {
 
 			int *tamanio_nuevo = list_get(lista,1);
 
-			log_info(logger_file_system, "Truncar Archivo: < %s > - Tamaño: < %i >",nombre,*tamanio_nuevo);
+			log_info(logger_file_system, "Truncar Archivo: %s  - Tamaño: %i",nombre,*tamanio_nuevo);
 			truncar_archivo(nombre, *tamanio_nuevo);
 			enviar_respuesta_truncar(cliente_fd);//1=OK
 			break;
@@ -321,7 +312,7 @@ void* procesar_conexion2(void* conexion1) {
 		case INICIAR_PROCESO: //reserva bloques y reenvia la lista de bloques asignados
 			lista = recibir_paquete(cliente_fd);
 			int *cant_bloq = list_get(lista,0);
-			log_info(logger_file_system, "Cantidad de bloques swap a reservar %i",*cant_bloq);
+			//log_info(logger_file_system, "Cantidad de bloques swap a reservar %i",*cant_bloq);
 			t_iniciar_proceso* iniciar= malloc(sizeof(t_iniciar_proceso));
 			iniciar->cant_bloque =*cant_bloq;
 			iniciar->cliente_fd = cliente_fd;
@@ -341,7 +332,7 @@ void* procesar_conexion2(void* conexion1) {
 			}
 
 			finalizar_proceso(bloq_a_liberar);
-			log_info(logger_file_system, "Proceso finalizado, bloq swap a liberados: < %i>",*tam_lista);
+			log_info(logger_file_system, "Proceso finalizado, bloq swap a liberados: %i",*tam_lista);
 			list_destroy(bloq_a_liberar);
 			break;
 		case RESPUESTA_F_READ:
@@ -390,9 +381,9 @@ void* procesar_conexion(void* conexion1) {
 			t_list* nose = recibir_paquete(cliente_fd);
 			char *nombre_nose = list_get(nose,0);
 			int* socket = list_get(nose,1);
-			log_info(logger_file_system, "llegue %i vez ",prueba);
+			//log_info(logger_file_system, "llegue %i vez ",prueba);
 			prueba++;
-			log_info(logger_file_system, "Abrir Archivo: <%s>",nombre_nose);
+			log_info(logger_file_system, "Abrir Archivo: %s",nombre_nose);
 			int tamanio_archivo = abrir_archivo_fcb(nombre_nose);
 			enviar_tamanio_archivo(tamanio_archivo, cliente_fd);
 
@@ -402,7 +393,7 @@ void* procesar_conexion(void* conexion1) {
 			lista=recibir_paquete(cliente_fd);
 			char* nombre_a_crear=list_get(lista,0);
 
-			log_info(logger_file_system, "Crear Archivo: <%s>",nombre_a_crear);
+			log_info(logger_file_system, "Crear Archivo: %s",nombre_a_crear);
 			crear_archivo_fcb(nombre_a_crear);
 			enviar_respuesta_crear_archivo(cliente_fd);
 			break;
@@ -414,7 +405,7 @@ void* procesar_conexion(void* conexion1) {
 			int *puntero = list_get(lista,2);
 			int *pid_f_read = list_get(lista,3);
 
-			log_info(logger_file_system	, "Leer Archivo: < %s > - Puntero: < %i > - Memoria: <%i>",nombre_arc,*puntero,*direccionFisica);
+			log_info(logger_file_system	, "Leer Archivo: %s - Puntero: %i - Memoria: %i",nombre_arc,*puntero,*direccionFisica);
 			int conexion_memoria_leer= crear_conexion(ip_memoria, puerto_memoria);
 
 			void*leido=leer_archivo_bloques_fat(*puntero, nombre_arc);
@@ -423,12 +414,12 @@ void* procesar_conexion(void* conexion1) {
 
 			int cop;
 			recv(conexion_memoria_leer, &cop, sizeof(cop), 0);
-			log_info(logger,"recibi el codigo de operacion %i",cop);
+			//log_info(logger,"recibi el codigo de operacion %i",cop);
 			t_list* lista=list_create();
-			log_error(logger_file_system,"llegue hasta aca el socket es %i",cliente_fd);
+			//log_error(logger_file_system,"llegue hasta aca el socket es %i",cliente_fd);
 			lista= recibir_paquete(conexion_memoria_leer);
 			close(conexion_memoria_leer);
-			log_error(logger_file_system,"el codigo socket es %i",cliente_fd);
+			//log_error(logger_file_system,"el codigo socket es %i",cliente_fd);
 
 			enviar_kernel_ok_lectura(cliente_fd);
 
@@ -457,7 +448,7 @@ void* procesar_conexion(void* conexion1) {
 
 			int *tamanio_nuevo = list_get(lista,1);
 
-			log_info(logger_file_system, "Truncar Archivo: < %s > - Tamaño: < %i >",nombre,*tamanio_nuevo);
+			log_info(logger_file_system, "Truncar Archivo: %s  - Tamaño:  %i ",nombre,*tamanio_nuevo);
 
 			truncar_archivo(nombre, *tamanio_nuevo);
 			enviar_respuesta_truncar(cliente_fd);//1=OK
@@ -465,7 +456,6 @@ void* procesar_conexion(void* conexion1) {
 		case ESCRIBIR_ARCHIVO:
 			//enviar_fwrite_fs(char *nombre,int dir_fisica,int puntero)
 			//TODO  revisar que este bien el manejo de conexiones.
-			log_info(logger_file_system, "=============================");
 			lista=recibir_paquete(cliente_fd);
 			char *nombre_a_escribir = list_get(lista,0);
 			int* direccionFisica=list_get(lista,1);
@@ -489,15 +479,15 @@ void* procesar_conexion(void* conexion1) {
 			enviar_direccion_memoria(*direccionFisica,conexion_memoria,*pid_escribir_archivo);
 			int cop2;
 			recv(conexion_memoria, &cop2, sizeof(cop), 0);
-			log_info(logger,"recibi el codigo de operacion %i",cop2);
+
 			t_list* lista2=list_create();
-			log_error(logger_file_system,"el codigo socket es %i",cliente_fd);
+
 			lista2= recibir_paquete(conexion_memoria);
 			void* auxiliar = list_get(lista2,0);
 			close(conexion_memoria);
 
 			escribir_bloque_fat(*puntero_escribir,nombre_a_escribir,auxiliar);
-			log_info(logger_file_system, ": “Escribir Archivo: <%s> - Puntero: <%i> - Memoria: <%i>",nombre_a_escribir,*puntero_escribir,*direccionFisica);
+			log_info(logger_file_system, ": “Escribir Archivo: %s - Puntero: %i - Memoria: %i",nombre_a_escribir,*puntero_escribir,*direccionFisica);
 
 			//poner semaforo?
 			//int puntero = recibir_puntero(conexion_memoria);
@@ -533,8 +523,6 @@ void* procesar_conexion(void* conexion1) {
 			sem_post(&sem_cont_lectura);
 			break;
 		default:
-			log_warning(logger,
-					"Operacion desconocida. No quieras meter la pata");
 			break;
 		}
 	//}
@@ -547,14 +535,14 @@ void manejo_fwrite(t_estructura_f_write* estruct){
 	enviar_direccion_memoria(estruct->direccion_fisica,conexion_memoria,estruct->pid_escribir);
 	int cop;
 	recv(conexion_memoria, &cop, sizeof(cop), 0);
-	log_info(logger,"recibi el codigo de operacion %i",cop);
+	//log_info(logger,"recibi el codigo de operacion %i",cop);
 	t_list* lista=list_create();
 	lista= recibir_paquete(conexion_memoria);
 	void* auxiliar = list_get(lista,0);
 
 	escribir_bloque_fat(estruct->puntero_escribir,estruct->nombre,auxiliar);
-	log_info(logger_file_system, ": “Escribir Archivo: <%s> - Puntero: <%i> - Memoria: <%i>",estruct->nombre,estruct->puntero_escribir,estruct->direccion_fisica);
-	log_error(logger_file_system,"el codigo socket es %i",estruct->socket);
+	//log_info(logger_file_system, ": “Escribir Archivo: <%s> - Puntero: <%i> - Memoria: <%i>",estruct->nombre,estruct->puntero_escribir,estruct->direccion_fisica);
+	//log_error(logger_file_system,"el codigo socket es %i",estruct->socket);
 	//poner semaforo?
 	//int puntero = recibir_puntero(conexion_memoria);
 	//escribir_bloque_fat(puntero, nombre, a_escribir)
@@ -563,7 +551,7 @@ void manejo_fwrite(t_estructura_f_write* estruct){
 }
 
 void enviar_kernel_ok_escritura(int cliente_fd){
-	log_error(logger,"llegue hasta aca el socket es %i",cliente_fd);
+	//log_error(logger,"llegue hasta aca el socket es %i",cliente_fd);
 	t_paquete *paquete = crear_paquete(OK_FWRITE);
 	int valor = 1;
 	agregar_a_paquete(paquete, &valor, sizeof(int));
@@ -572,7 +560,7 @@ void enviar_kernel_ok_escritura(int cliente_fd){
 }
 
 void enviar_kernel_ok_lectura(int cliente_fd){
-	log_error(logger_file_system,"llegue hasta aca el socket es %i",cliente_fd);
+	//log_error(logger_file_system,"llegue hasta aca el socket es %i",cliente_fd);
 	t_paquete *paquete = crear_paquete(OK_FREAD);
 	int valor = 1;
 	agregar_a_paquete(paquete, &valor, sizeof(int));
@@ -589,7 +577,7 @@ enviar_bloque_para_memoria(void* datos_swap_retornar,int cliente_fd){
 
 
 void enviar_respuesta_truncar(int socket_cliente){
-	log_error(logger_file_system,"envie respuesta truncar ");
+	//log_error(logger_file_system,"envie respuesta truncar ");
 	t_paquete* paquete=crear_paquete(OK_TRUNCAR_ARCHIVO);
 	int valor =1;
 	agregar_a_paquete(paquete, &valor,sizeof(int) );
@@ -613,20 +601,17 @@ void enviar_leer_memoria(int direccion,void*leido,int pid_f_read,int cliente_fd)
 	eliminar_paquete(paquete);
 }
 t_fcb* devolver_fcb(char *nombre) {
-	log_info(logger_file_system, "llega el archivo %s",nombre);
+	//log_info(logger_file_system, "llega el archivo %s",nombre);
 	for (int i = 0; i < list_size(fs->fcb_list); i++) {
 		t_fcb *fcb_buscado = list_get(fs->fcb_list, i);
 		if (strcmp(fcb_buscado->nombre_archivo, nombre) == 0) {
-			log_info(logger_file_system, "se encontro el archivo %s",
-					fcb_buscado->nombre_archivo);
+			//log_info(logger_file_system, "se encontro el archivo %s",
 
 			return fcb_buscado;
 		}
 
 	}
 
-	log_info(logger_file_system,
-			"El archivo buscado no se encuentra en la lista.");
 	return NULL;
 }
 int recibir_entero(int socket_cliente) {
@@ -650,8 +635,6 @@ void enviar_respuesta_crear_archivo(int cliente_fd) {
 void enviar_tamanio_archivo(int tamanio, int cliente_fd) {
 
 	t_paquete *paquete = crear_paquete(RESPUESTA_ABRIR_ARCHIVO);
-	log_error(logger_file_system,"el tamanio que envie es %i",tamanio);
-	log_error(logger_file_system,"el socket que envie es %i",cliente_fd);
 	agregar_a_paquete(paquete, &tamanio, sizeof(int));
 	enviar_paquete(paquete, cliente_fd);
 	eliminar_paquete(paquete);
@@ -660,7 +643,7 @@ void enviar_bloques_asignados_swap(t_list *lista_asignados, int socket_cliente) 
 
 	t_paquete *paquete = crear_paquete(RESPUESTA_INICIAR_PROCESO_FS);
 	int cantidad_de_bloque = list_size(lista_asignados);
-	log_info(logger_file_system,"%i",list_size(lista_asignados));
+	//log_info(logger_file_system,"%i",list_size(lista_asignados));
 
 	agregar_a_paquete(paquete, &cantidad_de_bloque, sizeof(int));
 	for (int i = 0; i < list_size(lista_asignados); i++) {
@@ -673,7 +656,7 @@ void enviar_bloques_asignados_swap(t_list *lista_asignados, int socket_cliente) 
 
 void iniciar_servidor_fs(char *puerto) {
 	int fs_fd = iniciar_servidor(puerto);
-	log_info(logger_file_system, "Servidor listo para recibir al cliente");
+	//log_info(logger_file_system, "Servidor listo para recibir al cliente");
 
 
 	int cliente_fd = esperar_cliente(fs_fd);
@@ -718,7 +701,7 @@ t_fcb* buscar_fcb(char *nombre_a_buscar) {
 }
 
 void generar_conexion_memoria(){
-	log_info(logger, "generar conexion con memoria\n");
+
 	pthread_t conexion_memoria_hilo_cpu;
 	conexion_memoria= crear_conexion(ip_memoria, puerto_memoria);
 	pthread_create(&conexion_memoria_hilo_cpu,NULL,(void*) procesar_conexion,(void *)&conexion_memoria);
@@ -740,7 +723,6 @@ char* intAString(int numero) {
 char* recibir_nombre_archivo(int socket_cliente) {
 	int size;
 	char *nombre = recibir_buffer(&size, socket_cliente);
-	log_info(logger, "Me llego el archivo %s", nombre);
 	//free(nombre);
 	return nombre;
 }
@@ -762,7 +744,7 @@ uint32_t buscar_entrada_libre_fat() {
 	uint32_t index_entrada_libre;
 	for (uint32_t i = 1; i < fs->fat->tamanio_fat; i++) {
 		if (fs->fat->entradas[i] == 0 && fs->fat->entradas[i ]!=UINT32_MAX) {
-			log_info(logger_file_system, "se encontro la entrada %u", fs->fat->entradas[i]);
+			//log_info(logger_file_system, "se encontro la entrada %u", fs->fat->entradas[i]);
 			index_entrada_libre = i;
 			break;
 		}
@@ -853,8 +835,6 @@ void crear_archivo_fcb(char *nom_fcb) {
 				free(ruta_copia);
 
 			} else {
-				log_info(logger_file_system, "hubo problemas creando el archivo fcb %s",
-						nom_fcb);
 			}
 	}
 
@@ -876,15 +856,12 @@ void actualizar_lista_fcbs(t_list *lista_fcbs) {
 void truncar_archivo(char *nombre, int nuevo_tamanio_bytes) {
 
 	t_fcb *fcb = devolver_fcb(nombre);
-	log_info(logger_file_system,"tamanio %u",fcb->tamanio_archivo);
 	if (fcb->tamanio_archivo < nuevo_tamanio_bytes) {
 		ampliar_tam_archivo(fcb, nuevo_tamanio_bytes);
 
 	} else if(fcb->tamanio_archivo>nuevo_tamanio_bytes){
 		reducir_tam_archivo(fcb, nuevo_tamanio_bytes);
 		//siempre se puede ampliar el archivo
-	}else{
-		log_info(logger_file_system,"el archivo tiene el mismo tamaño para truncar");
 	}
 	escribir_fcb_en_archivo(fcb);
 }
@@ -902,11 +879,9 @@ void ampliar_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes) {
 
 	int bloques_archivo = calcular_bloq_necesarios_fcb(fcb->tamanio_archivo);
 	uint32_t indice = fcb->bloq_inicial_archivo;
-	log_info(logger_file_system, "bloque inicial %u",
-			fcb->bloq_inicial_archivo);
 	//me paro en el ultimo bloque
 	while (fs->fat->entradas[indice] != UINT32_MAX) {
-		log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", indice,fs->fat->entradas[indice]);
+		log_info(logger_file_system, "Acceso FAT - Entrada: %u - Valor: %u", indice,fs->fat->entradas[indice]);
 		indice = fs->fat->entradas[indice];
 
 	}
@@ -923,11 +898,11 @@ void ampliar_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes) {
 		uint32_t bl_libre = buscar_entrada_libre_fat();
 
 		fs->fat->entradas[indice] = bl_libre;
-		log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", indice,fs->fat->entradas[indice]);
+		log_info(logger_file_system, "Acceso FAT - Entrada: %u - Valor: %u", indice,fs->fat->entradas[indice]);
 		indice = bl_libre;
 		usleep(retardo_acceso_fat*1000);
 		fs->fat->entradas[indice] = EOFF;
-		log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", indice,fs->fat->entradas[indice]);
+		log_info(logger_file_system, "Acceso FAT - Entrada: %u - Valor: %u", indice,fs->fat->entradas[indice]);
 	}
 	fcb->tamanio_archivo = tamanio_nuevo_bytes;
 
@@ -940,7 +915,7 @@ void reducir_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes) {
 
 	//me paro en el ultimo bloque
 	while (fs->fat->entradas[indice_final] != UINT32_MAX) {
-		log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", indice_final,fs->fat->entradas[indice_final]);
+		log_info(logger_file_system, "Acceso FAT - Entrada: %u - Valor: %u", indice_final,fs->fat->entradas[indice_final]);
 		anterior_indice = indice_final;
 		indice_final = fs->fat->entradas[indice_final];
 
@@ -951,16 +926,16 @@ void reducir_tam_archivo(t_fcb *fcb, int tamanio_nuevo_bytes) {
 	int cont = 0;
 	while (cont < cant_bloq_a_liberar) {
 		fs->fat->entradas[indice_final] = 0;
-		log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", indice_final,fs->fat->entradas[indice_final]);
+		log_info(logger_file_system, "Acceso FAT - Entrada: %u - Valor: %u", indice_final,fs->fat->entradas[indice_final]);
 		fs->fat->entradas[anterior_indice] = EOFF;
-		log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", anterior_indice,fs->fat->entradas[anterior_indice]);
+		log_info(logger_file_system, "Acceso FAT - Entrada: %u - Valor: %u", anterior_indice,fs->fat->entradas[anterior_indice]);
 
 		//me paro nuevamente en el ultimo bloque
 		indice_final = fcb->bloq_inicial_archivo;
 		anterior_indice = EOFF;
 		while (fs->fat->entradas[indice_final] != UINT32_MAX) {
 			usleep(retardo_acceso_fat*1000);
-			log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", indice_final,fs->fat->entradas[indice_final]);
+			log_info(logger_file_system, "Acceso FAT - Entrada: %u - Valor: %u", indice_final,fs->fat->entradas[indice_final]);
 			anterior_indice = indice_final;
 			indice_final = fs->fat->entradas[indice_final];
 		}
@@ -991,12 +966,12 @@ void* leer_archivo_bloques_fat(int puntero, char *nombre) {
 	while(cont<numero_bloque){
 		bloque=fs->fat->entradas[bloque];
 		usleep(retardo_acceso_fat*1000);
-		log_info(logger_file_system,"Acceso FAT - Entrada: <%u> - Valor: <%u>",bloque,fs->fat->entradas[bloque]);
+		log_info(logger_file_system,"Acceso FAT - Entrada: %u - Valor: %u",bloque,fs->fat->entradas[bloque]);
 		cont++;
 	}
 
 	//log_info(logger_file_system, "bloque a leer de fat %u", bloque);
-	log_info(logger_file_system,"Acceso Bloque - Archivo: <%s> - Bloque Archivo: <%u> - Bloque FS: <%u>",nombre,numero_bloque,bloque);
+	log_info(logger_file_system,"Acceso Bloque - Archivo: %s - Bloque Archivo: %u - Bloque FS: %u",nombre,numero_bloque,bloque);
 
 
 	//leo
@@ -1011,7 +986,7 @@ void* leer_archivo_bloques_fat(int puntero, char *nombre) {
 
 void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir){
 	uint32_t numero_bloque = puntero / tam_bloque;
-	log_warning(logger,"NUMERO DE BLOQUE %u",numero_bloque);
+	//log_warning(logger,"NUMERO DE BLOQUE %u",numero_bloque);
 	t_fcb* fcb=devolver_fcb(nombre);
 
 	uint32_t bloque=fcb->bloq_inicial_archivo;
@@ -1019,7 +994,7 @@ void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir){
 	int cont=1;
 	while(cont<numero_bloque){
 		usleep(retardo_acceso_fat*1000);
-		log_info(logger_file_system, "Acceso FAT - Entrada: <%u> - Valor: <%u>", bloque,fs->fat->entradas[bloque]);
+		log_info(logger_file_system, "Acceso FAT - Entrada: %u - Valor: %u", bloque,fs->fat->entradas[bloque]);
 		bloque=fs->fat->entradas[bloque];//obtengo el bloque
 		cont++;
 
@@ -1031,20 +1006,14 @@ void escribir_bloque_fat(int puntero, char* nombre,void* a_escribir){
 		usleep(retardo_acceso_bloq*1000);
 		memcpy(puntero_fat+(tam_bloque*bloque)+numero_bloque * tam_bloque,a_escribir,tam_bloque);
 		//log_info(logger_file_system, "bloque a escrito de fat %u", bloque);
-		log_info(logger_file_system,"Acceso Bloque - Archivo: <%s> - Bloque Archivo: <%u> - Bloque FS: <%u>",nombre,numero_bloque,bloque);
-	}else{
-		log_info(logger_file_system,"exceso");
+		log_info(logger_file_system,"Acceso Bloque - Archivo: %s - Bloque Archivo: %u - Bloque FS: %u",nombre,numero_bloque,bloque);
 	}
 
 }
 void reemplazar_bloq_swap(int num_bloque,void *a_escribir) {
 
-	log_warning(logger_file_system, "se escribio en el bloq de swap :%u",num_bloque);
-	log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
-	if(fs->bloques+(tam_bloque*num_bloque)==NULL){
+	log_info(logger_file_system, "Acceso a bloque swap %u", num_bloque);
 
-		log_info(logger_file_system, "es puntero es nulo");
-	}
 	//int *a = (int*)a_escribir;
 //	log_info(logger_file_system, "se recibio para escribir el puntero %i",*a	);
 	void* buffer_bloque=fs->bloques;
@@ -1057,29 +1026,24 @@ void escribir_bloque_swap(int puntero,void *a_escribir) {
 
 	uint32_t num_bloque = puntero / tam_bloque;
 
-	if(fs->bloques+(tam_bloque*num_bloque)==NULL){
-		log_info(logger_file_system, "es puntero es nulo");
-	}
+
 	//int *a = (int*)a_escribir;
 //	log_info(logger_file_system, "se recibio para escribir el puntero %i",*a	);
 	void* buffer_bloque=fs->bloques;
 	usleep(retardo_acceso_bloq*1000);
 	memcpy(buffer_bloque+(tam_bloque*num_bloque),a_escribir,tam_bloque);
-	log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
+	log_info(logger_file_system, "Acceso a bloque swap %u", num_bloque);
 	//log_info(logger_file_system, "se escribio en el bloq de swap :%u",num_bloque);
 
 }
 void poner_bloq_swap_reservado(uint32_t num_bloque) {
 	//log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
 	int marca_reservado=64;
-	if(fs->bloques+(tam_bloque*num_bloque)==NULL){
 
-		log_info(logger_file_system, "puntero swap es nulo");
-	}
 	void* buffer_bloque=fs->bloques;
 	usleep(retardo_acceso_bloq*1000);
 	memset(buffer_bloque + (tam_bloque*num_bloque),marca_reservado,tam_bloque);
-	log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
+	log_info(logger_file_system, "Acceso a bloque swap %u", num_bloque);
 
 }
 
@@ -1089,7 +1053,7 @@ void* leer_bloque_swap(int puntero){
 	void* buffer_bloques=fs->bloques;
 	usleep(retardo_acceso_bloq*1000);
 	memcpy(datos,buffer_bloques+(tam_bloque*num_bloq),tam_bloque);
-	log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloq);
+	log_info(logger_file_system, "Acceso a bloque swap %u", num_bloq);
 	return datos;
 
 
@@ -1117,7 +1081,7 @@ void asignar_bloques_swap(t_list *bloques_asignados, int cant_bloques) {
 	for (int i = 0; i < cant_bloques; i++) {
 		int index_bloq = buscar_bloq_libre_swap();
 
-		log_info(logger_file_system," bloque a asignar %i",index_bloq);
+
 		//log_info(logger_file_system, "Acceso a bloque swap <%u>", index_bloq);
 		fs->array_swap[index_bloq].libre = false;
 		poner_bloq_swap_reservado(index_bloq);//pone 0 en el bloq archivo
@@ -1133,7 +1097,7 @@ int buscar_bloq_libre_swap() {
 	//primero reservado para boot
 	for (int i = 0; i < cant_bloq_swap; i++) {
 		if (fs->array_swap[i].libre==true) {
-			log_info(logger_file_system, "Acceso a bloque swap <%u>", num_bloque);
+			log_info(logger_file_system, "Acceso a bloque swap %u", num_bloque);
 			num_bloque = i;
 			break;
 		}
@@ -1149,7 +1113,7 @@ void finalizar_proceso(t_list *lista_liberar) {
 		usleep(retardo_acceso_bloq*1000);
 
 		int indice_bloque = list_get(lista_liberar, indice_a_borrar);
-		log_info(logger_file_system, "Acceso a bloque swap <%u>", indice_bloque);
+		log_info(logger_file_system, "Acceso a bloque swap %u", indice_bloque);
 		fs->array_swap[indice_bloque].libre = true;
 
 	}
@@ -1239,7 +1203,6 @@ void levantar_fcbs() {
 	struct dirent *fcb;
 
 	if (directorio_archivos == NULL) {
-		log_error(logger, "No se pudo abrir el directorio de fcbs");
 		exit(1);
 	}
 

@@ -55,7 +55,7 @@ void procesar_conexion(void *conexion1){
 			t_pcb* pcb_aux2=list_get(pcb_en_ejecucion,0);
 
 			//log_info(logger,"recibi el pcb");
-			log_pcb_info(pcb_aux);
+			//log_pcb_info(pcb_aux);
 			recv(cliente_fd,&cod_op,sizeof(op_code),0);
 			switch(cod_op){
 			case EJECUTAR_SLEEP:
@@ -192,7 +192,7 @@ void procesar_conexion(void *conexion1){
 		case ENVIAR_DESALOJAR:
 			paquete = recibir_paquete(cliente_fd);
 			pcb_aux = desempaquetar_pcb(paquete);
-			log_pcb_info(pcb_aux);
+			//log_pcb_info(pcb_aux);
 			list_remove(pcb_en_ejecucion,0);
 			agregar_a_cola_ready(pcb_aux);
 			sem_post(&contador_cola_ready);
@@ -255,7 +255,7 @@ void procesar_conexion(void *conexion1){
 			break;
 
 		case -1:
-			log_error(logger, "el cliente se desconecto. Terminando servidor");
+			//log_error(logger, "el cliente se desconecto. Terminando servidor");
 			return;
 		default:
 			//log_warning(logger,"Operacion desconocida. No quieras meter la pata");
@@ -541,7 +541,6 @@ void ejecutar_fopen(char* nombre_archivo, char* modo_apertura, t_pcb* pcb) {
         	pcb->estado = WAITING;
 			log_info(logger,"PID: %i - Estado Anterior: RUNNING - Estado Actual: WAITING",pcb->pid);
 			log_info(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
-			log_error(logger ,"PID: %i - Bloqueado por: %s",pcb->pid,nombre_archivo);
 			queue_push(archivo->cola_bloqueados  ,pcb);
 			pcb->contexto->pc--;
 			if(!list_is_empty(pcb_en_ejecucion)){
@@ -912,7 +911,6 @@ void iniciar_proceso(char* archivo_test,int size,int prioridad,int pid){
 
 	enviar_paquete(paquete, conexion_memoria);
 	crear_pcb(prioridad);
-	log_warning(logger,"iniciar proceso");
 	sem_post(&contador_agregando_new);
 
 	//free(prueba);
@@ -1022,7 +1020,6 @@ void planificador_corto_plazo(){
 			break;
 		case RR:
 			if(!queue_is_empty(cola_ready)){
-				log_warning(logger,"pase por aca");
 				sem_wait(&contador_ejecutando_cpu);
 				de_ready_a_round_robin();
 			}
